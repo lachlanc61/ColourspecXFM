@@ -4,17 +4,17 @@
 #default input file and output directory
 
 infile:  
-- "/mnt/d/DATA/XFMDATA/2022/dimarco_zoey/sections2_25um_221101/S3/full_25um_sub.GeoPIXE"   #assign input file
+- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/ov50-200.GeoPIXE"   #assign input file
 
 outdir: 
-- "/mnt/d/DATA/XFMDATA/2022/dimarco_zoey/sections2_25um_221101/S3/PXVALS/"
+- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/PXVALS"
 
-PARSEMAP: False   #load spectrum-by-pixel data
+PARSEMAP: True   #load spectrum-by-pixel data
 
 chunksize: 1000    #size in Mb to load into memory at a time
 
-DOCOLOURS: False   #run colourmap
-DOCLUST: False     #run clustering
+DOCOLOURS: True   #run colourmap
+DOCLUST: True     #run clustering
 
 #recalc flags
 FORCEPARSE: True     #always parse datafile

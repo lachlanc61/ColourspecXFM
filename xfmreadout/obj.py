@@ -77,12 +77,15 @@ class Xfmap:
 
     def getdetectors(self, config):
         """
-        Parses beginning of self.stream and extracts pixel headers
-        Returns array of detector values
-        Breaks when det=0 is found on nonzero index
+        Find the detector config for the map
 
-        NB: assumes detectors increase sequentially and are uniform throughout file
-            eg. 0 1 2 3 repeating pixel-by-pixel
+        Pre-parses self.stream and jumps through pixel headers, 
+            saving detector values, until detectors begin to repeat
+
+        NB: assumes:
+            - detectors increase sequentially and are uniform throughout file
+                eg. 0 1 2 3 repeating pixel-by-pixel
+            - first pixel is representative of config for whole map
         """
         #initialise array and counters
         detarray=np.zeros(20).astype(int)
@@ -130,7 +133,7 @@ class Xfmap:
                 locstream, self.idx = parser.getstream(self,self.idx,readlength)
 
                 if config['WRITESUBMAP'] and utils.pxinsubmap(config, xidx, yidx):
-                        parser.writepxheader(config, self, pxseries)
+                        parser.writepxheader(config, self, pxseries, det)
                         parser.writepxrecord(locstream, readlength, self)
 
                 if config['PARSEMAP']:
@@ -143,6 +146,9 @@ class Xfmap:
                     #warn if recieved channel list is different length to chan array
                     if len(chan) != len(self.chan):
                         print("WARNING: unexpected length of channel list")
+
+                    #store pixel sum
+                    pxseries.sum[det,self.pxidx]=np.sum(counts)
 
                     #assign counts into data array
                     pxseries.data[det,self.pxidx,:]=counts
@@ -193,12 +199,17 @@ class Xfmap:
 
 class PixelSeries:
     def __init__(self, config, xfmap):
+
+        #assign number of detectors
+        ndet=max(xfmap.detarray)+1
+
         #initialise pixel value arrays
-        self.pxlen=np.zeros(xfmap.numpx,dtype=np.uint16)
-        self.xidx=np.zeros(xfmap.numpx,dtype=np.uint16)
-        self.yidx=np.zeros(xfmap.numpx,dtype=np.uint16)
-        self.det=np.zeros(xfmap.numpx,dtype=np.uint16)
-        self.dt=np.zeros(xfmap.numpx,dtype=np.uint16)
+        self.pxlen=np.zeros((ndet,xfmap.numpx),dtype=np.uint16)
+        self.xidx=np.zeros((ndet,xfmap.numpx),dtype=np.uint16)
+        self.yidx=np.zeros((ndet,xfmap.numpx),dtype=np.uint16)
+        self.det=np.zeros((ndet,xfmap.numpx),dtype=np.uint16)
+        self.sum=np.zeros((ndet,xfmap.numpx),dtype=np.uint32)        
+        self.dt=np.zeros((ndet,xfmap.numpx),dtype=np.float32)
 
         #create colour-associated attrs even if not doing colours
         self.rvals=np.zeros(xfmap.numpx)
@@ -208,8 +219,6 @@ class PixelSeries:
 
         #initialise whole data containers (WARNING: large)
         if config['PARSEMAP']: 
-            ndet=max(xfmap.detarray)+1
-
             self.data=np.zeros((ndet,xfmap.numpx,config['NCHAN']),dtype=np.uint16)
 #            if config['DOBG']: self.corrected=np.zeros((xfmap.numpx,config['NCHAN']),dtype=np.uint16)
         else:
@@ -220,11 +229,11 @@ class PixelSeries:
         self.nrows=0
 
     def receiveheader(self, pxidx, pxlen, xcoord, ycoord, det, dt):
-        self.pxlen[pxidx]=pxlen
-        self.xidx[pxidx]=xcoord
-        self.yidx[pxidx]=ycoord
-        self.det[pxidx]=det
-        self.dt[pxidx]=dt
+        self.pxlen[det,pxidx]=pxlen
+        self.xidx[det,pxidx]=xcoord
+        self.yidx[det,pxidx]=ycoord
+        self.det[det,pxidx]=det
+        self.dt[det,pxidx]=dt
         
         return self
 
