@@ -100,8 +100,8 @@ def writefileheader(config, xfmap):
 
 def getstream(xfmap, idx, length):
 
-    #if we have enough remaining in the chunk, proceed
-    if not idx+length >= xfmap.streamlen:    
+    #if we have enough remaining in the chunk, proceed (CHECK not sure if > or >=)
+    if not idx+length > xfmap.streamlen:    
         locstream=xfmap.stream[idx:idx+length]
         idx=idx+length
     else:   #if step would exceed chunk

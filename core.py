@@ -66,7 +66,7 @@ try:
     else:   
         pixelseries = pixelseries.readseries(config, odir)
 finally:
-    xfmap.closefiles()
+    xfmap.closefiles(config)
 
 runtime = time.time() - starttime
 
