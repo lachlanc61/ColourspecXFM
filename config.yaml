@@ -4,10 +4,12 @@
 #default input file and output directory
 
 infile:  
-- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/scan256.GeoPIXE"   #assign input file
+- "data/geo1.GeoPIXE"
+#- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/scan256.GeoPIXE"   #assign input file
 
-outdir: 
-- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/PXVALS"
+outdir:   #blank = assigned to directory of infile
+- "out/" 
+#- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/PXVALS"
 
 PARSEMAP: True   #load spectrum-by-pixel data
 

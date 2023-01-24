@@ -9,6 +9,7 @@ from copy import deepcopy
 
 from scipy.stats import norm
 
+ANADIR="autoanalysis"
 
 def getcfgs(f1, f2):
     """
@@ -117,56 +118,123 @@ def initcfg(args, pkgconfig, usrconfig):
             raise ValueError("FATAL: y2 nonzero but smaller than y1")
     return config, rawconfig
 
+class DirectoryStructure:
+    def __init__(self, config):
+        """
+        Assign input and output directories from the config
+            or location of script if relative
+        """
+        self.script = os.path.realpath(__file__) #_file = current script
+        self.spath=os.path.dirname(self.script) 
+        self.spath=os.path.dirname(self.spath)
+        
+        #check if paths are absolute or relative based on leading /
+        if config['infile'][0].startswith('/'):
+            self.fi=config['infile'][0]
+        else:
+            self.fi = os.path.join(self.spath,config['infile'][0])
 
-def initf(config):
-
-    script = os.path.realpath(__file__) #_file = current script
-    spath=os.path.dirname(script) 
-    spath=os.path.dirname(spath)
+        #assign output:
+        #   to input if output blank
+        #   otherwise as assigned
+        if config['outdir'][0] == "":
+            self.odir=os.path.dirname(self.fi)
+        elif config['outdir'][0].startswith('/'):   #relative vs absolute
+            self.odir=config['outdir'][0]
+        else:
+            self.odir=os.path.join(self.spath,config['outdir'][0])
     
-    #check if paths are absolute or relative based on leading /
-    if config['infile'][0].startswith('/'):
-        fi=config['infile'][0]
-    else:
-        fi = os.path.join(spath,config['infile'][0])
+        #assign and create analysis subdirs, if needed
+        self.transforms=os.path.join(self.odir,config['TRANSDIR'])
+        self.plots=os.path.join(self.odir,config['PLOTDIR'])
+        self.exports=os.path.join(self.odir,config['EXPORTDIR'])
 
-    if config['outdir'][0].startswith('/'):
-        odir=config['outdir'][0]
-    else:
-        odir=os.path.join(spath,config['outdir'][0])
+        #extract name of input file
+        self.fname = os.path.splitext(os.path.basename(self.fi))[0]
 
-    #extract name of input file
-    fname = os.path.splitext(os.path.basename(fi))[0]
-    print(f"input file: {fi}")
+        #setup submap export location and extension
+        if config['WRITESUBMAP']:
+            self.subname=self.fname+config['convext']
+            self.fsub = os.path.join(self.exports,self.subname+config['FTYPE'])
 
-    print(
-        "---------------------------\n"
-        "PATHS\n"
-        "---------------------------\n"
-        f"local: {spath}\n"
-        f"data: {fi}\n"
-        f"output: {odir}"
-    )
+            if not self.subname == os.path.splitext(os.path.basename(self.fsub))[0]:
+                raise ValueError(f"submap name not recognisable")
 
-    #check filetype is recognised - currently only accepts .GeoPIXE
-    if not config['FTYPE'] == ".GeoPIXE":
-        raise ValueError(f"FATAL: filetype {config['FTYPE']} not recognised")
+        else:
+            self.fsub = None
 
-    if config['WRITESUBMAP']:
-        subname=fname+config['convext']
-        fsub = os.path.join(odir,subname+config['FTYPE'])
+        return self
 
-        if not subname == os.path.splitext(os.path.basename(fsub))[0]:
-            raise ValueError(f"submap name not recognisable")
+    def create(self, config):
+        """
+        create the output directory and subdirectories, if needed
+        """
+        #create the output directory if it does not exist
+        if not os.path.isdir(odir):
+            os.mkdir(odir)
 
-        print(f"submap: {fsub}")
-    else:
-        fsub = None
+        #extract terminal directory for output
+        outbase=os.path.splitext(os.path.basename(odir))
 
-    print("---------------------------")
-    print("---------------------------")
+        #create a directory for analysis outputs, unless outdir already has this name
+        if not outbase == config['ANADIR'] or outbase == "out":
+            odir=os.path.join(odir,config['ANADIR'])
+            os.mkdir(odir)
+        
+        for dir in [ self.transforms, self.plots, self.exports ]:
+            if not os.path.isdir(dir):
+                os.mkdir(dir)
 
-    return config, fi, fname, fsub, odir
+        return self
+
+    def check(self, config):
+        """
+        run some basic sanity checks
+            eg. correct filetype
+        """
+        #check filetype is recognised - currently hardcoded
+        if not config['FTYPE'] == ".GeoPIXE":
+            raise ValueError(f"Filetype {config['FTYPE']} not recognised")
+    
+        for dir in [ self.odir, self.transforms, self.plots, self.exports ]:
+                if not os.path.isdir(dir):
+                    raise FileNotFoundError(f"Directory {dir} expected but not found")
+        
+        if not os.path.exists(self.fi):
+            raise FileNotFoundError(f"Input file {self.fi} expected but not found")
+
+        return 
+
+    def show(self):
+        """
+        present the directory assignments to the user
+        """
+        print(
+            "---------------------------\n"
+            "PATHS\n"
+            "---------------------------\n"
+            f"local: {self.spath}\n"
+            f"data: {self.fi}\n"
+            f"output: {self.odir}"
+        )
+        if self.fsub != None:
+            print(f"submap: {self.fsub}")
+
+        print("---------------------------")
+        print("---------------------------")
+
+        return
+
+def initfiles(config):
+
+    dirs = DirectoryStructure(config)
+    dirs = dirs.create(config)
+    dirs.check(config)
+    dirs.show()    
+
+    return config, dirs
+
+#    return config, fi, fname, fsub, odir
 
 def lookfor(x, val):
     difference_array = np.absolute(x-val)

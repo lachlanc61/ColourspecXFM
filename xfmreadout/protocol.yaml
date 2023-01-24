@@ -23,6 +23,12 @@ CMAP: 'Set1' #default colourmap for clusters
 #chunksize: 10073741824 #10 Gb
 #chunksize: 10737418240
 
+#names of subdirectories for output
+ANADIR: "autoanalysis"  
+TRANSDIR: "transformations"
+PLOTDIR: "plots"
+EXPORTDIR: "pixeldata"
+
 outfile: "pxspec"
 convext: "_sub"
 

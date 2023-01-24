@@ -36,7 +36,7 @@ args = utils.readargs()
 config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG, USER_CONFIG)
 
 #initialise read file and all directories relative to current script
-config, fi, fname, fsub, odir = utils.initf(config)
+config, dirs = utils.initfiles(config)
 
 starttime = time.time()             #init timer
 
