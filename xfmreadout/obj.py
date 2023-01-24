@@ -15,6 +15,13 @@ class MapDone(Exception): pass
 
 #CLASSES
 class Xfmap:
+    """
+    Object wrapping binary file to be read
+        holds: params read directly from file
+        loads: byte stream from file, holds pointer
+        methods to parse pixel header and body, manage memory via chunks
+            parser.py module contains subsidiary code to parse binary
+    """
     def __init__(self, config, fi, fo):
 
         #assign input file object for reading
