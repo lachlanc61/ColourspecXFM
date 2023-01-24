@@ -148,7 +148,7 @@ class Xfmap:
                         print("WARNING: unexpected length of channel list")
 
                     #store pixel sum
-                    pxseries.sum[det,self.pxidx]=np.sum(counts)
+                    pxseries.sum[det,self.pxidx]=int(np.sum(counts))
 
                     #assign counts into data array
                     pxseries.data[det,self.pxidx,:]=counts
@@ -201,15 +201,15 @@ class PixelSeries:
     def __init__(self, config, xfmap):
 
         #assign number of detectors
-        ndet=max(xfmap.detarray)+1
+        self.ndet=max(xfmap.detarray)+1
 
         #initialise pixel value arrays
-        self.pxlen=np.zeros((ndet,xfmap.numpx),dtype=np.uint16)
-        self.xidx=np.zeros((ndet,xfmap.numpx),dtype=np.uint16)
-        self.yidx=np.zeros((ndet,xfmap.numpx),dtype=np.uint16)
-        self.det=np.zeros((ndet,xfmap.numpx),dtype=np.uint16)
-        self.sum=np.zeros((ndet,xfmap.numpx),dtype=np.uint32)        
-        self.dt=np.zeros((ndet,xfmap.numpx),dtype=np.float32)
+        self.pxlen=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint16)
+        self.xidx=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint16)
+        self.yidx=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint16)
+        self.det=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint16)
+        self.sum=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint32)        
+        self.dt=np.zeros((self.ndet,xfmap.numpx),dtype=np.float32)
 
         #create colour-associated attrs even if not doing colours
         self.rvals=np.zeros(xfmap.numpx)
@@ -219,7 +219,7 @@ class PixelSeries:
 
         #initialise whole data containers (WARNING: large)
         if config['PARSEMAP']: 
-            self.data=np.zeros((ndet,xfmap.numpx,config['NCHAN']),dtype=np.uint16)
+            self.data=np.zeros((self.ndet,xfmap.numpx,config['NCHAN']),dtype=np.uint16)
 #            if config['DOBG']: self.corrected=np.zeros((xfmap.numpx,config['NCHAN']),dtype=np.uint16)
         else:
         #create a small dummy array just in case

@@ -4,10 +4,10 @@
 #default input file and output directory
 
 infile:  
-- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/ov50-200.GeoPIXE"   #assign input file
+- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/scan256.GeoPIXE"   #assign input file
 
 outdir: 
-- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/PXVALS"
+- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/PXVALS"
 
 PARSEMAP: True   #load spectrum-by-pixel data
 
@@ -15,6 +15,7 @@ chunksize: 1000    #size in Mb to load into memory at a time
 
 DOCOLOURS: True   #run colourmap
 DOCLUST: True     #run clustering
+DODTCALCS: True    #generate deadtime plots
 
 #recalc flags
 FORCEPARSE: True     #always parse datafile

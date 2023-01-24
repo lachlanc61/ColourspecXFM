@@ -5,6 +5,8 @@ import xfmreadout.utils as utils
 import xfmreadout.colour as colour
 import xfmreadout.clustering as clustering
 import xfmreadout.obj as obj
+import xfmreadout.dtops as dtops
+
 """
 Parses spectrum-by-pixel maps from IXRF XFM
 
@@ -47,6 +49,7 @@ starttime = time.time()             #init timer
 #   places pointer (map.idx) at start of first pixel record
 xfmap = obj.Xfmap(config, fi, fsub)
 
+#read the detector config from the file
 detarray=xfmap.getdetectors(config)
 
 #initialise the spectrum-by-pixel object
@@ -74,6 +77,7 @@ print(
 "---------------------------\n"
 "MAP COMPLETE\n"
 "---------------------------\n"
+f"dimensions expected (x,y): {xfmap.xres},{xfmap.yres}\n"
 f"pixels expected (X*Y): {xfmap.numpx}\n"
 f"pixels found: {pixelseries.npx}\n"
 f"total time: {round(runtime,2)} s\n"
@@ -95,7 +99,12 @@ if config['SAVEPXSPEC']:
 utils.varsizes(locals().items())
 
 #perform post-analysis:
+
 UDET=config['use_detector'] #define working detector for multi-detector files
+
+#generate deadtime/sum reports
+if config['DODTCALCS'] == True:
+    dtops.dtplots(config, odir, pixelseries.dt, pixelseries.sum, xfmap.xres, xfmap.yres, pixelseries.ndet)
 
 #create and show colour map
 if config['DOCOLOURS'] == True:
