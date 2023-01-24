@@ -137,13 +137,26 @@ class DirectoryStructure:
         #assign output:
         #   to input if output blank
         #   otherwise as assigned
-        if config['outdir'][0] == "":
-            self.odir=os.path.dirname(self.fi)
+        if config['outdir'][0] == "" or config['outdir'][0] == None:
+            self.odir=os.path.join(os.path.dirname(self.fi),config['ANADIR'])
         elif config['outdir'][0].startswith('/'):   #relative vs absolute
             self.odir=config['outdir'][0]
         else:
             self.odir=os.path.join(self.spath,config['outdir'][0])
     
+        if self.odir.endswith('/'):
+            self.odir = os.path.dirname(self.odir)
+
+        #extract terminal directory for output
+        outbase=os.path.basename(self.odir)
+
+        #if terminal directory has the correct name(s), continue
+        #   otherwise, append it
+        if outbase == config['ANADIR']:      
+            pass
+        else:
+            self.odir=os.path.join(self.odir,config['ANADIR'])
+
         #assign and create analysis subdirs, if needed
         self.transforms=os.path.join(self.odir,config['TRANSDIR'])
         self.plots=os.path.join(self.odir,config['PLOTDIR'])
@@ -163,23 +176,15 @@ class DirectoryStructure:
         else:
             self.fsub = None
 
-        return self
+        return
 
     def create(self, config):
         """
         create the output directory and subdirectories, if needed
         """
-        #create the output directory if it does not exist
-        if not os.path.isdir(odir):
-            os.mkdir(odir)
 
-        #extract terminal directory for output
-        outbase=os.path.splitext(os.path.basename(odir))
-
-        #create a directory for analysis outputs, unless outdir already has this name
-        if not outbase == config['ANADIR'] or outbase == "out":
-            odir=os.path.join(odir,config['ANADIR'])
-            os.mkdir(odir)
+        if not os.path.isdir(self.odir):
+            os.mkdir(self.odir)
         
         for dir in [ self.transforms, self.plots, self.exports ]:
             if not os.path.isdir(dir):

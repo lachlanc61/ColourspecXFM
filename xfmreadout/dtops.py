@@ -89,7 +89,10 @@ def dtplots(config, odir, dt, sum, xres, yres, ndet):
     dtimages(dt, odir, xres, yres, ndet)
     
     if config['PARSEMAP'] and (np.amax(sum) > 0):
-        diffimage(sum, odir, xres, yres, ndet)
+        
+        if ndet == 2:
+            diffimage(sum, odir, xres, yres, ndet)
+        
         dtscatter(dt, sum, odir, ndet)
     elif (np.amax(sum) <= 0):
         raise ValueError("Sum array is empty or zero - cannot generate sum plots")

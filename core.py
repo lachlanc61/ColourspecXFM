@@ -47,7 +47,7 @@ starttime = time.time()             #init timer
 #initialise map object
 #   parses header into map.headerdict
 #   places pointer (map.idx) at start of first pixel record
-xfmap = obj.Xfmap(config, fi, fsub)
+xfmap = obj.Xfmap(config, dirs.fi, dirs.fsub)
 
 #read the detector config from the file
 detarray=xfmap.getdetectors(config)
@@ -67,7 +67,7 @@ try:
         pixelseries = xfmap.parse(config, pixelseries)
     #else read from a pre-parsed csv
     else:   
-        pixelseries = pixelseries.readseries(config, odir)
+        pixelseries = pixelseries.readseries(config, dirs.odir)
 finally:
     xfmap.closefiles(config)
 
@@ -85,7 +85,7 @@ f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
 "---------------------------"
 )
 
-pixelseries.exportheader(config, odir)
+pixelseries.exportheader(config, dirs.odir)
 
 if not config['PARSEMAP']:
     print("WRITE COMPLETE")
@@ -93,7 +93,7 @@ if not config['PARSEMAP']:
     exit()
 
 if config['SAVEPXSPEC']:
-    pixelseries.exportseries(config, odir)
+    pixelseries.exportseries(config, dirs.odir)
 
 #show memory usage
 utils.varsizes(locals().items())
@@ -104,7 +104,7 @@ UDET=config['use_detector'] #define working detector for multi-detector files
 
 #generate deadtime/sum reports
 if config['DODTCALCS'] == True:
-    dtops.dtplots(config, odir, pixelseries.dt, pixelseries.sum, xfmap.xres, xfmap.yres, pixelseries.ndet)
+    dtops.dtplots(config, dirs.odir, pixelseries.dt, pixelseries.sum, xfmap.xres, xfmap.yres, pixelseries.ndet)
 
 #create and show colour map
 if config['DOCOLOURS'] == True:
@@ -115,13 +115,14 @@ if config['DOCOLOURS'] == True:
         counts=pixelseries.data[UDET,i,:]
         pixelseries.rvals[i], pixelseries.bvals[i], pixelseries.gvals[i], pixelseries.totalcounts[i] = colour.spectorgb(config, xfmap.energy, counts)
 
-    rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, odir)
+    rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, dirs.odir)
 
 #perform clustering
 if config['DOCLUST']:
-    categories, classavg = clustering.complete(config, pixelseries.data[UDET], xfmap.energy, xfmap.numpx, xfmap.xres, xfmap.yres, odir)
+    categories, classavg = clustering.complete(config, pixelseries.data[UDET], xfmap.energy, xfmap.numpx, xfmap.xres, xfmap.yres, dirs.odir)
 
 print("Processing complete")
+
 sys.exit()
 
 """

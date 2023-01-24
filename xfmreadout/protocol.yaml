@@ -24,7 +24,7 @@ CMAP: 'Set1' #default colourmap for clusters
 #chunksize: 10737418240
 
 #names of subdirectories for output
-ANADIR: "autoanalysis"  
+ANADIR: "out"
 TRANSDIR: "transformations"
 PLOTDIR: "plots"
 EXPORTDIR: "pixeldata"
