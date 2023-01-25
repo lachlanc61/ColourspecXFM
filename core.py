@@ -67,7 +67,7 @@ try:
         pixelseries = xfmap.parse(config, pixelseries)
     #else read from a pre-parsed csv
     else:   
-        pixelseries = pixelseries.readseries(config, dirs.odir)
+        pixelseries = pixelseries.readpxdata(config, dirs.exports)
 finally:
     xfmap.closefiles(config)
 
@@ -85,7 +85,7 @@ f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
 "---------------------------"
 )
 
-pixelseries.exportheader(config, dirs.odir)
+pixelseries.exportpxstats(config, dirs.exports)
 
 if not config['PARSEMAP']:
     print("WRITE COMPLETE")
@@ -93,7 +93,7 @@ if not config['PARSEMAP']:
     exit()
 
 if config['SAVEPXSPEC']:
-    pixelseries.exportseries(config, dirs.odir)
+    pixelseries.exportpxdata(config, dirs.odir)
 
 #show memory usage
 utils.varsizes(locals().items())

@@ -256,12 +256,40 @@ class PixelSeries:
         
         return flattened
 
-    def exportheader(self, config, odir):
-        parser.exportheader(config, self, odir)
+    def exportpxstats(self, config, dir):
+        """
+        write the pixel header statistics to csv
+        """
+        np.savetxt(os.path.join(dir, "pxstats_pxlen.txt"), self.pxlen, fmt='%i', delimiter=",")
+        np.savetxt(os.path.join(dir, "pxstats_xidx.txt"), self.xidx, fmt='%i', delimiter=",")
+        np.savetxt(os.path.join(dir, "pxstats_yidx.txt"), self.yidx, fmt='%i', delimiter=",")
+        np.savetxt(os.path.join(dir, "pxstats_detector.txt"), self.det, fmt='%i', delimiter=",")
+        np.savetxt(os.path.join(dir, "pxstats_dt.txt"), self.dt, fmt='%f', delimiter=",")    
+        
+        if config['PARSEMAP']:
+            np.savetxt(os.path.join(dir, "pxstats_sum.txt"), self.sum, fmt='%d', delimiter=",")    
 
-    def exportseries(self, config, odir):
-        parser.exportseries(config, self, odir)
 
-    def readseries(self, config, odir):
-        self = parser.readseries(config, self, odir)
+    def exportpxdata(self, config, dir):
+        """
+        writes the spectrum-by-pixel data to csv
+        """
+        print("saving spectrum-by-pixel to file")
+        np.savetxt(os.path.join(dir,  config['outfile'] + ".dat"), self.data, fmt='%i')   
+
+    def readpxdata(self, config, dir):
+        """
+        read data from csv
+            does not currently return as much information as the full parse
+        """
+        print("loading from file", config['outfile'])
+        self.data = np.loadtxt(os.path.join(dir, config['outfile']), dtype=np.uint16, delimiter=",")
+        self.pxlen=np.loadtxt(os.path.join(dir, "pxlen.txt"), dtype=np.uint16, delimiter=",")
+        self.xidx=np.loadtxt(os.path.join(dir, "xidx.txt"), dtype=np.uint16, delimiter=",")
+        self.yidx=np.loadtxt(os.path.join(dir, "yidx.txt"), dtype=np.uint16, delimiter=",")
+        self.det=np.loadtxt(os.path.join(dir, "detector.txt"), dtype=np.uint16, delimiter=",")
+        self.dt=np.loadtxt(os.path.join(dir, "dt.txt"), dtype=np.float32, delimiter=",")
+        
+        print("loaded successfully", config['outfile']) 
+
         return self

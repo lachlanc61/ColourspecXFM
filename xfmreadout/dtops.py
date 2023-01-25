@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 cset = ['red', 'blue']
 
-def dthist(dt, odir, ndet):
+def dthist(dt, dir: str, ndet: int):
     fig = plt.figure(figsize=(6,4))
 
     ax = fig.add_subplot(111)
@@ -17,10 +17,10 @@ def dthist(dt, odir, ndet):
 
     ax.legend(loc=1, title="Detector:")
 
-    fig.savefig(os.path.join(odir, 'deadtime_histograms.png'), dpi=150)
+    fig.savefig(os.path.join(dir, 'deadtime_histograms.png'), dpi=150)
     return
 
-def dtimages(dt, odir, xres, yres, ndet):
+def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
     fig, ax = plt.subplots(1, 2, figsize=(8,4))
 
     cset = ['red', 'blue']
@@ -38,10 +38,10 @@ def dtimages(dt, odir, xres, yres, ndet):
 
         ax[i].imshow(dtimage, cmap="magma")
 
-    fig.savefig(os.path.join(odir, 'deadtime_maps.png'), dpi=150)
+    fig.savefig(os.path.join(dir, 'deadtime_maps.png'), dpi=150)
     return
 
-def diffimage(sum, odir, xres, yres, ndet):
+def diffimage(sum, dir: str, xres: int, yres: int, ndet: int):
     
     if ndet != 2:
         raise ValueError("Number of detectors != 2, difference map not possible")
@@ -60,10 +60,10 @@ def diffimage(sum, odir, xres, yres, ndet):
 
     plt.colorbar(img, fraction=0.04346, pad=0.04)
 
-    plt.savefig(os.path.join(odir, 'difference_map.png'), dpi=150)
+    plt.savefig(os.path.join(dir, 'difference_map.png'), dpi=150)
     return
 
-def dtscatter(dt, sum, odir, ndet):
+def dtscatter(dt, sum, dir: str, ndet: int):
     fig = plt.figure(figsize=(8,4))
 
     ax = fig.add_subplot(111)
@@ -80,20 +80,21 @@ def dtscatter(dt, sum, odir, ndet):
     #NB: works but not sure why... box appears to right
     #from: https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot
 
-    fig.savefig(os.path.join(odir, 'deadtime_vs_counts.png'), dpi=150)
+    fig.savefig(os.path.join(dir, 'deadtime_vs_counts.png'), dpi=150)
     return
 
-def dtplots(config, odir, dt, sum, xres, yres, ndet):
+def dtplots(config, dir: str, dt, sum, xres: int, yres: int, ndet: int):
 
-    dthist(dt, odir, ndet)
-    dtimages(dt, odir, xres, yres, ndet)
+    dthist(dt, dir, ndet)
+    dtimages(dt, dir, xres, yres, ndet)
     
     if config['PARSEMAP'] and (np.amax(sum) > 0):
         
         if ndet == 2:
-            diffimage(sum, odir, xres, yres, ndet)
+        #difference map requires two detectors
+            diffimage(sum, dir, xres, yres, ndet)
         
-        dtscatter(dt, sum, odir, ndet)
+        dtscatter(dt, sum, dir, ndet)
     elif (np.amax(sum) <= 0):
         raise ValueError("Sum array is empty or zero - cannot generate sum plots")
 
