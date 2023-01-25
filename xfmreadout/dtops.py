@@ -21,7 +21,7 @@ def dthist(dt, dir: str, ndet: int):
     return
 
 def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
-    fig, ax = plt.subplots(1, 2, figsize=(8,4))
+    fig, ax = plt.subplots(1, ndet, figsize=(8,4))
 
     cset = ['red', 'blue']
 

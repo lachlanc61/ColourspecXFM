@@ -93,7 +93,7 @@ if not config['PARSEMAP']:
     exit()
 
 if config['SAVEPXSPEC']:
-    pixelseries.exportpxdata(config, dirs.odir)
+    pixelseries.exportpxdata(config, dirs.exports)
 
 #show memory usage
 utils.varsizes(locals().items())
@@ -104,7 +104,7 @@ UDET=config['use_detector'] #define working detector for multi-detector files
 
 #generate deadtime/sum reports
 if config['DODTCALCS'] == True:
-    dtops.dtplots(config, dirs.odir, pixelseries.dt, pixelseries.sum, xfmap.xres, xfmap.yres, pixelseries.ndet)
+    dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, xfmap.xres, xfmap.yres, pixelseries.ndet)
 
 #create and show colour map
 if config['DOCOLOURS'] == True:
@@ -115,11 +115,11 @@ if config['DOCOLOURS'] == True:
         counts=pixelseries.data[UDET,i,:]
         pixelseries.rvals[i], pixelseries.bvals[i], pixelseries.gvals[i], pixelseries.totalcounts[i] = colour.spectorgb(config, xfmap.energy, counts)
 
-    rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, dirs.odir)
+    rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, dirs)
 
 #perform clustering
 if config['DOCLUST']:
-    categories, classavg = clustering.complete(config, pixelseries.data[UDET], xfmap.energy, xfmap.numpx, xfmap.xres, xfmap.yres, dirs.odir)
+    categories, classavg = clustering.complete(config, pixelseries.data[UDET], xfmap.energy, xfmap.numpx, xfmap.xres, xfmap.yres, dirs)
 
 print("Processing complete")
 
