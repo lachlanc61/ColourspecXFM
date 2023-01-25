@@ -5,7 +5,7 @@ import json
 import copy
 
 import xfmreadout.byteops as byteops
-
+import xfmreadout.dtops as dtops
 
 def readfileheader(xfmap):
     print(
@@ -149,7 +149,7 @@ def readpxheader(headstream, config, readlength, xfmap):
     headstream=headstream[:readlength]
 
     #unpack the header
-    #   faster to unpack into temp variables vs directly into pbject attrs. not sure why atm
+    #   faster to unpack into temp variables vs directly into object attrs. not sure why atm
     pxflag0, pxflag1, pxlen, xidx, yidx, det, dt = xfmap.headstruct.unpack(headstream)
 
     #   check for pixel start flag "DP":
@@ -183,6 +183,19 @@ def readpxdata(locstream, config, readlength):
 
 
 def writepxheader(config, xfmap, pxseries, det):
+
+    #assign or predict deadtime values if not present
+    if config['FILL_DT'] and pxseries.ndet == 1:
+        if dt > 0:
+            raise ValueError("WARNING: Found nonzero deadtime while overwriting")
+        dt=float(config['assign_dt'])  
+    elif config['PREDICT_DT'] and pxseries.ndet == 1:
+        if dt > 0:
+            raise ValueError("WARNING: Found nonzero deadtime while overwriting")
+        dt=dtops.predictdt(config, pxseries.sum[det,xfmap.pxidx], xfmap.dwell, xfmap.timeconst)
+    else:
+        dt=pxseries.dt[det,xfmap.pxidx]
+
     pxflag=config['PXFLAG']
     pxflag0=pxflag[0].encode(config['CHARENCODE'])
     pxflag1=pxflag[1].encode(config['CHARENCODE'])
@@ -190,7 +203,6 @@ def writepxheader(config, xfmap, pxseries, det):
     pxlen=pxseries.pxlen[det,xfmap.pxidx]
     xcoord=pxseries.xidx[det,xfmap.pxidx]
     ycoord=pxseries.yidx[det,xfmap.pxidx]
-    dt=pxseries.dt[det,xfmap.pxidx]
     usedet=pxseries.det[det,xfmap.pxidx]
     
     if usedet != det:
@@ -200,8 +212,6 @@ def writepxheader(config, xfmap, pxseries, det):
     outstream=xfmap.headstruct.pack(pxflag0,pxflag1, pxlen, xcoord-config['submap_x'][0], \
                                     ycoord-config['submap_y'][0], det, dt)
     xfmap.outfile.write(outstream)
-
-        # write the channel data as-is
         
 
 def writepxrecord(locstream, readlength, xfmap):

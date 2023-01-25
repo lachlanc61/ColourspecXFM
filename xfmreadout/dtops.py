@@ -4,6 +4,23 @@ import matplotlib.pyplot as plt
 
 cset = ['red', 'blue']
 
+def predictdt(config, pxsum, dwell, timeconst):
+    """
+    predict missing deadtimes from countrate, dwell and time-constant
+    must be calibrated for each time-constant, will fail if current TC is uncalibrated    
+    """
+    norm_sum=int(round(pxsum/dwell), 0)
+
+    if timeconst == 0.5:    #hardcoded for now
+        a=float(config['dtcalc_a'])
+        c=float(config['dtcalc_c'])
+        cutoff=float(config['dtcalc_cutoff'])
+
+        dtpred=norm_sum*a+c
+        dtpred=float(round(min(dtpred,cutoff),2))
+    else:
+        raise ValueError(f"Deadtime prediction not calibrated for TC={timeconst}")
+
 def dthist(dt, dir: str, ndet: int):
     fig = plt.figure(figsize=(6,4))
 
@@ -21,22 +38,24 @@ def dthist(dt, dir: str, ndet: int):
     return
 
 def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
-    fig, ax = plt.subplots(1, ndet, figsize=(8,4))
+    #https://stackoverflow.com/questions/52273546/matplotlib-typeerror-axessubplot-object-is-not-subscriptable
+    #squeeze kwarg forces 1x1 plot to behave as a 2D array so subscripting works
+    fig, ax = plt.subplots(1, ndet, figsize=(8,4), squeeze=False)
 
     cset = ['red', 'blue']
 
     for i in np.arange(ndet):
-
-        ax[i].set_title(f"Detector: {i}")
-        ax[i].tick_params(axis='x',colors=cset[i])
-        ax[i].tick_params(axis='y',colors=cset[i])
-        for spine in ax[i].spines.values():
+        #ax now a 2D array because of squeeze - no sure if this index is correct for multiple plots, may be other axis
+        ax[0,i].set_title(f"Detector: {i}")
+        ax[0,i].tick_params(axis='x',colors=cset[i])
+        ax[0,i].tick_params(axis='y',colors=cset[i])
+        for spine in ax[0,i].spines.values():
             spine.set_linewidth(2)
             spine.set_color(cset[i])
 
         dtimage = dt[i].reshape(yres,xres)
 
-        ax[i].imshow(dtimage, cmap="magma")
+        ax[0,i].imshow(dtimage, cmap="magma")
 
     fig.savefig(os.path.join(dir, 'deadtime_maps.png'), dpi=150)
     return

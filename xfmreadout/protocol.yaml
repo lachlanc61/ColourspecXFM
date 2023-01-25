@@ -12,6 +12,9 @@ shortpct: 20     #% of lines to run in short config
 
 CMAP: 'Set1' #default colourmap for clusters
 
+FILL_DT: False
+PREDICT_DT: False
+
 #-----------------------------------
 #VARIABLES
 #-----------------------------------
@@ -35,6 +38,7 @@ convext: "_sub"
 #instrument config
 nclust: 6       #no of clusters
 use_detector: 0
+time_constant: 0.5
 
 #figure params (currently not used)
 figx: 20         #cm width of figure
@@ -54,6 +58,12 @@ MAX_E: 30        #maximum energy of interest
 SDS: 9           #standard deviations
 RGBLOG: False     #map RGB as log of intensity
 NCOLS: 5         #no. colours
+
+#deadtime prediction:
+dtcalc_a: 0.8333  #deadtime prediction scalar
+dtcalc_c: 0       #deadtime prediction constant
+dtcalc_cutoff: 95 #deadtime prediction cutoff
+assign_dt: 15     #manual dt to assign to all pixels
 
 #-----------------------------------
 #HARDCODED CONSTANTS (eg. filetype properties)

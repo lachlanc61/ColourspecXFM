@@ -55,12 +55,15 @@ class Xfmap:
         
         #try to assign values from header
         try:
-            self.xres = self.headerdict['File Header']['Xres']           #map size x
-            self.yres = self.headerdict['File Header']['Yres']           #map size y
-            self.xdim = self.headerdict['File Header']['Width (mm)']     #map dimension x
-            self.ydim = self.headerdict['File Header']['Height (mm)']    #map dimension y
+            self.xres = int(self.headerdict['File Header']['Xres'])           #map size x
+            self.yres = int(self.headerdict['File Header']['Yres'])           #map size y
+            self.xdim = float(self.headerdict['File Header']['Width (mm)'])     #map dimension x
+            self.ydim = float(self.headerdict['File Header']['Height (mm)'])    #map dimension y
             self.nchannels = int(self.headerdict['File Header']['Chan']) #no. channels
             self.gain = float(self.headerdict['File Header']['Gain (eV)']/1000) #gain in kV
+            self.deadtime = float(self.headerdict['File Header']['Deadtime (%)'])
+            self.dwell = float(self.headerdict['File Header']['Dwell (mS)'])   #dwell in ms
+            self.timeconst = float(config['time_constant']) #pulled from config, ideally should be in header
         except:
             raise ValueError("FATAL: failure reading values from header")
         
@@ -139,10 +142,6 @@ class Xfmap:
             
                 locstream, self.idx = parser.getstream(self,self.idx,readlength)
 
-                if config['WRITESUBMAP'] and utils.pxinsubmap(config, xidx, yidx):
-                        parser.writepxheader(config, self, pxseries, det)
-                        parser.writepxrecord(locstream, readlength, self)
-
                 if config['PARSEMAP']:
                     chan, counts = parser.readpxdata(locstream, config, readlength)
 
@@ -155,10 +154,15 @@ class Xfmap:
                         print("WARNING: unexpected length of channel list")
 
                     #store pixel sum
-                    pxseries.sum[det,self.pxidx]=int(np.sum(counts))
+                    pxsum=int(np.sum(counts))
+                    pxseries.sum[det,self.pxidx]=pxsum    #sum normalised for dwelltime
 
                     #assign counts into data array
                     pxseries.data[det,self.pxidx,:]=counts
+
+                if config['WRITESUBMAP'] and utils.pxinsubmap(config, xidx, yidx):
+                        parser.writepxheader(config, self, pxseries, det, pxsum)
+                        parser.writepxrecord(locstream, readlength, self)
 
                 self.fullidx=self.chunkidx+self.idx
 
