@@ -35,7 +35,7 @@ args = utils.readargs()
 #create input config from args and config files
 config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG, USER_CONFIG)
 
-#initialise read file and all directories relative to current script
+#initialise read file and directory structure 
 config, dirs = utils.initfiles(config)
 
 starttime = time.time()             #init timer

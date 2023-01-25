@@ -9,115 +9,6 @@ from copy import deepcopy
 
 from scipy.stats import norm
 
-ANADIR="autoanalysis"
-
-def getcfgs(f1, f2):
-    """
-    merges two dicts from filenames
-        NB: watch duplicates, f2 will override
-    """    
-    dict1 = readcfg(f1)
-    dict2 = readcfg(f2)
-
-    return {**dict1, **dict2}
-
-
-def readcfg(filename):
-        dir = os.path.realpath(__file__) #_file = current file (ie. utils.py)
-        dir=os.path.dirname(dir) 
-        dir=os.path.dirname(dir)        #second call to get out of src/..
-
-        yamlfile=os.path.join(dir,filename)
-
-        with open(yamlfile, "r") as f:
-            return yaml.safe_load(f)
-
-
-def readargs():
-    #get the arguments from command line
-    parsed = argparse.ArgumentParser()
-
-    parsed.add_argument("-c", "--usrconfig", help="User config file (.yaml)", type=os.path.abspath)
-    parsed.add_argument("-i", "--infile", help="Input file (.GeoPIXE)", type=os.path.abspath)
-    parsed.add_argument("-o", "--outdir", help="Output path", type=os.path.abspath)
-    parsed.add_argument("-s", "--submap", action='store_true', help="Export submap (.GeoPIXE)")
-    parsed.add_argument("-p", "--parse", action='store_true', help="Only export submap")
-    parsed.add_argument("-f", "--force", action='store_true', help="Force recalculation of all pixels/classes")
-    parsed.add_argument('-x', "--xcoords", nargs='+', type=int, help="X coordinates for submap as: xstart xend")
-    parsed.add_argument('-y', "--ycoords", nargs='+', type=int, help="Y coordinates for submap as: ystart yend")
-    parsed.add_argument('-ch', "--chunksize", nargs='+', type=int, help="Chunk size to load (in Mb)")
-
-    return parsed.parse_args()
-
-
-def initcfg(args, pkgconfig, usrconfig):
-    #if the user config was given as an arg, use it
-    if args.usrconfig is not None:
-        usrconfig = args.usrconfig
-    #otherwise just use the default 
-    else:
-        usrconfig = usrconfig
-    
-    #parse the config files 
-    rawconfig=getcfgs(pkgconfig, usrconfig) 
-
-    #create a working copy
-    config=deepcopy(rawconfig)
-
-    #modify working config based on args
-    if args.infile is not None:
-        config['infile'] = args.infile
-
-    if args.outdir is not None:
-        config['outdir'] = args.outdir
-
-    if args.submap:
-        config['WRITESUBMAP'] = True
-
-    if args.parse:
-        config['PARSEMAP'] = True
-    else:
-        print("EXPORTING SUBMAPS ONLY")
-
-    if args.force:
-        config['FORCEPARSE'] = True
-        config['FORCERED'] = True
-        config['FORCEKMEANS'] = True
-
-    if args.chunksize is not None:
-        config['chunksize'] = args.chunksize
-
-    if args.xcoords is not None:
-        config['submap_x'][0]=args.coords[0]
-        config['submap_x'][1]=args.coords[1]
-
-        if not config['WRITESUBMAP']:
-            print("WARNING: submap coordinates set but submap flag False")
-
-    if args.ycoords is not None:
-        config['submap_y'][0]=args.coords[2]
-        config['submap_y'][1]=args.coords[3]
-
-        if not config['WRITESUBMAP']:
-            print("WARNING: submap coordinates set but submap flag False")
-
-    if not config['PARSEMAP']:
-        config['DOCOLOURS']=False
-        config['DOCLUST']=False
-        config['DOBG']=False
-
-    if config['WRITESUBMAP']:
-        if config['submap_x'][1] == 0:
-            config['submap_x'][1]=int(99999)
-        if config['submap_y'][1] == 0:
-            config['submap_y'][1]=int(99999)
-
-        if (config['submap_x'][0] >= config['submap_x'][1]):
-            raise ValueError("FATAL: x2 nonzero but smaller than x1")
-        if (config['submap_y'][0] >= config['submap_y'][1]):
-            raise ValueError("FATAL: y2 nonzero but smaller than y1")
-    return config, rawconfig
-
 class DirectoryStructure:
     def __init__(self, config):
         """
@@ -229,6 +120,114 @@ class DirectoryStructure:
         print("---------------------------")
 
         return
+
+
+def getcfgs(f1, f2):
+    """
+    merges two dicts from filenames
+        NB: watch duplicates, f2 will override
+    """    
+    dict1 = readcfg(f1)
+    dict2 = readcfg(f2)
+
+    return {**dict1, **dict2}
+
+
+def readcfg(filename):
+        dir = os.path.realpath(__file__) #_file = current file (ie. utils.py)
+        dir=os.path.dirname(dir) 
+        dir=os.path.dirname(dir)        #second call to get out of src/..
+
+        yamlfile=os.path.join(dir,filename)
+
+        with open(yamlfile, "r") as f:
+            return yaml.safe_load(f)
+
+
+def readargs():
+    #get the arguments from command line
+    parsed = argparse.ArgumentParser()
+
+    parsed.add_argument("-c", "--usrconfig", help="User config file (.yaml)", type=os.path.abspath)
+    parsed.add_argument("-i", "--infile", help="Input file (.GeoPIXE)", type=os.path.abspath)
+    parsed.add_argument("-o", "--outdir", help="Output path", type=os.path.abspath)
+    parsed.add_argument("-s", "--submap", action='store_true', help="Export submap (.GeoPIXE)")
+    parsed.add_argument("-p", "--parse", action='store_true', help="Only export submap")
+    parsed.add_argument("-f", "--force", action='store_true', help="Force recalculation of all pixels/classes")
+    parsed.add_argument('-x', "--xcoords", nargs='+', type=int, help="X coordinates for submap as: xstart xend")
+    parsed.add_argument('-y', "--ycoords", nargs='+', type=int, help="Y coordinates for submap as: ystart yend")
+    parsed.add_argument('-ch', "--chunksize", nargs='+', type=int, help="Chunk size to load (in Mb)")
+
+    return parsed.parse_args()
+
+
+def initcfg(args, pkgconfig, usrconfig):
+    #if the user config was given as an arg, use it
+    if args.usrconfig is not None:
+        usrconfig = args.usrconfig
+    #otherwise just use the default 
+    else:
+        usrconfig = usrconfig
+    
+    #parse the config files 
+    rawconfig=getcfgs(pkgconfig, usrconfig) 
+
+    #create a working copy
+    config=deepcopy(rawconfig)
+
+    #modify working config based on args
+    if args.infile is not None:
+        config['infile'] = args.infile
+
+    if args.outdir is not None:
+        config['outdir'] = args.outdir
+
+    if args.submap:
+        config['WRITESUBMAP'] = True
+
+    if args.parse:
+        config['PARSEMAP'] = True
+    else:
+        print("EXPORTING SUBMAPS ONLY")
+
+    if args.force:
+        config['FORCEPARSE'] = True
+        config['FORCERED'] = True
+        config['FORCEKMEANS'] = True
+
+    if args.chunksize is not None:
+        config['chunksize'] = args.chunksize
+
+    if args.xcoords is not None:
+        config['submap_x'][0]=args.coords[0]
+        config['submap_x'][1]=args.coords[1]
+
+        if not config['WRITESUBMAP']:
+            print("WARNING: submap coordinates set but submap flag False")
+
+    if args.ycoords is not None:
+        config['submap_y'][0]=args.coords[2]
+        config['submap_y'][1]=args.coords[3]
+
+        if not config['WRITESUBMAP']:
+            print("WARNING: submap coordinates set but submap flag False")
+
+    if not config['PARSEMAP']:
+        config['DOCOLOURS']=False
+        config['DOCLUST']=False
+        config['DOBG']=False
+
+    if config['WRITESUBMAP']:
+        if config['submap_x'][1] == 0:
+            config['submap_x'][1]=int(99999)
+        if config['submap_y'][1] == 0:
+            config['submap_y'][1]=int(99999)
+
+        if (config['submap_x'][0] >= config['submap_x'][1]):
+            raise ValueError("FATAL: x2 nonzero but smaller than x1")
+        if (config['submap_y'][0] >= config['submap_y'][1]):
+            raise ValueError("FATAL: y2 nonzero but smaller than y1")
+    return config, rawconfig
 
 def initfiles(config):
 
