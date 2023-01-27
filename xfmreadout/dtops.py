@@ -9,7 +9,7 @@ def predictdt(config, pxsum, dwell, timeconst):
     predict missing deadtimes from countrate, dwell and time-constant
     must be calibrated for each time-constant, will fail if current TC is uncalibrated    
     """
-    norm_sum=int(round((pxsum/dwell)/2, 0)) #sum per pixel, corrected for dwell
+    norm_sum=(pxsum/dwell)/2 #sum per pixel, corrected for dwell
                                             # corrected for no. detectors
 
     if timeconst == 0.5:    #hardcoded for now
@@ -44,8 +44,6 @@ def postcalc(config, pixelseries, xfmap):
 
 
 def export(dir:str, dtpred, mergedsum):
-
-
     #NB: printing as if dtpred is list of lists -> newlines after each value
     #   not sure why, workaround is to pass as list of itself
     # https://stackoverflow.com/questions/42068144/numpy-savetxt-is-not-adding-comma-delimiter
@@ -176,28 +174,33 @@ def preddiffimage(dt, dtpred, dir: str, xres: int, yres: int, ndet: int):
     plt.savefig(os.path.join(dir, 'predicted_difference_map.png'), dpi=150)
     return
 
-def predscatter(dt, dtpred, dir: str, ndet: int):
+def predscatter(dt, dtpred, sum, dir: str, ndet: int):
     fig = plt.figure(figsize=(8,4))
 
     ax = fig.add_subplot(111)
-    ax.set_xlabel("Predicted Deadtime (%)")
-    ax.set_ylabel("Measured Deadtime (%)")
+    ax.set_xlabel("Deadtime (%)")
+    ax.set_ylabel("Counts")
 
-    ax.set_ylim(0,100)
-    ax.set_xlim(0,100)
+    labels = [ "measured", "predicted" ]
 
-    ax.scatter(dtpred, dt, color="red", marker='o', s=50, alpha=0.1, linewidths=None )
+    i=0
+    for data in [ dt, dtpred ]:
+        ax.scatter(sum, data, color=cset[i], marker='o', s=50, alpha=0.1, linewidths=None, label=f"{labels[i]}")
+        i+=1
+
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+    ax.legend(bbox_to_anchor=(1, 0.5), loc="center left", title="Detector:")
+    #NB: works but not sure why... box appears to right
+    #from: https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot
 
     fig.savefig(os.path.join(dir, 'predicted_deadtime_scatter.png'), dpi=150)
-    
-    #https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib/53865762#53865762
-    #seriously consider contoured plots
-    #particularly 3rd answer by "Guilliame" using density_scatter
     
     return
 
 
-def dtplots(config, dir: str, dt, sum, dtpred, dtavg, xres: int, yres: int, ndet: int):
+def dtplots(config, dir: str, dt, sum, dtpred, dtavg, mergedsum, xres: int, yres: int, ndet: int):
 
     dthist(dt, dir, ndet)
     dtimages(dt, dir, xres, yres, ndet)
@@ -214,7 +217,7 @@ def dtplots(config, dir: str, dt, sum, dtpred, dtavg, xres: int, yres: int, ndet
 
     predhist(dtavg, dtpred, dir, ndet)
     preddiffimage(dtavg, dtpred, dir, xres, yres, ndet)
-    predscatter(dtavg, dtpred, dir, ndet)
+    predscatter(dtavg, dtpred, mergedsum, dir, ndet)
 
     plt.close()
 

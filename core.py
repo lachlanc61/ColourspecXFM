@@ -108,7 +108,7 @@ if config['DODTCALCS'] == True:
 
     dtops.export(dirs.exports, dtpred, mergedsum)
 
-    dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, dtpred, dtavg, xfmap.xres, xfmap.yres, pixelseries.ndet)
+    dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, dtpred, dtavg, mergedsum, xfmap.xres, xfmap.yres, pixelseries.ndet)
 
 
 #create and show colour map
