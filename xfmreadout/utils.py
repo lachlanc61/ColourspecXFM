@@ -184,11 +184,11 @@ def initcfg(args, pkgconfig, usrconfig):
 
     if args.submap:
         config['WRITESUBMAP'] = True
+        print("EXPORTING ONLY")
 
     if args.parse:
         config['PARSEMAP'] = True
-    else:
-        print("EXPORTING SUBMAPS ONLY")
+        print("PARSING MAP")
 
     if args.force:
         config['FORCEPARSE'] = True
@@ -227,6 +227,18 @@ def initcfg(args, pkgconfig, usrconfig):
             raise ValueError("FATAL: x2 nonzero but smaller than x1")
         if (config['submap_y'][0] >= config['submap_y'][1]):
             raise ValueError("FATAL: y2 nonzero but smaller than y1")
+    
+    if config['PREDICT_DT'] and config['FILL_DT']:
+        raise ValueError("FATAL: mutually exclusive flags PREDICT_DT and FILL_DT are both set True")
+
+    if config['PREDICT_DT']:
+        print("Predicting deadtimes from count-rates")
+        if not config['PARSEMAP']:
+            raise ValueError("FATAL: cannot predict DTs without parsing map for pixel sums")
+
+    if config['FILL_DT']:
+        print(f"Assigning all pixel deadtimes to {config['assign_dt']}")
+
     return config, rawconfig
 
 def initfiles(config):

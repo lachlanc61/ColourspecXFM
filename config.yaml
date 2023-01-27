@@ -4,7 +4,7 @@
 #default input file and output directory
 
 infile:  
-- "data/geo1.GeoPIXE"
+- "data/ts2.GeoPIXE"
 #- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/scan256.GeoPIXE"   #assign input file
 
 outdir:   #blank = assigned to directory of infile
@@ -15,8 +15,8 @@ PARSEMAP: True   #load spectrum-by-pixel data
 
 chunksize: 1000    #size in Mb to load into memory at a time
 
-DOCOLOURS: True   #run colourmap
-DOCLUST: True     #run clustering
+DOCOLOURS: False   #run colourmap
+DOCLUST: False     #run clustering
 DODTCALCS: True    #generate deadtime plots
 
 #recalc flags
@@ -24,8 +24,11 @@ FORCEPARSE: True     #always parse datafile
 FORCERED: True       #always recalc dimensionality reduction
 FORCEKMEANS: True    #always recalc kmeans 
 
+
 #SUBMAP
 WRITESUBMAP: False    #write a submap
+FILL_DT: False
+PREDICT_DT: True
 submap_x: #x coordinates for writing submap
   - 0
   - 0

@@ -9,7 +9,8 @@ def predictdt(config, pxsum, dwell, timeconst):
     predict missing deadtimes from countrate, dwell and time-constant
     must be calibrated for each time-constant, will fail if current TC is uncalibrated    
     """
-    norm_sum=int(round(pxsum/dwell), 0)
+    norm_sum=int(round((pxsum/dwell)/2, 0)) #sum per pixel, corrected for dwell
+                                            # corrected for no. detectors
 
     if timeconst == 0.5:    #hardcoded for now
         a=float(config['dtcalc_a'])
@@ -17,9 +18,49 @@ def predictdt(config, pxsum, dwell, timeconst):
         cutoff=float(config['dtcalc_cutoff'])
 
         dtpred=norm_sum*a+c
-        dtpred=float(round(min(dtpred,cutoff),2))
+        dtpred=float(min(dtpred,cutoff))
     else:
-        raise ValueError(f"Deadtime prediction not calibrated for TC={timeconst}")
+        raise ValueError(f"Deadtime prediction not yet calibrated for TC={timeconst}")
+
+    return dtpred
+
+def postcalc(config, dir:str, pixelseries, xfmap):
+    timeconst = xfmap.timeconst
+    dwell = xfmap.dwell
+    ndet = pixelseries.ndet
+
+    sum=np.sum(pixelseries.sum, axis=0)
+    sumavg=sum/ndet
+    dtavg=np.sum(pixelseries.sum, axis=0)/ndet
+
+    if len(sumavg) != len(dtavg):
+        raise ValueError("sum and dt array sizes differ")
+
+    dtpred=np.zeros(len(dtavg),dtype=np.float32)
+
+    for i in range(len(sumavg)):
+        dtpred[i]=predictdt(config, sumavg[i], dwell, timeconst)
+
+    pass
+
+    #NB: printing as if dtpred is list of lists -> newlines after each value
+    #   not sure why, workaround is to pass as list of itself
+    # https://stackoverflow.com/questions/42068144/numpy-savetxt-is-not-adding-comma-delimiter
+    np.savetxt(os.path.join(dir, "pxstats_dtpred.txt"), [dtpred], fmt='%f', delimiter=",")
+    np.savetxt(os.path.join(dir, "pxstats_mergedsum.txt"), [sum], fmt='%d', delimiter=",")
+
+
+    return dtpred
+
+
+
+
+
+
+
+
+
+
 
 def dthist(dt, dir: str, ndet: int):
     fig = plt.figure(figsize=(6,4))
@@ -100,6 +141,11 @@ def dtscatter(dt, sum, dir: str, ndet: int):
     #from: https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot
 
     fig.savefig(os.path.join(dir, 'deadtime_vs_counts.png'), dpi=150)
+    
+    #https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib/53865762#53865762
+    #seriously consider contoured plots
+    #particularly 3rd answer by "Guilliame" using density_scatter
+    
     return
 
 def dtplots(config, dir: str, dt, sum, xres: int, yres: int, ndet: int):

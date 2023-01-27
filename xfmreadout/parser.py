@@ -184,17 +184,23 @@ def readpxdata(locstream, config, readlength):
 
 def writepxheader(config, xfmap, pxseries, det):
 
+    dt=pxseries.dt[det,xfmap.pxidx]
+
     #assign or predict deadtime values if not present
     if config['FILL_DT'] and pxseries.ndet == 1:
         if dt > 0:
             raise ValueError("WARNING: Found nonzero deadtime while overwriting")
-        dt=float(config['assign_dt'])  
+        #fill with fixed value
+        dt=float(config['assign_dt'])
+
     elif config['PREDICT_DT'] and pxseries.ndet == 1:
         if dt > 0:
             raise ValueError("WARNING: Found nonzero deadtime while overwriting")
+        #predict from pixel sum
         dt=dtops.predictdt(config, pxseries.sum[det,xfmap.pxidx], xfmap.dwell, xfmap.timeconst)
     else:
-        dt=pxseries.dt[det,xfmap.pxidx]
+        #leave unchanged
+        dt=dt
 
     pxflag=config['PXFLAG']
     pxflag0=pxflag[0].encode(config['CHARENCODE'])

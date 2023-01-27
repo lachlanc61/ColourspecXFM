@@ -73,6 +73,9 @@ finally:
 
 runtime = time.time() - starttime
 
+#show memory usage
+utils.varsizes(locals().items())
+
 print(
 "---------------------------\n"
 "MAP COMPLETE\n"
@@ -95,16 +98,16 @@ if not config['PARSEMAP']:
 if config['SAVEPXSPEC']:
     pixelseries.exportpxdata(config, dirs.exports)
 
-#show memory usage
-utils.varsizes(locals().items())
-
 #perform post-analysis:
 
 UDET=config['use_detector'] #define working detector for multi-detector files
 
 #generate deadtime/sum reports
 if config['DODTCALCS'] == True:
+    dtpred = dtops.postcalc(config, dirs.exports, pixelseries, xfmap)
+
     dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, xfmap.xres, xfmap.yres, pixelseries.ndet)
+
 
 #create and show colour map
 if config['DOCOLOURS'] == True:

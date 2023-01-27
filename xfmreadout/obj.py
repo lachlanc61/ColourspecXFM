@@ -161,7 +161,7 @@ class Xfmap:
                     pxseries.data[det,self.pxidx,:]=counts
 
                 if config['WRITESUBMAP'] and utils.pxinsubmap(config, xidx, yidx):
-                        parser.writepxheader(config, self, pxseries, det, pxsum)
+                        parser.writepxheader(config, self, pxseries, det)
                         parser.writepxrecord(locstream, readlength, self)
 
                 self.fullidx=self.chunkidx+self.idx

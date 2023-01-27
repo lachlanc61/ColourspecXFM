@@ -12,9 +12,6 @@ shortpct: 20     #% of lines to run in short config
 
 CMAP: 'Set1' #default colourmap for clusters
 
-FILL_DT: False
-PREDICT_DT: False
-
 #-----------------------------------
 #VARIABLES
 #-----------------------------------
@@ -32,8 +29,8 @@ TRANSDIR: "transformations"
 PLOTDIR: "plots"
 EXPORTDIR: "pixeldata"
 
-outfile: "pxspec"
-convext: "_sub"
+outfile: "pxspec"   #name of spectrum-by-pixel csv
+convext: "_export"  #converted file extension
 
 #instrument config
 nclust: 6       #no of clusters
