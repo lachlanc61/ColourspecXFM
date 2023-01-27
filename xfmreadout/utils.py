@@ -9,6 +9,118 @@ from copy import deepcopy
 
 from scipy.stats import norm
 
+class DirectoryStructure:
+    def __init__(self, config):
+        """
+        Assign input and output directories from the config
+            or location of script if relative
+        """
+        self.script = os.path.realpath(__file__) #_file = current script
+        self.spath=os.path.dirname(self.script) 
+        self.spath=os.path.dirname(self.spath)
+        
+        #check if paths are absolute or relative based on leading /
+        if config['infile'][0].startswith('/'):
+            self.fi=config['infile'][0]
+        else:
+            self.fi = os.path.join(self.spath,config['infile'][0])
+
+        #assign output:
+        #   to input if output blank
+        #   otherwise as assigned
+        if config['outdir'][0] == "" or config['outdir'][0] == None:
+            self.odir=os.path.join(os.path.dirname(self.fi),config['ANADIR'])
+        elif config['outdir'][0].startswith('/'):   #relative vs absolute
+            self.odir=config['outdir'][0]
+        else:
+            self.odir=os.path.join(self.spath,config['outdir'][0])
+    
+        if self.odir.endswith('/'):
+            self.odir = os.path.dirname(self.odir)
+
+        #extract terminal directory for output
+        outbase=os.path.basename(self.odir)
+
+        #if terminal directory has the correct name(s), continue
+        #   otherwise, append it
+        if outbase == config['ANADIR']:      
+            pass
+        else:
+            self.odir=os.path.join(self.odir,config['ANADIR'])
+
+        #assign and create analysis subdirs, if needed
+        self.transforms=os.path.join(self.odir,config['TRANSDIR'])
+        self.plots=os.path.join(self.odir,config['PLOTDIR'])
+        self.exports=os.path.join(self.odir,config['EXPORTDIR'])
+
+        #extract name of input file
+        self.fname = os.path.splitext(os.path.basename(self.fi))[0]
+
+        #setup submap export location and extension
+        if config['WRITESUBMAP']:
+            self.subname=self.fname+config['convext']
+            self.fsub = os.path.join(self.exports,self.subname+config['FTYPE'])
+
+            if not self.subname == os.path.splitext(os.path.basename(self.fsub))[0]:
+                raise ValueError(f"submap name not recognisable")
+
+        else:
+            self.fsub = None
+
+        return
+
+    def create(self, config):
+        """
+        create the output directory and subdirectories, if needed
+        """
+
+        if not os.path.isdir(self.odir):
+            os.mkdir(self.odir)
+        
+        for dir in [ self.transforms, self.plots, self.exports ]:
+            if not os.path.isdir(dir):
+                os.mkdir(dir)
+
+        return self
+
+    def check(self, config):
+        """
+        run some basic sanity checks
+            eg. correct filetype
+        """
+        #check filetype is recognised - currently hardcoded
+        if not config['FTYPE'] == ".GeoPIXE":
+            raise ValueError(f"Filetype {config['FTYPE']} not recognised")
+    
+        for dir in [ self.odir, self.transforms, self.plots, self.exports ]:
+                if not os.path.isdir(dir):
+                    raise FileNotFoundError(f"Directory {dir} expected but not found")
+        
+        if not os.path.exists(self.fi):
+            raise FileNotFoundError(f"Input file {self.fi} expected but not found")
+
+        return 
+
+    def show(self):
+        """
+        present the directory assignments to the user
+        """
+        print(
+            "---------------------------\n"
+            "PATHS\n"
+            "---------------------------\n"
+            f"local: {self.spath}\n"
+            f"data: {self.fi}\n"
+            f"output: {self.odir}"
+        )
+        if self.fsub != None:
+            print(f"submap: {self.fsub}")
+
+        print("---------------------------")
+        print("---------------------------")
+
+        return
+
 
 def getcfgs(f1, f2):
     """
@@ -72,11 +184,11 @@ def initcfg(args, pkgconfig, usrconfig):
 
     if args.submap:
         config['WRITESUBMAP'] = True
+        print("EXPORTING ONLY")
 
     if args.parse:
         config['PARSEMAP'] = True
-    else:
-        print("EXPORTING SUBMAPS ONLY")
+        print("PARSING MAP")
 
     if args.force:
         config['FORCEPARSE'] = True
@@ -115,58 +227,30 @@ def initcfg(args, pkgconfig, usrconfig):
             raise ValueError("FATAL: x2 nonzero but smaller than x1")
         if (config['submap_y'][0] >= config['submap_y'][1]):
             raise ValueError("FATAL: y2 nonzero but smaller than y1")
+    
+    if config['PREDICT_DT'] and config['FILL_DT']:
+        raise ValueError("FATAL: mutually exclusive flags PREDICT_DT and FILL_DT are both set True")
+
+    if config['PREDICT_DT']:
+        print("Predicting deadtimes from count-rates")
+        if not config['PARSEMAP']:
+            raise ValueError("FATAL: cannot predict DTs without parsing map for pixel sums")
+
+    if config['FILL_DT']:
+        print(f"Assigning all pixel deadtimes to {config['assign_dt']}")
+
     return config, rawconfig
 
+def initfiles(config):
 
-def initf(config):
+    dirs = DirectoryStructure(config)
+    dirs = dirs.create(config)
+    dirs.check(config)
+    dirs.show()    
 
-    script = os.path.realpath(__file__) #_file = current script
-    spath=os.path.dirname(script) 
-    spath=os.path.dirname(spath)
-    
-    #check if paths are absolute or relative based on leading /
-    if config['infile'][0].startswith('/'):
-        fi=config['infile'][0]
-    else:
-        fi = os.path.join(spath,config['infile'][0])
+    return config, dirs
 
-    if config['outdir'][0].startswith('/'):
-        odir=config['outdir'][0]
-    else:
-        odir=os.path.join(spath,config['outdir'][0])
-
-    #extract name of input file
-    fname = os.path.splitext(os.path.basename(fi))[0]
-    print(f"input file: {fi}")
-
-    print(
-        "---------------------------\n"
-        "PATHS\n"
-        "---------------------------\n"
-        f"local: {spath}\n"
-        f"data: {fi}\n"
-        f"output: {odir}"
-    )
-
-    #check filetype is recognised - currently only accepts .GeoPIXE
-    if not config['FTYPE'] == ".GeoPIXE":
-        raise ValueError(f"FATAL: filetype {config['FTYPE']} not recognised")
-
-    if config['WRITESUBMAP']:
-        subname=fname+config['convext']
-        fsub = os.path.join(odir,subname+config['FTYPE'])
-
-        if not subname == os.path.splitext(os.path.basename(fsub))[0]:
-            raise ValueError(f"submap name not recognisable")
-
-        print(f"submap: {fsub}")
-    else:
-        fsub = None
-
-    print("---------------------------")
-    print("---------------------------")
-
-    return config, fi, fname, fsub, odir
+#    return config, fi, fname, fsub, odir
 
 def lookfor(x, val):
     difference_array = np.absolute(x-val)

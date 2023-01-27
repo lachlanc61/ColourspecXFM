@@ -21,22 +21,9 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 # create a pointer to the module object instance itself
 #       functions like "self" for module
+#   -> more explicit than just using module local namespace
 #   https://stackoverflow.com/questions/1977362/how-to-create-module-wide-variables-in-python
 this = sys.modules[__name__]
-
-"""
-#vars for gaussians
-#   x-zero
-xzer=np.floor(-(MIN_XE/config['ESTEP'])).astype(int)   
-#   standard deviation 
-sd=(ELASTIC-MIN_E)/(SDS)  
-#   means for each
-irmu=MIN_E-sd*1.5   #ir
-rmu=MIN_E+sd*1.5    #red
-gmu=rmu+sd*3        #green
-bmu=ELASTIC-sd*1.5    #blue
-uvmu=ELASTIC+sd*1.5   #uv
-"""
 
 #-----------------------------------
 #FUNCTIONS
@@ -101,7 +88,7 @@ def spectorgb(config, e, y):
 
     return(rsum,gsum,bsum,ysum)
 
-def complete(rvals, gvals, bvals, mapx, mapy, odir):
+def complete(rvals, gvals, bvals, mapx, mapy, dirs):
     """
     creates final colour-mapped image
 
@@ -117,9 +104,9 @@ def complete(rvals, gvals, bvals, mapx, mapy, odir):
 
     print(f'scaled maxima: r {np.max(rvals)} g {np.max(gvals)} b {np.max(bvals)}')
 
-    np.savetxt(os.path.join(odir, "rvals.txt"), rvals)
-    np.savetxt(os.path.join(odir, "gvals.txt"), gvals)
-    np.savetxt(os.path.join(odir, "bvals.txt"), bvals)
+    np.savetxt(os.path.join(dirs.transforms, "colourmap_red.txt"), rvals)
+    np.savetxt(os.path.join(dirs.transforms, "colourmap_green.txt"), gvals)
+    np.savetxt(os.path.join(dirs.transforms, "colourmap_blue.txt"), bvals)
 
     rimg=np.reshape(rvals, (-1, mapx))
     gimg=np.reshape(gvals, (-1, mapx))
@@ -130,11 +117,10 @@ def complete(rvals, gvals, bvals, mapx, mapy, odir):
     rgbarray[..., 1] = gimg*256
     rgbarray[..., 2] = bimg*256
     
-    show(rgbarray, odir)
+    show(rgbarray, dirs.plots)
     return(rgbarray)
 
 
-def show(rgbarray, odir):
+def show(rgbarray, out_path):
     plt.imshow(rgbarray)
-    plt.savefig(os.path.join(odir, 'colours.png'), dpi=150)
-    plt.show()   
+    plt.savefig(os.path.join(out_path, 'colours.png'), dpi=150)

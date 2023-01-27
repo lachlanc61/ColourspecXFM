@@ -50,7 +50,7 @@ def getredname(i):
     """
     return repr(reducers[i][0]()).split("(")[0]
 
-def reduce(config, data, odir):
+def reduce(config, data, output_path):
     """
     performs dimensionality reduction on data using reducers
     args:       data
@@ -69,10 +69,10 @@ def reduce(config, data, odir):
         if config['FORCERED']:
             #utils.varsizes(locals().items())
             embed = reducer(n_components=2, **args).fit_transform(data)
-            np.savetxt(os.path.join(odir, redname + ".txt"), embed)
+            np.savetxt(os.path.join(output_path, redname + ".dat"), embed)
         else:
             print("loading from file", redname)
-            embed = np.loadtxt(os.path.join(odir, redname + ".txt"))
+            embed = np.loadtxt(os.path.join(output_path, redname + ".dat"))
         
         clusttimes[i] = time.time() - start_time
         embedding[i,:,:]=embed
@@ -80,7 +80,7 @@ def reduce(config, data, odir):
     return embedding, clusttimes
 
 
-def dokmeans(config, embedding, npx, odir):
+def dokmeans(config, embedding, npx, output_path):
     """
     performs kmeans on embedding matrices to cluster 2D matrices from reducers 
 
@@ -106,10 +106,10 @@ def dokmeans(config, embedding, npx, odir):
         if config['FORCEKMEANS']:
             kmeans.fit(embed)
             categories[i]=kmeans.labels_
-            np.savetxt(os.path.join(odir, redname + "_kmeans.txt"), categories[i])
+            np.savetxt(os.path.join(output_path, redname + "_kmeans.txt"), categories[i])
         else:
             print("loading from file", redname)
-            categories[i]=np.loadtxt(os.path.join(odir, redname + "_kmeans.txt"))
+            categories[i]=np.loadtxt(os.path.join(output_path, redname + "_kmeans.txt"))
     return categories
 
 def sumclusters(config, dataset, catlist):
@@ -131,7 +131,7 @@ def sumclusters(config, dataset, catlist):
         specsum[i,:]=(np.sum(datcat,axis=0))/pxincat
     return specsum
 
-def clustplt(config, embedding, categories, mapx, clusttimes, odir):
+def clustplt(config, embedding, categories, mapx, clusttimes, output_path):
     """
     receives arrays from reducers and kmeans
     + time to cluster
@@ -194,18 +194,18 @@ def clustplt(config, embedding, categories, mapx, clusttimes, odir):
     plt.setp(ax, xticks=[], yticks=[])
 
     #save and show
-    plt.savefig(os.path.join(odir, 'clusters.png'), dpi=150)
+    plt.savefig(os.path.join(output_path, 'clusters.png'), dpi=150)
     plt.show()
     return
 
 
-def complete(config, data, energy, totalpx, mapx, mapy, odir):
+def complete(config, data, energy, totalpx, mapx, mapy, dirs):
 
     #   produce reduced-dim embedding per reducer
-    embedding, clusttimes = reduce(config, data, odir)
+    embedding, clusttimes = reduce(config, data, dirs.transforms)
 
     #   cluster via kmeans on embedding
-    categories = dokmeans(config, embedding, totalpx, odir)
+    categories = dokmeans(config, embedding, totalpx, dirs.transforms)
 
     #produce and save cluster averages
 
@@ -219,13 +219,13 @@ def complete(config, data, energy, totalpx, mapx, mapy, odir):
         
         for j in range(config['nclust']):
             print(f'saving reducer {redname} cluster {j} with shape {classavg[i,j,:].shape}', end='\r')
-            np.savetxt(os.path.join(odir, "sum_" + redname + "_" + str(j) + ".txt"), np.c_[energy, classavg[i,j,:]], fmt=['%1.3e','%1.6e'])
+            np.savetxt(os.path.join(dirs.transforms, "sum_" + redname + "_" + str(j) + ".txt"), np.c_[energy, classavg[i,j,:]], fmt=['%1.3e','%1.6e'])
         
         print(f'saving combined file for {redname}')
-        np.savetxt(os.path.join(odir, "sum_" + redname + ".txt"), np.c_[energy, classavg[i,:,:].transpose(1,0)], fmt='%1.5e')             
+        np.savetxt(os.path.join(dirs.transforms, "sum_" + redname + ".txt"), np.c_[energy, classavg[i,:,:].transpose(1,0)], fmt='%1.5e')             
         #plt.plot(energy, clustaverages[i,j,:])
     
-    clustplt(config, embedding, categories, mapx, clusttimes, odir)
+    clustplt(config, embedding, categories, mapx, clusttimes, dirs.plots)
 
     return categories, classavg
 

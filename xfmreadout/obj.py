@@ -55,12 +55,15 @@ class Xfmap:
         
         #try to assign values from header
         try:
-            self.xres = self.headerdict['File Header']['Xres']           #map size x
-            self.yres = self.headerdict['File Header']['Yres']           #map size y
-            self.xdim = self.headerdict['File Header']['Width (mm)']     #map dimension x
-            self.ydim = self.headerdict['File Header']['Height (mm)']    #map dimension y
+            self.xres = int(self.headerdict['File Header']['Xres'])           #map size x
+            self.yres = int(self.headerdict['File Header']['Yres'])           #map size y
+            self.xdim = float(self.headerdict['File Header']['Width (mm)'])     #map dimension x
+            self.ydim = float(self.headerdict['File Header']['Height (mm)'])    #map dimension y
             self.nchannels = int(self.headerdict['File Header']['Chan']) #no. channels
             self.gain = float(self.headerdict['File Header']['Gain (eV)']/1000) #gain in kV
+            self.deadtime = float(self.headerdict['File Header']['Deadtime (%)'])
+            self.dwell = float(self.headerdict['File Header']['Dwell (mS)'])   #dwell in ms
+            self.timeconst = float(config['time_constant']) #pulled from config, ideally should be in header
         except:
             raise ValueError("FATAL: failure reading values from header")
         
@@ -139,10 +142,6 @@ class Xfmap:
             
                 locstream, self.idx = parser.getstream(self,self.idx,readlength)
 
-                if config['WRITESUBMAP'] and utils.pxinsubmap(config, xidx, yidx):
-                        parser.writepxheader(config, self, pxseries, det)
-                        parser.writepxrecord(locstream, readlength, self)
-
                 if config['PARSEMAP']:
                     chan, counts = parser.readpxdata(locstream, config, readlength)
 
@@ -155,10 +154,15 @@ class Xfmap:
                         print("WARNING: unexpected length of channel list")
 
                     #store pixel sum
-                    pxseries.sum[det,self.pxidx]=int(np.sum(counts))
+                    pxsum=int(np.sum(counts))
+                    pxseries.sum[det,self.pxidx]=pxsum    #sum normalised for dwelltime
 
                     #assign counts into data array
                     pxseries.data[det,self.pxidx,:]=counts
+
+                if config['WRITESUBMAP'] and utils.pxinsubmap(config, xidx, yidx):
+                        parser.writepxheader(config, self, pxseries, det)
+                        parser.writepxrecord(locstream, readlength, self)
 
                 self.fullidx=self.chunkidx+self.idx
 
@@ -256,12 +260,40 @@ class PixelSeries:
         
         return flattened
 
-    def exportheader(self, config, odir):
-        parser.exportheader(config, self, odir)
+    def exportpxstats(self, config, dir):
+        """
+        write the pixel header statistics to csv
+        """
+        np.savetxt(os.path.join(dir, "pxstats_pxlen.txt"), self.pxlen, fmt='%i', delimiter=",")
+        np.savetxt(os.path.join(dir, "pxstats_xidx.txt"), self.xidx, fmt='%i', delimiter=",")
+        np.savetxt(os.path.join(dir, "pxstats_yidx.txt"), self.yidx, fmt='%i', delimiter=",")
+        np.savetxt(os.path.join(dir, "pxstats_detector.txt"), self.det, fmt='%i', delimiter=",")
+        np.savetxt(os.path.join(dir, "pxstats_dt.txt"), self.dt, fmt='%f', delimiter=",")    
+        
+        if config['PARSEMAP']:
+            np.savetxt(os.path.join(dir, "pxstats_sum.txt"), self.sum, fmt='%d', delimiter=",")    
 
-    def exportseries(self, config, odir):
-        parser.exportseries(config, self, odir)
 
-    def readseries(self, config, odir):
-        self = parser.readseries(config, self, odir)
+    def exportpxdata(self, config, dir):
+        """
+        writes the spectrum-by-pixel data to csv
+        """
+        print("saving spectrum-by-pixel to file")
+        np.savetxt(os.path.join(dir,  config['outfile'] + ".dat"), self.data, fmt='%i')   
+
+    def readpxdata(self, config, dir):
+        """
+        read data from csv
+            does not currently return as much information as the full parse
+        """
+        print("loading from file", config['outfile'])
+        self.data = np.loadtxt(os.path.join(dir, config['outfile']), dtype=np.uint16, delimiter=",")
+        self.pxlen=np.loadtxt(os.path.join(dir, "pxlen.txt"), dtype=np.uint16, delimiter=",")
+        self.xidx=np.loadtxt(os.path.join(dir, "xidx.txt"), dtype=np.uint16, delimiter=",")
+        self.yidx=np.loadtxt(os.path.join(dir, "yidx.txt"), dtype=np.uint16, delimiter=",")
+        self.det=np.loadtxt(os.path.join(dir, "detector.txt"), dtype=np.uint16, delimiter=",")
+        self.dt=np.loadtxt(os.path.join(dir, "dt.txt"), dtype=np.float32, delimiter=",")
+        
+        print("loaded successfully", config['outfile']) 
+
         return self

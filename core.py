@@ -35,8 +35,8 @@ args = utils.readargs()
 #create input config from args and config files
 config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG, USER_CONFIG)
 
-#initialise read file and all directories relative to current script
-config, fi, fname, fsub, odir = utils.initf(config)
+#initialise read file and directory structure 
+config, dirs = utils.initfiles(config)
 
 starttime = time.time()             #init timer
 
@@ -47,7 +47,7 @@ starttime = time.time()             #init timer
 #initialise map object
 #   parses header into map.headerdict
 #   places pointer (map.idx) at start of first pixel record
-xfmap = obj.Xfmap(config, fi, fsub)
+xfmap = obj.Xfmap(config, dirs.fi, dirs.fsub)
 
 #read the detector config from the file
 detarray=xfmap.getdetectors(config)
@@ -67,11 +67,14 @@ try:
         pixelseries = xfmap.parse(config, pixelseries)
     #else read from a pre-parsed csv
     else:   
-        pixelseries = pixelseries.readseries(config, odir)
+        pixelseries = pixelseries.readpxdata(config, dirs.exports)
 finally:
     xfmap.closefiles(config)
 
 runtime = time.time() - starttime
+
+#show memory usage
+utils.varsizes(locals().items())
 
 print(
 "---------------------------\n"
@@ -85,7 +88,7 @@ f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
 "---------------------------"
 )
 
-pixelseries.exportheader(config, odir)
+pixelseries.exportpxstats(config, dirs.exports)
 
 if not config['PARSEMAP']:
     print("WRITE COMPLETE")
@@ -93,10 +96,7 @@ if not config['PARSEMAP']:
     exit()
 
 if config['SAVEPXSPEC']:
-    pixelseries.exportseries(config, odir)
-
-#show memory usage
-utils.varsizes(locals().items())
+    pixelseries.exportpxdata(config, dirs.exports)
 
 #perform post-analysis:
 
@@ -104,7 +104,12 @@ UDET=config['use_detector'] #define working detector for multi-detector files
 
 #generate deadtime/sum reports
 if config['DODTCALCS'] == True:
-    dtops.dtplots(config, odir, pixelseries.dt, pixelseries.sum, xfmap.xres, xfmap.yres, pixelseries.ndet)
+    dtpred, dtavg, mergedsum = dtops.postcalc(config, pixelseries, xfmap)
+
+    dtops.export(dirs.exports, dtpred, mergedsum)
+
+    dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, dtpred, dtavg, mergedsum, xfmap.xres, xfmap.yres, pixelseries.ndet)
+
 
 #create and show colour map
 if config['DOCOLOURS'] == True:
@@ -115,13 +120,14 @@ if config['DOCOLOURS'] == True:
         counts=pixelseries.data[UDET,i,:]
         pixelseries.rvals[i], pixelseries.bvals[i], pixelseries.gvals[i], pixelseries.totalcounts[i] = colour.spectorgb(config, xfmap.energy, counts)
 
-    rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, odir)
+    rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, dirs)
 
 #perform clustering
 if config['DOCLUST']:
-    categories, classavg = clustering.complete(config, pixelseries.data[UDET], xfmap.energy, xfmap.numpx, xfmap.xres, xfmap.yres, odir)
+    categories, classavg = clustering.complete(config, pixelseries.data[UDET], xfmap.energy, xfmap.numpx, xfmap.xres, xfmap.yres, dirs)
 
 print("Processing complete")
+
 sys.exit()
 
 """
