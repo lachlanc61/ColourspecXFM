@@ -104,9 +104,11 @@ UDET=config['use_detector'] #define working detector for multi-detector files
 
 #generate deadtime/sum reports
 if config['DODTCALCS'] == True:
-    dtpred = dtops.postcalc(config, dirs.exports, pixelseries, xfmap)
+    dtpred, dtavg, mergedsum = dtops.postcalc(config, pixelseries, xfmap)
 
-    dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, xfmap.xres, xfmap.yres, pixelseries.ndet)
+    dtops.export(dirs.exports, dtpred, mergedsum)
+
+    dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, dtpred, dtavg, xfmap.xres, xfmap.yres, pixelseries.ndet)
 
 
 #create and show colour map

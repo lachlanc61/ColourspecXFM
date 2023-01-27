@@ -117,7 +117,7 @@ def complete(rvals, gvals, bvals, mapx, mapy, dirs):
     rgbarray[..., 1] = gimg*256
     rgbarray[..., 2] = bimg*256
     
-    show(rgbarray, dirs.exports)
+    show(rgbarray, dirs.plots)
     return(rgbarray)
 
 

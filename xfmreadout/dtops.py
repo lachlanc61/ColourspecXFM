@@ -24,42 +24,35 @@ def predictdt(config, pxsum, dwell, timeconst):
 
     return dtpred
 
-def postcalc(config, dir:str, pixelseries, xfmap):
+def postcalc(config, pixelseries, xfmap):
     timeconst = xfmap.timeconst
     dwell = xfmap.dwell
     ndet = pixelseries.ndet
 
-    sum=np.sum(pixelseries.sum, axis=0)
-    sumavg=sum/ndet
-    dtavg=np.sum(pixelseries.sum, axis=0)/ndet
+    mergedsum=np.sum(pixelseries.sum, axis=0)
+    dtavg=np.sum(pixelseries.dt, axis=0)/ndet
 
-    if len(sumavg) != len(dtavg):
+    if len(mergedsum) != len(dtavg):
         raise ValueError("sum and dt array sizes differ")
 
     dtpred=np.zeros(len(dtavg),dtype=np.float32)
 
-    for i in range(len(sumavg)):
-        dtpred[i]=predictdt(config, sumavg[i], dwell, timeconst)
+    for i in range(len(mergedsum)):
+        dtpred[i]=predictdt(config, mergedsum[i], dwell, timeconst)
 
-    pass
+    return dtpred, dtavg, mergedsum
+
+
+def export(dir:str, dtpred, mergedsum):
+
 
     #NB: printing as if dtpred is list of lists -> newlines after each value
     #   not sure why, workaround is to pass as list of itself
     # https://stackoverflow.com/questions/42068144/numpy-savetxt-is-not-adding-comma-delimiter
     np.savetxt(os.path.join(dir, "pxstats_dtpred.txt"), [dtpred], fmt='%f', delimiter=",")
-    np.savetxt(os.path.join(dir, "pxstats_mergedsum.txt"), [sum], fmt='%d', delimiter=",")
+    np.savetxt(os.path.join(dir, "pxstats_mergedsum.txt"), [mergedsum], fmt='%d', delimiter=",")
 
-
-    return dtpred
-
-
-
-
-
-
-
-
-
+    return
 
 
 def dthist(dt, dir: str, ndet: int):
@@ -148,7 +141,63 @@ def dtscatter(dt, sum, dir: str, ndet: int):
     
     return
 
-def dtplots(config, dir: str, dt, sum, xres: int, yres: int, ndet: int):
+def predhist(dt, dtpred, dir: str, ndet: int):
+    fig = plt.figure(figsize=(6,4))
+
+    ax = fig.add_subplot(111)
+
+    ax.set_xlabel("Deadtime (%)")
+    ax.set_ylabel("No. pixels")
+
+    i=0
+    labels = [ "measured", "predicted" ]
+
+    for data in [ dt, dtpred ]:
+        ax.hist(data, 100, fc=cset[i], alpha=0.5, label=f"{labels[i]}")
+        i+=1
+
+    fig.savefig(os.path.join(dir, 'predicted_deadtime_histograms.png'), dpi=150)
+    return
+
+def preddiffimage(dt, dtpred, dir: str, xres: int, yres: int, ndet: int):
+       
+    diffmap = dtpred-dt
+
+    diffimage = diffmap.reshape(yres,xres)
+
+    fig = plt.figure(figsize=(6,6))
+
+    ax = fig.add_subplot(111)
+
+    img = ax.imshow(diffimage, cmap='bwr')
+
+    plt.colorbar(img, fraction=0.04, pad=0.04)
+
+    plt.savefig(os.path.join(dir, 'predicted_difference_map.png'), dpi=150)
+    return
+
+def predscatter(dt, dtpred, dir: str, ndet: int):
+    fig = plt.figure(figsize=(8,4))
+
+    ax = fig.add_subplot(111)
+    ax.set_xlabel("Predicted Deadtime (%)")
+    ax.set_ylabel("Measured Deadtime (%)")
+
+    ax.set_ylim(0,100)
+    ax.set_xlim(0,100)
+
+    ax.scatter(dtpred, dt, color="red", marker='o', s=50, alpha=0.1, linewidths=None )
+
+    fig.savefig(os.path.join(dir, 'predicted_deadtime_scatter.png'), dpi=150)
+    
+    #https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib/53865762#53865762
+    #seriously consider contoured plots
+    #particularly 3rd answer by "Guilliame" using density_scatter
+    
+    return
+
+
+def dtplots(config, dir: str, dt, sum, dtpred, dtavg, xres: int, yres: int, ndet: int):
 
     dthist(dt, dir, ndet)
     dtimages(dt, dir, xres, yres, ndet)
@@ -162,6 +211,10 @@ def dtplots(config, dir: str, dt, sum, xres: int, yres: int, ndet: int):
         dtscatter(dt, sum, dir, ndet)
     elif (np.amax(sum) <= 0):
         raise ValueError("Sum array is empty or zero - cannot generate sum plots")
+
+    predhist(dtavg, dtpred, dir, ndet)
+    preddiffimage(dtavg, dtpred, dir, xres, yres, ndet)
+    predscatter(dtavg, dtpred, dir, ndet)
 
     plt.close()
 
