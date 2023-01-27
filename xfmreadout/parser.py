@@ -181,68 +181,6 @@ def readpxdata(locstream, config, readlength):
     #return as lists
     return(list(chan), list(counts))
 
-<<<<<<< HEAD
-def readseries(config, pxseries, odir):
-    """
-    read data from a pre-saved datfile
-        does not currently return as much information as the full parse
-    """
-    print("loading from file", config['outfile'])
-    pxseries.data = np.loadtxt(os.path.join(odir, config['outfile']), dtype=np.uint16, delimiter=",")
-    pxseries.pxlen=np.loadtxt(os.path.join(odir, "pxlen.txt"), dtype=np.uint16, delimiter=",")
-    pxseries.xidx=np.loadtxt(os.path.join(odir, "xidx.txt"), dtype=np.uint16, delimiter=",")
-    pxseries.yidx=np.loadtxt(os.path.join(odir, "yidx.txt"), dtype=np.uint16, delimiter=",")
-    pxseries.det=np.loadtxt(os.path.join(odir, "detector.txt"), dtype=np.uint16, delimiter=",")
-    pxseries.dt=np.loadtxt(os.path.join(odir, "dt.txt"), dtype=np.float32, delimiter=",")
-    
-    print("loaded successfully", config['outfile']) 
-
-    return pxseries
-
-def exportseries(config, pxseries, odir):
-    print("saving spectrum-by-pixel to file")
-    np.savetxt(os.path.join(odir,  config['outfile'] + ".dat"), pxseries.data, fmt='%i')    
-
-def exportheader(config, pxseries, odir):
-    np.savetxt(os.path.join(odir, "pxlen.txt"), pxseries.pxlen, fmt='%i', delimiter=",")
-    np.savetxt(os.path.join(odir, "xidx.txt"), pxseries.xidx, fmt='%i', delimiter=",")
-    np.savetxt(os.path.join(odir, "yidx.txt"), pxseries.yidx, fmt='%i', delimiter=",")
-    np.savetxt(os.path.join(odir, "detector.txt"), pxseries.det, fmt='%i', delimiter=",")
-    np.savetxt(os.path.join(odir, "dt.txt"), pxseries.dt, fmt='%f', delimiter=",")    
-    if config['PARSEMAP']:
-        np.savetxt(os.path.join(odir, "sum.txt"), pxseries.sum, fmt='%d', delimiter=",")
-
-def writepxheader(config, xfmap, pxseries, det):
-||||||| a779bc0
-def readseries(config, pxseries, odir):
-    """
-    read data from a pre-saved datfile
-        does not currently return as much information as the full parse
-    """
-    print("loading from file", config['outfile'])
-    pxseries.data = np.loadtxt(os.path.join(odir, config['outfile']), dtype=np.uint16)
-    pxseries.pxlen=np.loadtxt(os.path.join(odir, "pxlen.txt"), dtype=np.uint16)
-    pxseries.xidx=np.loadtxt(os.path.join(odir, "xidx.txt"), dtype=np.uint16)
-    pxseries.yidx=np.loadtxt(os.path.join(odir, "yidx.txt"), dtype=np.uint16)
-    pxseries.det=np.loadtxt(os.path.join(odir, "detector.txt"), dtype=np.uint16)
-    pxseries.dt=np.loadtxt(os.path.join(odir, "dt.txt"), dtype=np.uint16)
-    print("loaded successfully", config['outfile']) 
-
-    return pxseries
-
-def exportseries(config, pxseries, odir):
-    print("saving spectrum-by-pixel to file")
-    np.savetxt(os.path.join(odir,  config['outfile'] + ".dat"), pxseries.data, fmt='%i')    
-
-def exportheader(config, pxseries, odir):
-    np.savetxt(os.path.join(odir, "pxlen.txt"), pxseries.pxlen, fmt='%i')
-    np.savetxt(os.path.join(odir, "xidx.txt"), pxseries.xidx, fmt='%i')
-    np.savetxt(os.path.join(odir, "yidx.txt"), pxseries.yidx, fmt='%i')
-    np.savetxt(os.path.join(odir, "detector.txt"), pxseries.det, fmt='%i')
-    np.savetxt(os.path.join(odir, "dt.txt"), pxseries.dt, fmt='%i')
-
-def writepxheader(config, xfmap, pxseries):
-=======
 
 def writepxheader(config, xfmap, pxseries, det):
 
@@ -264,27 +202,9 @@ def writepxheader(config, xfmap, pxseries, det):
         #leave unchanged
         dt=dt
 
->>>>>>> aae5b36b69b54789535290cfa520d7a5a1faaecb
     pxflag=config['PXFLAG']
     pxflag0=pxflag[0].encode(config['CHARENCODE'])
     pxflag1=pxflag[1].encode(config['CHARENCODE'])
-<<<<<<< HEAD
-
-    pxlen=pxseries.pxlen[det,xfmap.pxidx]
-    xcoord=pxseries.xidx[det,xfmap.pxidx]
-    ycoord=pxseries.yidx[det,xfmap.pxidx]
-    dt=pxseries.dt[det,xfmap.pxidx]
-    usedet=pxseries.det[det,xfmap.pxidx]
-    
-    if usedet != det:
-        raise ValueError("WARNING: Detector value mismatch")
-||||||| a779bc0
-    pxlen=pxseries.pxlen[xfmap.pxidx]
-    xcoord=pxseries.xidx[xfmap.pxidx]
-    ycoord=pxseries.yidx[xfmap.pxidx]
-    det=pxseries.det[xfmap.pxidx]
-    dt=pxseries.dt[xfmap.pxidx]
-=======
 
     pxlen=pxseries.pxlen[det,xfmap.pxidx]
     xcoord=pxseries.xidx[det,xfmap.pxidx]
@@ -293,7 +213,6 @@ def writepxheader(config, xfmap, pxseries, det):
     
     if usedet != det:
         raise ValueError("WARNING: Detector value mismatch")
->>>>>>> aae5b36b69b54789535290cfa520d7a5a1faaecb
 
     #write the header with x/y coords adjusted
     outstream=xfmap.headstruct.pack(pxflag0,pxflag1, pxlen, xcoord-config['submap_x'][0], \

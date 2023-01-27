@@ -152,5 +152,9 @@ OO:
     chunk parsing:          0.002505 s
 
 refactored:
-    read+write:             0.000643 s
+    parse+write:             0.000643 s
+
+dtops:
+    read+parse              0.001184 s
+    headers+write           0.00005 s
 """

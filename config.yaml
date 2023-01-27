@@ -17,7 +17,7 @@ chunksize: 1000    #size in Mb to load into memory at a time
 
 DOCOLOURS: False   #run colourmap
 DOCLUST: False     #run clustering
-DODTCALCS: True    #generate deadtime plots
+DODTCALCS: False    #generate deadtime plots
 
 #recalc flags
 FORCEPARSE: True     #always parse datafile
