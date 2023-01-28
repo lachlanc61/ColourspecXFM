@@ -6,6 +6,7 @@ import xfmreadout.colour as colour
 import xfmreadout.clustering as clustering
 import xfmreadout.obj2 as obj
 import xfmreadout.dtops as dtops
+import xfmreadout.parser2 as parser
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -56,6 +57,8 @@ pixelseries = obj.PixelSeries(config, xfmap, xfmap.numpx, xfmap.detarray)
 
 #start a timer
 starttime = time.time() 
+
+parser.indexmap(xfmap, pixelseries)
 
 try:
     #if we are parsing the .GeoPIXE file

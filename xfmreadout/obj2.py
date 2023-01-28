@@ -11,19 +11,45 @@ import xfmreadout.byteops2 as byteops
 import xfmreadout.parser2 as parser
 
 
-class MapDone(Exception): pass
+#class MapDone(Exception): pass
 
 
 class MapBuffer:
     """
     Object holding current chunk of file for processing
     """
-    def __init__(self, infile, fileidx, chunksize):
-        self.infile=infile
-        self.fileidx = fileidx
+    def __init__(self, xfmap):
+        """
+        NB: buffers need to have a source -> should refer back to xfmap
+
+        xfmap is the file object, it stores the file pointer etc
+            everything that reads/writes to the actual file should happen via methods on xfmap
+
+        ie. nextchunk, resets etc
+        """
+        self.source = xfmap
+        self.chunksize = xfmap.chunksize
         self.len = 0
         try:
-            self.data = self.infile.read(chunksize) 
+            self.data, self.fileidx = xfmap.readin() 
+            self.len = len(self.data)
+        except:
+            raise EOFError(f"No data to load from {xfmap.infile}")
+        
+        return
+
+
+class MapBuffer:
+    """
+    Object holding current chunk of file for processing
+    """
+    def __init__(self, infile, chunksize):
+        self.infile=infile
+        self.fidx = self.infile.tell()
+        self.chunksize=chunksize
+        self.len = 0
+        try:
+            self.data = self.infile.read(self.chunksize) 
             self.len = len(self.data)
         except:
             raise EOFError(f"No data to load from {self.infile}")
@@ -54,6 +80,7 @@ class Xfmap:
         #get total size of file to parse
         self.fullsize = os.path.getsize(fi)
         self.chunksize = int(config['chunksize'])*int(config['MBCONV'])
+        self.fileidx=0
 
         """
         #generate initial bytestream
@@ -72,11 +99,10 @@ class Xfmap:
         """
 
         #read the beginning of the file into buffer
-        self.nextidx=0
-        buffer=self.next()
+        buffer = self.newbuffer()
 
         #read the JSON header and store position of first pixel
-        self.headerdict, self.localidx = self.readjsonheader(buffer, 0)
+        self.headerdict, self.recordstart, buffer = parser.readjsonheader(buffer, 0)
         
         #try to assign values from header
         try:
@@ -104,70 +130,64 @@ class Xfmap:
         self.numpx = self.xres*self.yres        #expected number of pixels
         self.PXHEADERLEN=config['PXHEADERLEN'] 
 
-        self.detarray = parser.getdetectors(buffer, self.localidx, self.PXHEADERLEN)
+        self.detarray = parser.getdetectors(buffer, self.recordstart, self.PXHEADERLEN)
         self.ndet = max(self.detarray)+1
 
+        self.resetfile()
         return
 
-        """
-        remove below?
-        
+    def readin(self):
+        datstart = self.fidx
+        data = self.infile.read(self.chunksize)
+        self.fidx+=self.chunksize
 
-        #init struct for reading pixel headers
-        self.headstruct=struct.Struct("<ccI3Hf")
-        self.PXHEADERLEN=config['PXHEADERLEN'] 
-        self.pxlen=self.PXHEADERLEN+config['NCHAN']*4   #dummy value for pxlen
+        if self.fidx != self.infile.tell():
+            raise ValueError("Mismatch between file pointer and file index")
 
-        self.detarray = parser.getdetectors(config, initstream, self.pxstart)
-        """
+        return data, datstart
 
-    def next(self):
-        buffer=MapBuffer(self.infile, self.nextidx, self.chunksize)
+    def resetfile(self):
+        self.infile.seek(0)
+        self.fidx=0
 
-        if buffer.len < self.chunksize:
+    def newbuffer(self):
+        buffer=MapBuffer(self)
+
+        if buffer.len < buffer.chunksize:
             print("\n NOTE: final chunk")
         
         if not buffer.data:
             print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-            raise MapDone
+            raise parser.MapDone
 
-        self.nextidx=self.nextidx+self.chunksize
-
-        return buffer
+        return buffer        
 
 
-    def readjsonheader(self, buffer, idx):
 
-        if idx != 0:
-            print(f"WARNING: header being read from byte {idx}. Expected beginning of file.")
+    def closefiles(self, config):
+        self.infile.close()
+        if config['WRITESUBMAP']:
+            self.outfile.close()
 
-        headerlen=byteops.binunpack(buffer.data, idx, "<H")
 
-        if headerlen == 20550:  #(="DP" as <uint16)
-            raise ValueError("FATAL: file header missing, cannot read map params")
-        elif headerlen <= 500:
-            raise ValueError("FATAL: file header too small, check input")
-        else:
-            #proceed
 
-            #pull slice of byte stream corresponding to header
-            #   bytes[0-2]= headerlen
-            #   doesn't include trailing '\n' '}', so +2
-            headerraw, idx = parser.getstream(buffer, 2, headerlen)
 
-            #read it as utf8
-            headerstream = headerraw.decode('utf-8')
-            
-            #load into dictionary via json builtin
-            headerdict = json.loads(headerstream)
 
-        #print map params
-        print(f"header length: {headerlen} (bytes)")
 
-        #set pointer index to length of header + 2 bytes -> position of first pixel record
-        idx = headerlen+2
 
-        return headerdict, idx
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     def parse(self, config, pxseries):
@@ -252,10 +272,7 @@ class Xfmap:
             print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
             raise MapDone
 
-    def closefiles(self, config):
-        self.infile.close()
-        if config['WRITESUBMAP']:
-            self.outfile.close()
+
 
 
 class PixelSeries:

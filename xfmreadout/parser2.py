@@ -6,7 +6,10 @@ import copy
 
 import xfmreadout.byteops2 as byteops
 import xfmreadout.dtops as dtops
+import xfmreadout.obj2 as obj
 
+
+class MapDone(Exception): pass
 
 pxheadstruct=struct.Struct("<ccI3Hf")
 
@@ -23,13 +26,8 @@ def getstream(buffer, idx, length):
         #store the length read
         gotlen=buffer.len-idx  
 
-        #load next chunk
-        """
-        orphan this for now...
-        buffer = xfmap.next() 
-        """
+        buffer = buffer.source.newbuffer() 
 
-        raise ValueError("End of buffer reached")
         #load the remainder of the pixel
         stream+=buffer.data[0:length-gotlen]
 
@@ -38,7 +36,7 @@ def getstream(buffer, idx, length):
     if len(stream) < length:
         raise ValueError("FATAL: received stream shorter than expected")
 
-    return stream, idx
+    return stream, idx, buffer
 
 
 def getdetectors(buffer, idx, pxheaderlen):
@@ -59,7 +57,7 @@ def getdetectors(buffer, idx, pxheaderlen):
 
     while True:
         #pull stream and extract pixel header
-        headstream, idx = getstream(buffer,idx,pxheaderlen)
+        headstream, idx, buffer = getstream(buffer,idx,pxheaderlen)
         pxlen, xidx, yidx, det, dt = readpxheader(headstream)
         #assign detector
         detarray[i]=int(det)
@@ -72,6 +70,39 @@ def getdetectors(buffer, idx, pxheaderlen):
             i+=1
 
     return detarray[:i]
+
+def readjsonheader(buffer, idx):
+
+        if idx != 0:
+            print(f"WARNING: header being read from byte {idx}. Expected beginning of file.")
+
+        headerlen=byteops.binunpack(buffer.data, idx, "<H")
+
+        if headerlen == 20550:  #(="DP" as <uint16)
+            raise ValueError("FATAL: file header missing, cannot read map params")
+        elif headerlen <= 500:
+            raise ValueError("FATAL: file header too small, check input")
+        else:
+            #proceed
+
+            #pull slice of byte stream corresponding to header
+            #   bytes[0-2]= headerlen
+            #   doesn't include trailing '\n' '}', so +2
+            headerraw, idx, buffer = getstream(buffer, 2, headerlen)
+
+            #read it as utf8
+            headerstream = headerraw.decode('utf-8')
+            
+            #load into dictionary via json builtin
+            headerdict = json.loads(headerstream)
+
+        #print map params
+        print(f"header length: {headerlen} (bytes)")
+
+        #set pointer index to length of header + 2 bytes -> position of first pixel record
+        idx = headerlen+2
+
+        return headerdict, idx, buffer
 
 
 def readpxheader(headstream):
@@ -108,6 +139,57 @@ def readpxheader(headstream):
         raise ValueError(f"ERROR: pixel flag 'DP' expected but not found")
 
     return pxlen, xidx, yidx, det, dt
+
+
+def readpxdata(locstream, config, readlength):
+
+    #initialise channel index and result arrays
+    chan=np.zeros(int((readlength)/config['BYTESPERCHAN']), dtype=int)
+    counts=np.zeros(int((readlength)/config['BYTESPERCHAN']), dtype=int)
+    #       4 = no. bytes in each x,y pair
+    #         = 2x2 bytes each 
+
+    #create struct object for reading
+    fmt= "<%dH" % ((readlength) // 2)
+    chanstruct=struct.Struct(fmt)
+
+    #read the channel data
+    chandata=chanstruct.unpack(locstream[:readlength])
+    #take even indexes for channels
+    chan=chandata[::2]
+    #take odd indexes for counts
+    counts=chandata[1::2]
+
+    #return as lists
+    return(list(chan), list(counts))
+
+
+
+def indexmap(xfmap, pixelseries):
+    try:
+        buffer = xfmap.genbuffer()
+        fidx = xfmap.headerlen
+        while True:
+
+            """
+            under construction
+            """
+            raise MapDone
+    except MapDone:
+        return pxseries
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -153,31 +235,6 @@ def writefileheader(config, xfmap):
     # first is overwritten during json.loads
     #   .: only one in dict to write to second file
     #   think we can ignore this, the info is not used, but header is different when rewritten
-
-
-
-
-def readpxdata(locstream, config, readlength):
-
-    #initialise channel index and result arrays
-    chan=np.zeros(int((readlength)/config['BYTESPERCHAN']), dtype=int)
-    counts=np.zeros(int((readlength)/config['BYTESPERCHAN']), dtype=int)
-    #       4 = no. bytes in each x,y pair
-    #         = 2x2 bytes each 
-
-    #create struct object for reading
-    fmt= "<%dH" % ((readlength) // 2)
-    chanstruct=struct.Struct(fmt)
-
-    #read the channel data
-    chandata=chanstruct.unpack(locstream[:readlength])
-    #take even indexes for channels
-    chan=chandata[::2]
-    #take odd indexes for counts
-    counts=chandata[1::2]
-
-    #return as lists
-    return(list(chan), list(counts))
 
 
 def writepxheader(config, xfmap, pxseries, det):
