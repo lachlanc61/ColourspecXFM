@@ -206,7 +206,8 @@ def indexmap(xfmap, pixelseries):
             
             pixelseries = pixelseries.receiveheader(pxidx, pxlen, xidx, yidx, det, dt)
             
-            idx+=pxlen-xfmap.PXHEADERLEN
+            #use getstream to step to the next pixel and handle end-of-buffer events
+            __, idx, buffer = getstream(buffer, idx, pxlen-xfmap.PXHEADERLEN)
 
             if det == xfmap.maxdet:
                 pxidx = endpx(pxidx, idx, buffer, xfmap, pixelseries)

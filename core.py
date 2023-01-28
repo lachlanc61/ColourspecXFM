@@ -60,6 +60,11 @@ starttime = time.time()
 
 parser.indexmap(xfmap, pixelseries)
 
+
+
+exit()
+
+
 try:
     #if we are parsing the .GeoPIXE file
     #   begin parsing
