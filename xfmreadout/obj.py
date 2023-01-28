@@ -7,8 +7,8 @@ import copy
 import xfmreadout.utils as utils
 import xfmreadout.colour as colour
 import xfmreadout.fitting as fitting
-import xfmreadout.byteops2 as byteops
-import xfmreadout.parser2 as parser
+import xfmreadout.byteops as byteops
+import xfmreadout.parser as parser
 
 
 #class MapDone(Exception): pass

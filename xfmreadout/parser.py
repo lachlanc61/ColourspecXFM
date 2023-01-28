@@ -4,9 +4,9 @@ import numpy as np
 import json
 import copy
 
-import xfmreadout.byteops2 as byteops
+import xfmreadout.byteops as byteops
 import xfmreadout.dtops as dtops
-import xfmreadout.obj2 as obj
+import xfmreadout.obj as obj
 
 
 class MapDone(Exception): pass

@@ -4,9 +4,9 @@ import numpy as np
 import xfmreadout.utils as utils
 import xfmreadout.colour as colour
 import xfmreadout.clustering as clustering
-import xfmreadout.obj2 as obj
+import xfmreadout.obj as obj
 import xfmreadout.dtops as dtops
-import xfmreadout.parser2 as parser
+import xfmreadout.parser as parser
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
