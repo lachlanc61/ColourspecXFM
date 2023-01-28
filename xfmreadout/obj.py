@@ -8,6 +8,7 @@ import xfmreadout.utils as utils
 import xfmreadout.colour as colour
 import xfmreadout.fitting as fitting
 import xfmreadout.byteops as byteops
+import xfmreadout.bufferops as bufferops
 import xfmreadout.parser as parser
 
 
