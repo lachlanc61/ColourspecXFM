@@ -54,13 +54,12 @@ xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub)
 #initialise the spectrum-by-pixel object
 #       pre-creates all arrays for storing data, pixel header values etc
 #       WARNING: big memory spike here if map is large
-pixelseries = structures.PixelSeries(config, xfmap, xfmap.numpx, xfmap.detarray)
+pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray)
 
 #start a timer
 starttime = time.time() 
 
-parser.indexmap(xfmap, pixelseries)
-
+pixelseries, indexlist = parser.indexmap(xfmap, pixelseries)
 
 
 exit()
@@ -87,7 +86,7 @@ print(
 "MAP COMPLETE\n"
 "---------------------------\n"
 f"dimensions expected (x,y): {xfmap.xres},{xfmap.yres}\n"
-f"pixels expected (X*Y): {xfmap.numpx}\n"
+f"pixels expected (X*Y): {xfmap.npx}\n"
 f"pixels found: {pixelseries.npx}\n"
 f"total time: {round(runtime,2)} s\n"
 f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
@@ -130,7 +129,7 @@ if config['DOCOLOURS'] == True:
 
 #perform clustering
 if config['DOCLUST']:
-    categories, classavg = clustering.complete(config, pixelseries.data[UDET], xfmap.energy, xfmap.numpx, xfmap.xres, xfmap.yres, dirs)
+    categories, classavg = clustering.complete(config, pixelseries.data[UDET], xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
 
 print("Processing complete")
 

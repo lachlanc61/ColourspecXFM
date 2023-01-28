@@ -86,7 +86,7 @@ class Xfmap:
             #       need to ask IXRF how this is handled by Iridium
 
         #derived vars
-        self.numpx = self.xres*self.yres        #expected number of pixels
+        self.npx = self.xres*self.yres        #expected number of pixels
         self.PXHEADERLEN=config['PXHEADERLEN'] 
 
         self.detarray = bufferops.getdetectors(buffer, self.datastart, self.PXHEADERLEN)
@@ -126,7 +126,7 @@ class Xfmap:
 
     def parse(self, config, pxseries):
 
-        print(f"pixels expected: {self.numpx}")
+        print(f"pixels expected: {self.npx}")
         print("---------------------------")
 
         if config['WRITESUBMAP']:
@@ -173,7 +173,7 @@ class Xfmap:
                 #if on last detector for this pixel, increment counters and check end
                 if det == max(self.detarray):
                     #stop when pixel index greater than expected no. pixels
-                    if (self.pxidx >= (self.numpx-1)):
+                    if (self.pxidx >= (self.npx-1)):
                         print(f"\nENDING AT: Row {self.rowidx}/{self.yres} at pixel {self.pxidx}")
                         raise parser.MapDone
 
@@ -210,7 +210,7 @@ class Xfmap:
 
 
 class PixelSeries:
-    def __init__(self, config, xfmap, numpx, detarray):
+    def __init__(self, config, xfmap, npx, detarray):
 
         self.source=xfmap
 
@@ -218,23 +218,23 @@ class PixelSeries:
         self.ndet=max(detarray)+1
 
         #initialise pixel value arrays
-        self.pxlen=np.zeros((self.ndet,numpx),dtype=np.uint16)
-        self.xidx=np.zeros((self.ndet,numpx),dtype=np.uint16)
-        self.yidx=np.zeros((self.ndet,numpx),dtype=np.uint16)
-        self.det=np.zeros((self.ndet,numpx),dtype=np.uint16)
-        self.sum=np.zeros((self.ndet,numpx),dtype=np.uint32)        
-        self.dt=np.zeros((self.ndet,numpx),dtype=np.float32)
+        self.pxlen=np.zeros((self.ndet,npx),dtype=np.uint16)
+        self.xidx=np.zeros((self.ndet,npx),dtype=np.uint16)
+        self.yidx=np.zeros((self.ndet,npx),dtype=np.uint16)
+        self.det=np.zeros((self.ndet,npx),dtype=np.uint16)
+        self.sum=np.zeros((self.ndet,npx),dtype=np.uint32)        
+        self.dt=np.zeros((self.ndet,npx),dtype=np.float32)
 
         #create colour-associated attrs even if not doing colours
-        self.rvals=np.zeros(numpx)
-        self.gvals=np.zeros(numpx)
-        self.bvals=np.zeros(numpx)
-        self.totalcounts=np.zeros(numpx)
+        self.rvals=np.zeros(npx)
+        self.gvals=np.zeros(npx)
+        self.bvals=np.zeros(npx)
+        self.totalcounts=np.zeros(npx)
 
         #initialise whole data containers (WARNING: large)
         if config['PARSEMAP']: 
-            self.data=np.zeros((self.ndet,numpx,config['NCHAN']),dtype=np.uint16)
-#            if config['DOBG']: self.corrected=np.zeros((xfmap.numpx,config['NCHAN']),dtype=np.uint16)
+            self.data=np.zeros((self.ndet,npx,config['NCHAN']),dtype=np.uint16)
+#            if config['DOBG']: self.corrected=np.zeros((xfmap.npx,config['NCHAN']),dtype=np.uint16)
         else:
         #create a small dummy array just in case
             self.data=np.zeros((1024,config['NCHAN']),dtype=np.uint16)

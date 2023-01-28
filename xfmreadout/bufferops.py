@@ -1,15 +1,25 @@
 import struct 
 import os
+import sys
+import time
 import numpy as np
 import json
 import copy
+
+from multiprocessing import Process, Queue
 
 import xfmreadout.byteops as byteops
 import xfmreadout.dtops as dtops
 import xfmreadout.structures as structures
 import xfmreadout.parser as parser
 
+#assign an identifier to the local namespace
+#   used to create persistent preloaded buffer
+this = sys.modules[__name__]
 
+Q = Queue()
+
+pxheadstruct = struct.Struct("<ccI3Hf")
 
 class MapBuffer:
     """
@@ -23,15 +33,51 @@ class MapBuffer:
         try:
             self.data = self.infile.read(self.chunksize) 
             self.len = len(self.data)
+            time.sleep(0.5)
+            print(f"\nloading buffer at {self.fidx}")
+            time.sleep(0.5)
+            print(f"loaded buffer at {self.fidx}\n")               
         except:
             raise EOFError(f"No data to load from {self.infile}")
-        
+
         return
 
-pxheadstruct=struct.Struct("<ccI3Hf")
+
+
+"""
+def preloadbuffer(infile, chunksize):
+    nextbuffer=MapBuffer(infile, chunksize)
+
+    Q.put(nextbuffer)
+
+def spawnloadbuffer(infile, chunksize):
+    process = Process(target=preloadbuffer, args=(infile, chunksize))
+    process.start()
+    print('Waiting...')
+    print(Q.get())
+    process.join()    
+
+    nextbuffer=0
+
+    return nextbuffer
+"""
 
 def getbuffer(infile, chunksize):
-    buffer = MapBuffer(infile, chunksize)
+    """
+    loads and checks buffers
+        preloads next buffer via module local namespace
+
+    suspect this could be done more cleanly via a method in MapBuffer
+    """
+
+    if (infile.tell() == 0):
+        buffer = MapBuffer(infile, chunksize)
+        this.nextbuffer=MapBuffer(infile, chunksize)
+        #this.nextbuffer = spawnloadbuffer(infile, chunksize)
+    else:
+        buffer=this.nextbuffer
+        this.nextbuffer=MapBuffer(infile, chunksize)
+        #this.nextbuffer = spawnloadbuffer(infile, chunksize)
 
     if buffer.len < buffer.chunksize:
         print("\n NOTE: final chunk")
