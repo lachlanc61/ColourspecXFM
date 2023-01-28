@@ -14,34 +14,21 @@ import xfmreadout.parser2 as parser
 class MapDone(Exception): pass
 
 
-class MapStream:
+class MapBuffer:
     """
     Object holding current chunk of file for processing
     """
     def __init__(self, infile, fileidx, chunksize):
         self.infile=infile
         self.fileidx = fileidx
-        self.streamlen = 0
-        self.next(chunksize)
-
-    def next(self, chunksize):
-        newstream=self.infile.read(chunksize)  
-        newidx = self.fileidx+self.streamlen
-        newlen=len(newstream)
-
-        if newlen < chunksize:
-            print("\n NOTE: final chunk")
+        self.len = 0
+        try:
+            self.data = self.infile.read(chunksize) 
+            self.len = len(self.data)
+        except:
+            raise EOFError(f"No data to load from {self.infile}")
         
-        if not newstream:
-            print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-            raise MapDone
-
-        self.stream=newstream
-        self.fileidx=newidx
-        self.streamlen=newlen
-
         return
-
 
 
 
@@ -84,11 +71,12 @@ class Xfmap:
         self.chunkidx = self.idx        
         """
 
-        #read a short section of file containing header and first n pixels
-        stream=self.infile.read(50000)
+        #read the beginning of the file into buffer
+        self.nextidx=0
+        buffer=self.next()
 
         #read the JSON header and store position of first pixel
-        self.pxstart, self.headerdict = parser.readjsonheader(stream)
+        self.headerdict, self.localidx = self.readjsonheader(buffer, 0)
         
         #try to assign values from header
         try:
@@ -103,7 +91,7 @@ class Xfmap:
             self.timeconst = float(config['time_constant']) #pulled from config, ideally should be in header
         except:
             raise ValueError("FATAL: failure reading values from header")
-        
+               
         #initialise arrays
         self.chan = np.arange(0,self.nchannels)     #channel series
         self.energy = self.chan*self.gain           #energy series
@@ -114,54 +102,73 @@ class Xfmap:
 
         #derived vars
         self.numpx = self.xres*self.yres        #expected number of pixels
+        self.PXHEADERLEN=config['PXHEADERLEN'] 
+
+        self.detarray = parser.getdetectors(buffer, self.localidx, self.PXHEADERLEN)
+        self.ndet = max(self.detarray)+1
+
+        return
 
         """
         remove below?
-        """
+        
 
         #init struct for reading pixel headers
         self.headstruct=struct.Struct("<ccI3Hf")
         self.PXHEADERLEN=config['PXHEADERLEN'] 
         self.pxlen=self.PXHEADERLEN+config['NCHAN']*4   #dummy value for pxlen
 
-        self.detarray=self.getdetectors(config)
-
-
-
-    def getdetectors(self, config):
+        self.detarray = parser.getdetectors(config, initstream, self.pxstart)
         """
-        Find the detector config for the map
 
-        Pre-parses self.stream and jumps through pixel headers, 
-            saving detector values, until detectors begin to repeat
+    def next(self):
+        buffer=MapBuffer(self.infile, self.nextidx, self.chunksize)
 
-        NB: assumes:
-            - detectors increase sequentially and are uniform throughout file
-                eg. 0 1 2 3 repeating pixel-by-pixel
-            - first pixel is representative of config for whole map
-        """
-        #initialise array and counters
-        detarray=np.zeros(20).astype(int)
-        i=0
-        j=self.idx
+        if buffer.len < self.chunksize:
+            print("\n NOTE: final chunk")
+        
+        if not buffer.data:
+            print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
+            raise MapDone
 
-        while True:
-            #pull stream and extract pixel header
-            headstream, j = parser.getstream(self,j,self.PXHEADERLEN)
-            pxlen, xidx, yidx, det, dt = parser.readpxheader(headstream, config, self.PXHEADERLEN, self)
-            #assign detector
-            detarray[i]=int(det)
-            #if det=0 for pixel other than 0th, increment and break
-            if (i > 0) and (det == 0):
-                break
-            #otherwise pull next stream to move index and continue
-            else:
-                readlength=pxlen-self.PXHEADERLEN
-                locstream, j = parser.getstream(self,j,readlength)
-                i+=1
+        self.nextidx=self.nextidx+self.chunksize
 
-        return detarray[:i]
-    
+        return buffer
+
+
+    def readjsonheader(self, buffer, idx):
+
+        if idx != 0:
+            print(f"WARNING: header being read from byte {idx}. Expected beginning of file.")
+
+        headerlen=byteops.binunpack(buffer.data, idx, "<H")
+
+        if headerlen == 20550:  #(="DP" as <uint16)
+            raise ValueError("FATAL: file header missing, cannot read map params")
+        elif headerlen <= 500:
+            raise ValueError("FATAL: file header too small, check input")
+        else:
+            #proceed
+
+            #pull slice of byte stream corresponding to header
+            #   bytes[0-2]= headerlen
+            #   doesn't include trailing '\n' '}', so +2
+            headerraw, idx = parser.getstream(buffer, 2, headerlen)
+
+            #read it as utf8
+            headerstream = headerraw.decode('utf-8')
+            
+            #load into dictionary via json builtin
+            headerdict = json.loads(headerstream)
+
+        #print map params
+        print(f"header length: {headerlen} (bytes)")
+
+        #set pointer index to length of header + 2 bytes -> position of first pixel record
+        idx = headerlen+2
+
+        return headerdict, idx
+
 
     def parse(self, config, pxseries):
 
@@ -252,28 +259,30 @@ class Xfmap:
 
 
 class PixelSeries:
-    def __init__(self, config, xfmap):
+    def __init__(self, config, xfmap, numpx, detarray):
+
+        self.source=xfmap
 
         #assign number of detectors
-        self.ndet=max(xfmap.detarray)+1
+        self.ndet=max(detarray)+1
 
         #initialise pixel value arrays
-        self.pxlen=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint16)
-        self.xidx=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint16)
-        self.yidx=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint16)
-        self.det=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint16)
-        self.sum=np.zeros((self.ndet,xfmap.numpx),dtype=np.uint32)        
-        self.dt=np.zeros((self.ndet,xfmap.numpx),dtype=np.float32)
+        self.pxlen=np.zeros((self.ndet,numpx),dtype=np.uint16)
+        self.xidx=np.zeros((self.ndet,numpx),dtype=np.uint16)
+        self.yidx=np.zeros((self.ndet,numpx),dtype=np.uint16)
+        self.det=np.zeros((self.ndet,numpx),dtype=np.uint16)
+        self.sum=np.zeros((self.ndet,numpx),dtype=np.uint32)        
+        self.dt=np.zeros((self.ndet,numpx),dtype=np.float32)
 
         #create colour-associated attrs even if not doing colours
-        self.rvals=np.zeros(xfmap.numpx)
-        self.gvals=np.zeros(xfmap.numpx)
-        self.bvals=np.zeros(xfmap.numpx)
-        self.totalcounts=np.zeros(xfmap.numpx)
+        self.rvals=np.zeros(numpx)
+        self.gvals=np.zeros(numpx)
+        self.bvals=np.zeros(numpx)
+        self.totalcounts=np.zeros(numpx)
 
         #initialise whole data containers (WARNING: large)
         if config['PARSEMAP']: 
-            self.data=np.zeros((self.ndet,xfmap.numpx,config['NCHAN']),dtype=np.uint16)
+            self.data=np.zeros((self.ndet,numpx,config['NCHAN']),dtype=np.uint16)
 #            if config['DOBG']: self.corrected=np.zeros((xfmap.numpx,config['NCHAN']),dtype=np.uint16)
         else:
         #create a small dummy array just in case

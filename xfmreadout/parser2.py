@@ -7,42 +7,41 @@ import copy
 import xfmreadout.byteops2 as byteops
 import xfmreadout.dtops as dtops
 
-def readjsonheader(stream):
-    streamlen=len(stream)
-    idx=0
 
-    headerlen=byteops.binunpack(stream, idx, "<H")
+pxheadstruct=struct.Struct("<ccI3Hf")
 
 
-    if headerlen == 20550:  #(="DP" as <uint16)
-        raise ValueError("FATAL: file header missing, cannot read map params")
-    elif headerlen <= 500:
-        raise ValueError("FATAL: file header too small, check input")
-    else:
-        #proceed
+def getstream(buffer, idx, length):
 
-        #pull slice of byte stream corresponding to header
-        #   bytes[0-2]= headerlen
-        #   doesn't include trailing '\n' '}', so +2
-        headerraw=stream[2:headerlen+2]
+    #if we have enough remaining in the chunk, proceed (CHECK not sure if > or >=)
+    if not idx+length > buffer.len:    
+        stream=buffer.data[idx:idx+length]
+        idx=idx+length
+    else:   #if step would exceed chunk
+        #read the remainder of the chunk
+        stream=buffer.data[idx:buffer.len]
+        #store the length read
+        gotlen=buffer.len-idx  
 
-        #read it as utf8
-        headerstream = headerraw.decode('utf-8')
-        
-        #load into dictionary via json builtin
-        headerdict = json.loads(headerstream)
+        #load next chunk
+        """
+        orphan this for now...
+        buffer = xfmap.next() 
+        """
 
-    #print map params
-    print(f"header length: {headerlen} (bytes)")
+        raise ValueError("End of buffer reached")
+        #load the remainder of the pixel
+        stream+=buffer.data[0:length-gotlen]
 
-    #set pointer index to length of header + 2 bytes -> position of first pixel record
-    idx = headerlen+2
+        idx = length - gotlen
 
-    return idx, headerdict
+    if len(stream) < length:
+        raise ValueError("FATAL: received stream shorter than expected")
+
+    return stream, idx
 
 
-
-def getdetectors(config, idx, pxheaderlen, headstream):
+def getdetectors(buffer, idx, pxheaderlen):
     """
     Find the detector config for the map
 
@@ -57,12 +56,11 @@ def getdetectors(config, idx, pxheaderlen, headstream):
     #initialise array and counters
     detarray=np.zeros(20).astype(int)
     i=0
-    j=idx
 
     while True:
         #pull stream and extract pixel header
-        headstream, j = parser.getstream(self,j,pxheaderlen)
-        pxlen, xidx, yidx, det, dt = parser.readpxheader(headstream, config, pxheaderlen, self)
+        headstream, idx = getstream(buffer,idx,pxheaderlen)
+        pxlen, xidx, yidx, det, dt = readpxheader(headstream)
         #assign detector
         detarray[i]=int(det)
         #if det=0 for pixel other than 0th, increment and break
@@ -70,19 +68,46 @@ def getdetectors(config, idx, pxheaderlen, headstream):
             break
         #otherwise pull next stream to move index and continue
         else:
-            readlength=pxlen-pxheaderlen
-            locstream, j = parser.getstream(self,j,readlength)
+            idx+=pxlen-pxheaderlen
             i+=1
 
     return detarray[:i]
 
 
+def readpxheader(headstream):
+    """"
+    Pixel Record
+    Note: not name/value pairs for file size reasons. The pixel record header is the only record type name/value pair, for easier processing. We are keeping separate records for separate detectors, since the deadtime information will also be per detector per pixel.
+        1.	Record type pair  "DP", Length of pixel data record in bytes ( 4 byte int)
+        2.	X                          Horizontal pixel index (2 byte int)
+        3.	Y                          Vertical pixel index (2 byte int)
+        4.	Detector               Data in this record is for this detector (2 byte int)
+        5.	Deadtime             Deadtime for this pixel (4 byte float)
+        6.	Data (for each channel with data up to maximum channel index)
+            a.	Channel     Channel index (0- Max Chan) (2 byte int)
+            b.	Count         Event counts in channel (2 byte int)
 
+    #   concise format:
+    #   DP  len     X       Y       det     dt  DATA
+    #   2c  4i     2i       2i      2i      4f
+    """
+    """
+    Read binary with struct
+    https://stackoverflow.com/questions/8710456/reading-a-binary-file-with-python
+    Read binary as chunks
+    https://stackoverflow.com/questions/71978290/python-how-to-read-binary-file-by-chunks-and-specify-the-beginning-offset
+    """
 
+    #unpack the header
+    #   faster to unpack into temp variables vs directly into object attrs. not sure why atm
+    pxflag0, pxflag1, pxlen, xidx, yidx, det, dt = pxheadstruct.unpack(headstream)
 
+    #   check for pixel start flag "DP":
+    pxflag=pxflag0+pxflag1
+    if not (pxflag == b'DP'):
+        raise ValueError(f"ERROR: pixel flag 'DP' expected but not found")
 
-
-
+    return pxlen, xidx, yidx, det, dt
 
 
 
@@ -129,66 +154,8 @@ def writefileheader(config, xfmap):
     #   .: only one in dict to write to second file
     #   think we can ignore this, the info is not used, but header is different when rewritten
 
-def getstream(xfmap, idx, length):
 
-    #if we have enough remaining in the chunk, proceed (CHECK not sure if > or >=)
-    if not idx+length > xfmap.streamlen:    
-        locstream=xfmap.stream[idx:idx+length]
-        idx=idx+length
-    else:   #if step would exceed chunk
-        #read the remainder of the chunk
-        locstream=xfmap.stream[idx:xfmap.streamlen]
-        #store the length read
-        gotlen=xfmap.streamlen-idx  
 
-        #load next chyunk and update xfmap idx
-        xfmap.nextchunk() 
-
-        #load the remainder of the pixel
-        locstream+=xfmap.stream[0:length-gotlen]
-
-        idx = length - gotlen
-
-    if len(locstream) < length:
-        raise ValueError("FATAL: received stream shorter than expected, unexpected EOF")
-
-    return locstream, idx
-
-def readpxheader(headstream, config, readlength, xfmap):
-    """"
-    Pixel Record
-    Note: not name/value pairs for file size reasons. The pixel record header is the only record type name/value pair, for easier processing. We are keeping separate records for separate detectors, since the deadtime information will also be per detector per pixel.
-        1.	Record type pair  "DP", Length of pixel data record in bytes ( 4 byte int)
-        2.	X                          Horizontal pixel index (2 byte int)
-        3.	Y                          Vertical pixel index (2 byte int)
-        4.	Detector               Data in this record is for this detector (2 byte int)
-        5.	Deadtime             Deadtime for this pixel (4 byte float)
-        6.	Data (for each channel with data up to maximum channel index)
-            a.	Channel     Channel index (0- Max Chan) (2 byte int)
-            b.	Count         Event counts in channel (2 byte int)
-
-    #   concise format:
-    #   DP  len     X       Y       det     dt  DATA
-    #   2c  4i     2i       2i      2i      4f
-    """
-    """
-    Read binary with struct
-    https://stackoverflow.com/questions/8710456/reading-a-binary-file-with-python
-    Read binary as chunks
-    https://stackoverflow.com/questions/71978290/python-how-to-read-binary-file-by-chunks-and-specify-the-beginning-offset
-    """
-    headstream=headstream[:readlength]
-
-    #unpack the header
-    #   faster to unpack into temp variables vs directly into object attrs. not sure why atm
-    pxflag0, pxflag1, pxlen, xidx, yidx, det, dt = xfmap.headstruct.unpack(headstream)
-
-    #   check for pixel start flag "DP":
-    pxflag=pxflag0+pxflag1
-    if not (pxflag == b'DP'):
-        raise ValueError(f"ERROR: pixel flag 'DP' expected but not found for pixel {xfmap.pxidx}")
-
-    return pxlen, xidx, yidx, det, dt
 
 def readpxdata(locstream, config, readlength):
 
