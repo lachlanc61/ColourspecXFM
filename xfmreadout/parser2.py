@@ -13,9 +13,19 @@ class MapDone(Exception): pass
 
 pxheadstruct=struct.Struct("<ccI3Hf")
 
+def getbuffer(infile, chunksize):
+    buffer = obj.MapBuffer(infile, chunksize)
+
+    if buffer.len < buffer.chunksize:
+        print("\n NOTE: final chunk")
+    
+    if not buffer.data:
+        print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
+        raise MapDone
+
+    return buffer      
 
 def getstream(buffer, idx, length):
-
     #if we have enough remaining in the chunk, proceed (CHECK not sure if > or >=)
     if not idx+length > buffer.len:    
         stream=buffer.data[idx:idx+length]
@@ -26,7 +36,7 @@ def getstream(buffer, idx, length):
         #store the length read
         gotlen=buffer.len-idx  
 
-        buffer = buffer.source.newbuffer() 
+        buffer = getbuffer(buffer.infile, buffer.chunksize) 
 
         #load the remainder of the pixel
         stream+=buffer.data[0:length-gotlen]
@@ -167,8 +177,11 @@ def readpxdata(locstream, config, readlength):
 
 def indexmap(xfmap, pixelseries):
     try:
-        buffer = xfmap.genbuffer()
-        fidx = xfmap.headerlen
+
+        xfmap.resetfile()
+        buffer = getbuffer(xfmap.infile, xfmap.chunksize)
+        fidx = xfmap.datastart
+
         while True:
 
             """
@@ -176,7 +189,7 @@ def indexmap(xfmap, pixelseries):
             """
             raise MapDone
     except MapDone:
-        return pxseries
+        return pixelseries
 
 
 

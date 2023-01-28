@@ -13,32 +13,6 @@ import xfmreadout.parser2 as parser
 
 #class MapDone(Exception): pass
 
-
-class MapBuffer:
-    """
-    Object holding current chunk of file for processing
-    """
-    def __init__(self, xfmap):
-        """
-        NB: buffers need to have a source -> should refer back to xfmap
-
-        xfmap is the file object, it stores the file pointer etc
-            everything that reads/writes to the actual file should happen via methods on xfmap
-
-        ie. nextchunk, resets etc
-        """
-        self.source = xfmap
-        self.chunksize = xfmap.chunksize
-        self.len = 0
-        try:
-            self.data, self.fileidx = xfmap.readin() 
-            self.len = len(self.data)
-        except:
-            raise EOFError(f"No data to load from {xfmap.infile}")
-        
-        return
-
-
 class MapBuffer:
     """
     Object holding current chunk of file for processing
@@ -80,7 +54,10 @@ class Xfmap:
         #get total size of file to parse
         self.fullsize = os.path.getsize(fi)
         self.chunksize = int(config['chunksize'])*int(config['MBCONV'])
-        self.fileidx=0
+        self.fidx=self.infile.tell()
+
+        if self.fidx != 0:
+            raise ValueError(f"File pointer at {self.fidx} - Expected 0 (start of file)")
 
         """
         #generate initial bytestream
@@ -99,10 +76,10 @@ class Xfmap:
         """
 
         #read the beginning of the file into buffer
-        buffer = self.newbuffer()
+        buffer = parser.getbuffer(self.infile, self.chunksize)
 
         #read the JSON header and store position of first pixel
-        self.headerdict, self.recordstart, buffer = parser.readjsonheader(buffer, 0)
+        self.headerdict, self.datastart, buffer = parser.readjsonheader(buffer, 0)
         
         #try to assign values from header
         try:
@@ -130,39 +107,14 @@ class Xfmap:
         self.numpx = self.xres*self.yres        #expected number of pixels
         self.PXHEADERLEN=config['PXHEADERLEN'] 
 
-        self.detarray = parser.getdetectors(buffer, self.recordstart, self.PXHEADERLEN)
+        self.detarray = parser.getdetectors(buffer, self.datastart, self.PXHEADERLEN)
         self.ndet = max(self.detarray)+1
 
         self.resetfile()
         return
 
-    def readin(self):
-        datstart = self.fidx
-        data = self.infile.read(self.chunksize)
-        self.fidx+=self.chunksize
-
-        if self.fidx != self.infile.tell():
-            raise ValueError("Mismatch between file pointer and file index")
-
-        return data, datstart
-
     def resetfile(self):
         self.infile.seek(0)
-        self.fidx=0
-
-    def newbuffer(self):
-        buffer=MapBuffer(self)
-
-        if buffer.len < buffer.chunksize:
-            print("\n NOTE: final chunk")
-        
-        if not buffer.data:
-            print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-            raise parser.MapDone
-
-        return buffer        
-
-
 
     def closefiles(self, config):
         self.infile.close()
