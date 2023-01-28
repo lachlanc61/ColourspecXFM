@@ -4,7 +4,7 @@ import numpy as np
 import xfmreadout.utils as utils
 import xfmreadout.colour as colour
 import xfmreadout.clustering as clustering
-import xfmreadout.obj as obj
+import xfmreadout.structures as structures
 import xfmreadout.dtops as dtops
 import xfmreadout.bufferops as bufferops
 import xfmreadout.parser as parser
@@ -49,12 +49,12 @@ starttime = time.time()             #init timer
 #initialise map object
 #   parses header into map.headerdict
 #   places pointer (map.idx) at start of first pixel record
-xfmap = obj.Xfmap(config, dirs.fi, dirs.fsub)
+xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub)
 
 #initialise the spectrum-by-pixel object
 #       pre-creates all arrays for storing data, pixel header values etc
 #       WARNING: big memory spike here if map is large
-pixelseries = obj.PixelSeries(config, xfmap, xfmap.numpx, xfmap.detarray)
+pixelseries = structures.PixelSeries(config, xfmap, xfmap.numpx, xfmap.detarray)
 
 #start a timer
 starttime = time.time() 

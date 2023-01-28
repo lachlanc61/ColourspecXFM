@@ -7,7 +7,7 @@ TEST_DIR=os.path.realpath(os.path.dirname(__file__))
 BASE_DIR=os.path.dirname(TEST_DIR)
 sys.path.append(BASE_DIR)
 
-import xfmreadout.obj as obj
+import xfmreadout.structures as structures
 import xfmreadout.utils as utils
 import xfmreadout.bufferops as parser
 
@@ -26,7 +26,7 @@ config, fi, fname, fsub, odir = utils.initf(config)
 #define the map object fixture
 @pytest.fixture
 def xfmap():   
-    return obj.Xfmap(config, fi, fsub)
+    return structures.Xfmap(config, fi, fsub)
 
 def test_stream_break_body(xfmap):
     """

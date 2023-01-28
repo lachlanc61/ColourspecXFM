@@ -6,7 +6,7 @@ import copy
 
 import xfmreadout.byteops as byteops
 import xfmreadout.dtops as dtops
-import xfmreadout.obj as obj
+import xfmreadout.structures as structures
 import xfmreadout.parser as parser
 
 

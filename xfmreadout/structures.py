@@ -12,10 +12,6 @@ import xfmreadout.bufferops as bufferops
 import xfmreadout.parser as parser
 
 
-#class parser.MapDone(Exception): pass
-
-
-
 
 
 #CLASSES
@@ -179,7 +175,7 @@ class Xfmap:
                     #stop when pixel index greater than expected no. pixels
                     if (self.pxidx >= (self.numpx-1)):
                         print(f"\nENDING AT: Row {self.rowidx}/{self.yres} at pixel {self.pxidx}")
-                        raise obj.parser.MapDone
+                        raise parser.MapDone
 
                     #print pixel index at end of every row
                     if self.pxidx % self.xres == (self.xres-1): 
