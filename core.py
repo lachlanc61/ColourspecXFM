@@ -6,6 +6,7 @@ import xfmreadout.colour as colour
 import xfmreadout.clustering as clustering
 import xfmreadout.obj as obj
 import xfmreadout.dtops as dtops
+import xfmreadout.bufferops as bufferops
 import xfmreadout.parser as parser
 
 """
@@ -58,7 +59,7 @@ pixelseries = obj.PixelSeries(config, xfmap, xfmap.numpx, xfmap.detarray)
 #start a timer
 starttime = time.time() 
 
-bufferops.indexmap(xfmap, pixelseries)
+parser.indexmap(xfmap, pixelseries)
 
 
 

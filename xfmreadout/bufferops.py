@@ -43,6 +43,8 @@ def getstream(buffer, idx, length):
 
         idx = length - gotlen
 
+        a=1
+
     if len(stream) < length:
         raise ValueError("FATAL: received stream shorter than expected")
 
@@ -191,32 +193,6 @@ def endpx(pxidx, idx, buffer, xfmap, pixelseries):
     return pxidx
 
 
-def indexmap(xfmap, pixelseries):
-    try:
-
-        xfmap.resetfile()
-        buffer = getbuffer(xfmap.infile, xfmap.chunksize)
-        idx = xfmap.datastart
-        pxidx=0
-        while True:
-
-            headstream, idx, buffer = getstream(buffer, idx, xfmap.PXHEADERLEN)
-            
-            pxlen, xidx, yidx, det, dt = readpxheader(headstream)
-            
-            pixelseries = pixelseries.receiveheader(pxidx, pxlen, xidx, yidx, det, dt)
-            
-            #use getstream to step to the next pixel and handle end-of-buffer events
-            __, idx, buffer = getstream(buffer, idx, pxlen-xfmap.PXHEADERLEN)
-
-            if det == xfmap.maxdet:
-                pxidx = endpx(pxidx, idx, buffer, xfmap, pixelseries)
-
-    except MapDone:
-        pixelseries.npx=pxidx+1
-        pixelseries.nrows=pixelseries.yidx[0,pxidx]+1 
-        xfmap.resetfile()
-        return pixelseries
 
 
 
