@@ -39,7 +39,7 @@ class Xfmap:
         holds: params read directly from file
         loads: byte stream from file, holds pointer
         methods to parse pixel header and body, manage memory via chunks
-            parser.py module contains subsidiary code to parse binary
+            bufferops.py module contains subsidiary code to parse binary
     """
     def __init__(self, config, fi, fo):
 
@@ -76,10 +76,10 @@ class Xfmap:
         """
 
         #read the beginning of the file into buffer
-        buffer = parser.getbuffer(self.infile, self.chunksize)
+        buffer = bufferops.getbuffer(self.infile, self.chunksize)
 
         #read the JSON header and store position of first pixel
-        self.headerdict, self.datastart, buffer = parser.readjsonheader(buffer, 0)
+        self.headerdict, self.datastart, buffer = bufferops.readjsonheader(buffer, 0)
         
         #try to assign values from header
         try:
@@ -107,7 +107,7 @@ class Xfmap:
         self.numpx = self.xres*self.yres        #expected number of pixels
         self.PXHEADERLEN=config['PXHEADERLEN'] 
 
-        self.detarray = parser.getdetectors(buffer, self.datastart, self.PXHEADERLEN)
+        self.detarray = bufferops.getdetectors(buffer, self.datastart, self.PXHEADERLEN)
         self.maxdet = max(self.detarray)
 
         self.resetfile()
@@ -148,24 +148,24 @@ class Xfmap:
         print("---------------------------")
 
         if config['WRITESUBMAP']:
-            parser.writefileheader(config, self)
+            bufferops.writefileheader(config, self)
 
         #https://stackoverflow.com/questions/16073396/breaking-while-loop-with-function
         try:
             while True:
                 
-                headstream, self.idx = parser.getstream(self,self.idx,self.PXHEADERLEN)
+                headstream, self.idx = bufferops.getstream(self,self.idx,self.PXHEADERLEN)
 
-                pxlen, xidx, yidx, det, dt = parser.readpxheader(headstream, config, self.PXHEADERLEN, self)
+                pxlen, xidx, yidx, det, dt = bufferops.readpxheader(headstream, config, self.PXHEADERLEN, self)
 
                 readlength=pxlen-self.PXHEADERLEN
 
                 pxseries = pxseries.receiveheader(self.pxidx, pxlen, xidx, yidx, det, dt)
             
-                locstream, self.idx = parser.getstream(self,self.idx,readlength)
+                locstream, self.idx = bufferops.getstream(self,self.idx,readlength)
 
                 if config['PARSEMAP']:
-                    chan, counts = parser.readpxdata(locstream, config, readlength)
+                    chan, counts = bufferops.readpxdata(locstream, config, readlength)
 
                     #fill gaps in spectrum 
                     #   (ie. assign all zero-count chans = 0)
@@ -183,8 +183,8 @@ class Xfmap:
                     pxseries.data[det,self.pxidx,:]=counts
 
                 if config['WRITESUBMAP'] and utils.pxinsubmap(config, xidx, yidx):
-                        parser.writepxheader(config, self, pxseries, det)
-                        parser.writepxrecord(locstream, readlength, self)
+                        bufferops.writepxheader(config, self, pxseries, det)
+                        bufferops.writepxrecord(locstream, readlength, self)
 
                 self.fullidx=self.chunkidx+self.idx
 

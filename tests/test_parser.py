@@ -9,7 +9,7 @@ sys.path.append(BASE_DIR)
 
 import xfmreadout.obj as obj
 import xfmreadout.utils as utils
-import xfmreadout.parser as parser
+import xfmreadout.bufferops as parser
 
 USER_CONFIG=os.path.join(TEST_DIR,'parser_config.yaml')
 PACKAGE_CONFIG=os.path.join(TEST_DIR,'parser_protocol.yaml')
@@ -46,7 +46,7 @@ def test_stream_break_body(xfmap):
     expected = expdata.read(expected_length)
 
     #run getstream
-    result, xfmap.idx = parser.getstream(xfmap,xfmap.idx,readlength)
+    result, xfmap.idx = bufferops.getstream(xfmap,xfmap.idx,readlength)
 
     assert result == expected
 
@@ -73,7 +73,7 @@ def test_stream_break_header(xfmap):
     expected = expdata.read(xfmap.PXHEADERLEN)
 
     #run getstream
-    result, xfmap.idx = parser.getstream(xfmap,xfmap.idx,xfmap.PXHEADERLEN)
+    result, xfmap.idx = bufferops.getstream(xfmap,xfmap.idx,xfmap.PXHEADERLEN)
 
     assert result == expected
 
@@ -91,7 +91,7 @@ def test_read_pxheader(xfmap):
     teststream = fi.read(xfmap.PXHEADERLEN)
 
     #run
-    pxlen, xidx, yidx, det, dt = parser.readpxheader(teststream, config, xfmap.PXHEADERLEN, xfmap)
+    pxlen, xidx, yidx, det, dt = bufferops.readpxheader(teststream, config, xfmap.PXHEADERLEN, xfmap)
 
     #format as list
     result = [pxlen, xidx, yidx, det, dt]
@@ -120,7 +120,7 @@ def EXCLUDEtest_read_pxdata(xfmap):
         raise ValueError("TEST STATE ERROR: unexpected length of input stream")
 
 
-    chan, counts = parser.readpxdata(teststream, config, pxlen-xfmap.PXHEADERLEN)
+    chan, counts = bufferops.readpxdata(teststream, config, pxlen-xfmap.PXHEADERLEN)
     
     breakpoint()
 

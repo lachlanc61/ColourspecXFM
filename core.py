@@ -58,7 +58,7 @@ pixelseries = obj.PixelSeries(config, xfmap, xfmap.numpx, xfmap.detarray)
 #start a timer
 starttime = time.time() 
 
-parser.indexmap(xfmap, pixelseries)
+bufferops.indexmap(xfmap, pixelseries)
 
 
 
