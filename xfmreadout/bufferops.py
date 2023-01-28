@@ -7,21 +7,38 @@ import copy
 import xfmreadout.byteops as byteops
 import xfmreadout.dtops as dtops
 import xfmreadout.obj as obj
+import xfmreadout.parser as parser
 
 
-class MapDone(Exception): pass
+
+class MapBuffer:
+    """
+    Object holding current chunk of file for processing
+    """
+    def __init__(self, infile, chunksize):
+        self.infile=infile
+        self.fidx = self.infile.tell()
+        self.chunksize=chunksize
+        self.len = 0
+        try:
+            self.data = self.infile.read(self.chunksize) 
+            self.len = len(self.data)
+        except:
+            raise EOFError(f"No data to load from {self.infile}")
+        
+        return
 
 pxheadstruct=struct.Struct("<ccI3Hf")
 
 def getbuffer(infile, chunksize):
-    buffer = obj.MapBuffer(infile, chunksize)
+    buffer = MapBuffer(infile, chunksize)
 
     if buffer.len < buffer.chunksize:
         print("\n NOTE: final chunk")
     
     if not buffer.data:
         print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-        raise MapDone
+        raise parser.MapDone
 
     return buffer      
 
@@ -176,21 +193,7 @@ def readpxdata(locstream, config, readlength):
     return(list(chan), list(counts))
 
 
-def endpx(pxidx, idx, buffer, xfmap, pixelseries):
-    #print pixel index at end of every row
-    row=pixelseries.yidx[0,pxidx]+1
 
-    if pxidx % xfmap.xres == (xfmap.xres-1): 
-        print(f"\rRow {row}/{xfmap.yres} at pixel {pxidx}, byte {buffer.fidx+idx} ({100*(buffer.fidx+idx)/xfmap.fullsize:.1f} %)", end='')
-        pass
-    #stop when pixel index greater than expected no. pixels
-    if (pxidx >= (xfmap.numpx-1)):
-        print(f"\nENDING AT: Row {row}/{xfmap.yres} at pixel {pxidx}")
-        raise MapDone
-
-    pxidx+=1
-
-    return pxidx
 
 
 

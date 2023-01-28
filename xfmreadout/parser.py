@@ -4,7 +4,7 @@ import xfmreadout.obj as obj
 import xfmreadout.bufferops as bufferops
 
 
-
+class MapDone(Exception): pass
 
 def endpx(pxidx, idx, buffer, xfmap, pixelseries):
     #print pixel index at end of every row
@@ -16,7 +16,7 @@ def endpx(pxidx, idx, buffer, xfmap, pixelseries):
     #stop when pixel index greater than expected no. pixels
     if (pxidx >= (xfmap.numpx-1)):
         print(f"\nENDING AT: Row {row}/{xfmap.yres} at pixel {pxidx}")
-        raise bufferops.MapDone
+        raise MapDone
 
     pxidx+=1
 
@@ -44,7 +44,7 @@ def indexmap(xfmap, pixelseries):
             if det == xfmap.maxdet:
                 pxidx = endpx(pxidx, idx, buffer, xfmap, pixelseries)
 
-    except bufferops.MapDone:
+    except MapDone:
         pixelseries.npx=pxidx+1
         pixelseries.nrows=pixelseries.yidx[0,pxidx]+1 
         xfmap.resetfile()

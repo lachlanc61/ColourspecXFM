@@ -12,24 +12,9 @@ import xfmreadout.bufferops as bufferops
 import xfmreadout.parser as parser
 
 
-#class MapDone(Exception): pass
+#class parser.MapDone(Exception): pass
 
-class MapBuffer:
-    """
-    Object holding current chunk of file for processing
-    """
-    def __init__(self, infile, chunksize):
-        self.infile=infile
-        self.fidx = self.infile.tell()
-        self.chunksize=chunksize
-        self.len = 0
-        try:
-            self.data = self.infile.read(self.chunksize) 
-            self.len = len(self.data)
-        except:
-            raise EOFError(f"No data to load from {self.infile}")
-        
-        return
+
 
 
 
@@ -194,7 +179,7 @@ class Xfmap:
                     #stop when pixel index greater than expected no. pixels
                     if (self.pxidx >= (self.numpx-1)):
                         print(f"\nENDING AT: Row {self.rowidx}/{self.yres} at pixel {self.pxidx}")
-                        raise obj.MapDone
+                        raise obj.parser.MapDone
 
                     #print pixel index at end of every row
                     if self.pxidx % self.xres == (self.xres-1): 
@@ -202,7 +187,7 @@ class Xfmap:
                         self.rowidx+=1
 
                     self.pxidx+=1    #next pixel
-        except MapDone:
+        except parser.MapDone:
             #store no. pixels and rows read successfully
             pxseries.npx=self.pxidx+1
             pxseries.nrows=self.rowidx+1 
@@ -223,7 +208,7 @@ class Xfmap:
 
         if not self.stream:
             print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-            raise MapDone
+            raise parser.MapDone
 
 
 
