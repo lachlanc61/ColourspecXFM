@@ -57,7 +57,7 @@ class MapBuffer:
         if cache_flag:
             self.cache()
 
-        time.sleep(5)
+        #time.sleep(5)
         return
 
     def cache(self):
@@ -67,13 +67,14 @@ class MapBuffer:
         self.process.start()
 
     def retrieve(self):
-        time.sleep(2)
+#        time.sleep(2)
         print('Retrieving...')
         nextdata=self.pipe_parent.recv()
         nextfidx=self.pipe_parent.recv()
         self.process.join()    
         self.pipe_parent.close
         self.pipe_child.close
+        #self.process.close()
 
         self.data = nextdata
         self.fidx = nextfidx
@@ -94,6 +95,15 @@ class MapBuffer:
             raise parser.MapDone
 
         return
+
+    def wait(self):
+        """
+        wait for running cache to complete
+        """
+        #need to receive sends first, otherwise will not complete
+        ___=self.pipe_parent.recv()
+        ___=self.pipe_parent.recv()
+        self.process.join()
 
 def spawnloadbuffer(infile, chunksize):
     parent_end, child_end = mp.Pipe()

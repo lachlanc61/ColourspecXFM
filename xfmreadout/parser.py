@@ -53,5 +53,6 @@ def indexmap(xfmap, pixelseries):
     except MapDone:
         pixelseries.npx=pxidx+1
         pixelseries.nrows=pixelseries.yidx[0,pxidx]+1 
+        buffer.wait()
         xfmap.resetfile()
         return pixelseries, indexlist
