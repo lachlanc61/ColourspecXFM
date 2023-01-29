@@ -3,6 +3,7 @@ import os
 import numpy as np
 import json
 import copy
+import time
 
 import xfmreadout.utils as utils
 import xfmreadout.colour as colour
@@ -58,7 +59,7 @@ class Xfmap:
         """
 
         #read the beginning of the file into buffer
-        buffer = bufferops.getbuffer(self.infile, self.chunksize)
+        buffer = bufferops.MapBuffer(self.infile, self.chunksize)
 
         #read the JSON header and store position of first pixel
         self.headerdict, self.datastart, buffer = bufferops.readjsonheader(buffer, 0)
@@ -92,6 +93,7 @@ class Xfmap:
         self.detarray = bufferops.getdetectors(buffer, self.datastart, self.PXHEADERLEN)
         self.maxdet = max(self.detarray)
 
+        time.sleep(5)
         self.resetfile()
         return
 

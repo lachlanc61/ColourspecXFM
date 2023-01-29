@@ -24,11 +24,12 @@ def endpx(pxidx, idx, buffer, xfmap, pixelseries):
 
 
 def indexmap(xfmap, pixelseries):
+    print("BEGIN INDEXING")
     try:
         indexlist=np.zeros((pixelseries.ndet,xfmap.npx),dtype=np.uint64)
 
         xfmap.resetfile()
-        buffer = bufferops.getbuffer(xfmap.infile, xfmap.chunksize)
+        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
         idx = xfmap.datastart
         pxheaderlen = xfmap.PXHEADERLEN
 

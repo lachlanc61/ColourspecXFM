@@ -19,6 +19,14 @@ this = sys.modules[__name__]
 
 pxheadstruct = struct.Struct("<ccI3Hf")
 
+
+def worker(infile, chunksize, conn):
+    nextbuffer=MapBuffer(infile, chunksize)
+    conn.send(nextbuffer.data)
+    conn.send(nextbuffer.fidx)
+    conn.close()
+    #should wait here until received
+
 class MapBuffer:
     """
     Object holding current chunk of file for processing
@@ -26,6 +34,12 @@ class MapBuffer:
     def __init__(self, infile, chunksize):
         self.infile=infile
         self.fidx = self.infile.tell()
+
+        if (self.fidx == 0):
+            cache_flag = True
+        else:
+            cache_flag = False
+
         self.chunksize=chunksize
         self.len = 0
         try:
@@ -33,17 +47,53 @@ class MapBuffer:
             self.len = len(self.data)
             time.sleep(0.1)
             print(f"\nloading buffer at {self.fidx}")
-            time.sleep(5)
+            time.sleep(2)
             print(f"loaded buffer at {self.fidx}\n")               
         except:
             raise EOFError(f"No data to load from {self.infile}")
 
+        self.check()
+
+        if cache_flag:
+            self.cache()
+
+        time.sleep(5)
         return
 
+    def cache(self):
+        print('Caching...')
+        self.pipe_parent, self.pipe_child = mp.Pipe()   
+        self.process = mp.Process(target=worker, args=(self.infile, self.chunksize, self.pipe_child))
+        self.process.start()
 
-def worker(infile, chunksize, conn):
-    nextbuffer=MapBuffer(infile, chunksize)
-    conn.send(nextbuffer)
+    def retrieve(self):
+        time.sleep(2)
+        print('Retrieving...')
+        nextdata=self.pipe_parent.recv()
+        nextfidx=self.pipe_parent.recv()
+        self.process.join()    
+        self.pipe_parent.close
+        self.pipe_child.close
+
+        self.data = nextdata
+        self.fidx = nextfidx
+        self.len = len(nextdata)
+
+        time.sleep(1)       #wait a moment to ensure the subprocess closes
+        print('Retrieved, caching next...')
+        self.cache()
+
+        return self
+
+    def check(self):
+        if self.len < self.chunksize:
+            print("\n NOTE: final chunk")
+        
+        if self.data == "":
+            print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
+            raise parser.MapDone
+
+        return
 
 def spawnloadbuffer(infile, chunksize):
     parent_end, child_end = mp.Pipe()
@@ -83,29 +133,6 @@ def getbuffer_parralel(infile, chunksize):
 
     return buffer      
 
-
-
-
-
-
-"""
-def preloadbuffer(infile, chunksize):
-    nextbuffer=MapBuffer(infile, chunksize)
-
-    Q.put(nextbuffer)
-
-def spawnloadbuffer(infile, chunksize):
-    process = Process(target=preloadbuffer, args=(infile, chunksize))
-    process.start()
-    print('Waiting...')
-    print(Q.get())
-    process.join()    
-
-    nextbuffer=0
-
-    return nextbuffer
-"""
-
 def getbuffer(infile, chunksize):
     """
     loads and checks buffers
@@ -143,7 +170,7 @@ def getstream(buffer, idx, length):
         #store the length read
         gotlen=buffer.len-idx  
 
-        buffer = getbuffer(buffer.infile, buffer.chunksize) 
+        buffer = buffer.retrieve()
 
         #load the remainder of the pixel
         stream+=buffer.data[0:length-gotlen]
