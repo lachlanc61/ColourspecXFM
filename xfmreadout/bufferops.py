@@ -19,8 +19,17 @@ this = sys.modules[__name__]
 
 pxheadstruct = struct.Struct("<ccI3Hf")
 
-
 def worker(infile, chunksize, conn):
+    """
+    Worker for multiprocess
+        loads new buffer object in a subprocess to cache it 
+        then sends data and file index via pipe to MapBuffer.retrieve()
+            will hold open until data is received
+            to take data as dummy and close, use MapBuffer.wait()
+    
+    NB: reads from infile concurrently, make sure completed before main
+        reinitialises buffer or moves file head
+    """
     nextbuffer=MapBuffer(infile, chunksize)
     conn.send(nextbuffer.data)
     conn.send(nextbuffer.fidx)
@@ -45,10 +54,9 @@ class MapBuffer:
         try:
             self.data = self.infile.read(self.chunksize) 
             self.len = len(self.data)
+            #print(f"\nloading buffer at {self.fidx}")
             time.sleep(0.1)
-            print(f"\nloading buffer at {self.fidx}")
-            time.sleep(2)
-            print(f"loaded buffer at {self.fidx}\n")               
+            #print(f"loaded buffer at {self.fidx}\n")               
         except:
             raise EOFError(f"No data to load from {self.infile}")
 
@@ -57,37 +65,48 @@ class MapBuffer:
         if cache_flag:
             self.cache()
 
-        #time.sleep(5)
         return
 
     def cache(self):
-        print('Caching...')
+        """
+        Spawn new multiprocess to pre-load next chunk
+        Create a pipe to transfer newly loaded chunk
+        """
+        #print('Caching...')
         self.pipe_parent, self.pipe_child = mp.Pipe()   
         self.process = mp.Process(target=worker, args=(self.infile, self.chunksize, self.pipe_child))
         self.process.start()
 
     def retrieve(self):
-#        time.sleep(2)
-        print('Retrieving...')
+        """
+        Receives data and file index from next chunk preloaded by Multiprocess
+
+            Waits for process to complete, close pipes
+            Assign new data to current buffer
+            Begin caching next chunk
+        """
+        #print('Retrieving...')
         nextdata=self.pipe_parent.recv()
         nextfidx=self.pipe_parent.recv()
         self.process.join()    
         self.pipe_parent.close
         self.pipe_child.close
-        #self.process.close()
 
         self.data = nextdata
         self.fidx = nextfidx
         self.len = len(nextdata)
 
-        time.sleep(1)       #wait a moment to ensure the subprocess closes
-        print('Retrieved, caching next...')
+        #print('Retrieved, caching next...')
         self.cache()
 
         return self
 
     def check(self):
-        if self.len < self.chunksize:
+        """
+        simple sanity checks/readouts on self
+            run after new chunk is loaded
+        """
+        if self.len < self.chunksize and not self.len == 0:
             print("\n NOTE: final chunk")
         
         if self.data == "":
@@ -104,70 +123,6 @@ class MapBuffer:
         ___=self.pipe_parent.recv()
         ___=self.pipe_parent.recv()
         self.process.join()
-
-def spawnloadbuffer(infile, chunksize):
-    parent_end, child_end = mp.Pipe()
-    process = mp.Process(target=worker, args=(infile, chunksize, child_end))
-    process.start()
-    print('Loading next...')
-    nextbuffer=parent_end.recv()
-    process.join()    
-
-    return nextbuffer
-
-
-
-def getbuffer_parralel(infile, chunksize):
-    """
-    loads and checks buffers
-        preloads next buffer via module local namespace
-
-    suspect this could be done more cleanly via a method in MapBuffer
-    """
-
-    if (infile.tell() == 0):
-        buffer = MapBuffer(infile, chunksize)
-        #this.nextbuffer=MapBuffer(infile, chunksize)
-        this.nextbuffer = spawnloadbuffer(infile, chunksize)
-    else:
-        buffer=this.nextbuffer
-        #this.nextbuffer=MapBuffer(infile, chunksize)
-        this.nextbuffer = spawnloadbuffer(infile, chunksize)
-
-    if buffer.len < buffer.chunksize:
-        print("\n NOTE: final chunk")
-    
-    if not buffer.data:
-        print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-        raise parser.MapDone
-
-    return buffer      
-
-def getbuffer(infile, chunksize):
-    """
-    loads and checks buffers
-        preloads next buffer via module local namespace
-
-    suspect this could be done more cleanly via a method in MapBuffer
-    """
-
-    if (infile.tell() == 0):
-        buffer = MapBuffer(infile, chunksize)
-        this.nextbuffer=MapBuffer(infile, chunksize)
-        #this.nextbuffer = spawnloadbuffer(infile, chunksize)
-    else:
-        buffer=this.nextbuffer
-        this.nextbuffer=MapBuffer(infile, chunksize)
-        #this.nextbuffer = spawnloadbuffer(infile, chunksize)
-
-    if buffer.len < buffer.chunksize:
-        print("\n NOTE: final chunk")
-    
-    if not buffer.data:
-        print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-        raise parser.MapDone
-
-    return buffer      
 
 def getstream(buffer, idx, length):
     #if we have enough remaining in the chunk, proceed (CHECK not sure if > or >=)

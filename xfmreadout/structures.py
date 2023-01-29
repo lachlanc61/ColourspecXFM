@@ -94,8 +94,6 @@ class Xfmap:
         self.maxdet = max(self.detarray)
 
         buffer.wait()
-        print("wait complete")
-        time.sleep(5)
         self.resetfile()
         return
 

@@ -61,6 +61,19 @@ starttime = time.time()
 
 pixelseries, indexlist = parser.indexmap(xfmap, pixelseries)
 
+runtime = time.time() - starttime
+
+print(
+"---------------------------\n"
+"MAP COMPLETE\n"
+"---------------------------\n"
+f"dimensions expected (x,y): {xfmap.xres},{xfmap.yres}\n"
+f"pixels expected (X*Y): {xfmap.npx}\n"
+f"pixels found: {pixelseries.npx}\n"
+f"total time: {round(runtime,2)} s\n"
+f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
+"---------------------------"
+)
 
 exit()
 
