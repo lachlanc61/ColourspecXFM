@@ -252,6 +252,32 @@ def readpxheader(headstream):
     return pxlen, xidx, yidx, det, dt
 
 
+def readpxdata(stream, readlength, bytesperchan):
+
+    #initialise channel index and result arrays
+    chan=np.zeros(int((readlength)/bytesperchan), dtype=int)
+    counts=np.zeros(int((readlength)/bytesperchan), dtype=int)
+
+    #generate struct object for reading
+    fmt= "<%dH" % ((readlength) // bytesperchan/2)
+    chanstruct=struct.Struct(fmt)
+
+    #use it to read the channel data
+    chandata=chanstruct.unpack(stream[:readlength])
+
+    #take even indexes for channels
+    chan=chandata[::2]
+    
+    #take odd indexes for counts
+    counts=chandata[1::2]
+
+    #return as lists
+    return(list(chan), list(counts))
+
+
+
+
+"""
 def readpxdata(locstream, config, readlength):
 
     #initialise channel index and result arrays
@@ -273,10 +299,7 @@ def readpxdata(locstream, config, readlength):
 
     #return as lists
     return(list(chan), list(counts))
-
-
-
-
+"""
 
 
 

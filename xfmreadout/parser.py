@@ -2,6 +2,8 @@ import numpy as np
 
 import xfmreadout.structures as structures
 import xfmreadout.bufferops as bufferops
+import xfmreadout.utils as utils
+
 
 
 class MapDone(Exception): pass
@@ -23,7 +25,24 @@ def endpx(pxidx, idx, buffer, xfmap, pixelseries):
     return pxidx
 
 
+def initparse(xfmap):
+    """
+    unused for now
+    """
+    xfmap.resetfile()
+    buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
+    idx = xfmap.datastart
+    pxheaderlen = xfmap.PXHEADERLEN    
+
+    return buffer, idx, pxheaderlen
+
 def indexmap(xfmap, pixelseries):
+    """
+    parse the pixel headers
+    - get pixel statistics
+    index the file
+    """
+
     print("BEGIN INDEXING")
     try:
         indexlist=np.zeros((pixelseries.ndet,xfmap.npx),dtype=np.uint64)
@@ -31,7 +50,7 @@ def indexmap(xfmap, pixelseries):
         xfmap.resetfile()
         buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
         idx = xfmap.datastart
-        pxheaderlen = xfmap.PXHEADERLEN
+        pxheaderlen = xfmap.PXHEADERLEN    
 
         pxidx=0
         while True:
@@ -56,3 +75,43 @@ def indexmap(xfmap, pixelseries):
         buffer.wait()
         xfmap.resetfile()
         return pixelseries, indexlist
+
+
+
+def parse(xfmap, pixelseries, indexlist):
+    """
+    read in the map data after indexing
+
+    NB. no longer getting sum from parser, do this in postana using pixelseries.data
+    """
+    try:
+        xfmap.resetfile()
+        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
+        idx = xfmap.datastart
+        pxheaderlen = xfmap.PXHEADERLEN
+        bytesperchan = xfmap.BYTESPERCHAN
+
+        for pxidx in range(pixelseries.npx):
+            for det in range(pixelseries.ndet):
+
+                byteindex=indexlist[det,pxidx]+pxheaderlen
+                if not det == pixelseries.det[det,pxidx]:
+                    raise ValueError(f"Detector mistmatch at (det,pixel) = ({det},{pxidx})")
+                
+                #NB DOES NOT WORK YET: byteindex being used as idx, need to rebuild this
+                #   need a handler for buffer vs specific byteindexes
+                stream, idx, buffer=bufferops.getstream(buffer, byteindex, pxheaderlen)
+                chan, counts = bufferops.readpxdata(stream, pixelseries.pxlen[det,pxidx], bytesperchan)
+                chan, counts = utils.gapfill(chan,counts, xfmap.nchannels)  #<-should probably go in readpxdata
+                pixelseries.data[det,pxidx,:]=counts
+
+
+            ___ = endpx(pxidx, idx, buffer, xfmap, pixelseries)
+    except MapDone:
+        if not pixelseries.npx == pxidx:
+            raise ValueError(f"Index mistmatch ({pixelseries.npx}) vs ({pxidx})")
+        if not pixelseries.nrows == pixelseries.yidx[0,pxidx]+1:
+            raise ValueError(f"Index mistmatch ({pixelseries.nrows}) vs ({pixelseries.yidx[0,pxidx]+1})")
+        buffer.wait()
+        xfmap.resetfile()
+        return pixelseries

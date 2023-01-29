@@ -88,7 +88,10 @@ class Xfmap:
 
         #derived vars
         self.npx = self.xres*self.yres        #expected number of pixels
+
+        #config constants
         self.PXHEADERLEN=config['PXHEADERLEN'] 
+        self.BYTESPERCHAN=config['BYTESPERCHAN'] 
 
         self.detarray = bufferops.getdetectors(buffer, self.datastart, self.PXHEADERLEN)
         self.maxdet = max(self.detarray)
