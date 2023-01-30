@@ -124,7 +124,7 @@ class MapBuffer:
         ___=self.pipe_parent.recv()
         self.process.join()
 
-def getstream(buffer, idx, length):
+def getstream(buffer, idx: int, length: int):
     #if we have enough remaining in the chunk, proceed (CHECK not sure if > or >=)
     if not idx+length > buffer.len:    
         stream=buffer.data[idx:idx+length]
@@ -148,6 +148,17 @@ def getstream(buffer, idx, length):
         raise ValueError("FATAL: received stream shorter than expected")
 
     return stream, idx, buffer
+
+
+def pullstream(buffer, start: int, length: int, pxheaderlen: int):
+    if start < buffer.fidx:
+        raise ValueError(f"pixel start {start} not in current buffer beginning {buffer.fidx}") 
+    else:
+        stream=buffer.data[int(start+pxheaderlen-buffer.fidx):int(start+length-buffer.fidx)]
+
+    return stream
+
+
 
 
 def getdetectors(buffer, idx, pxheaderlen):
@@ -259,8 +270,11 @@ def readpxdata(stream, readlength, bytesperchan):
     counts=np.zeros(int((readlength)/bytesperchan), dtype=int)
 
     #generate struct object for reading
-    fmt= "<%dH" % ((readlength) // bytesperchan/2)
+    fmt= "<%dH" % ((readlength) // (bytesperchan/2))
     chanstruct=struct.Struct(fmt)
+
+    if len(stream) != readlength:
+        raise ValueError("stream size does not match struct")
 
     #use it to read the channel data
     chandata=chanstruct.unpack(stream[:readlength])

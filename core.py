@@ -61,6 +61,8 @@ starttime = time.time()
 
 pixelseries, indexlist = parser.indexmap(xfmap, pixelseries)
 
+pixelseries = parser.parse(xfmap, pixelseries, indexlist)
+
 runtime = time.time() - starttime
 
 print(
@@ -74,6 +76,7 @@ f"total time: {round(runtime,2)} s\n"
 f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
 "---------------------------"
 )
+
 
 exit()
 
@@ -175,4 +178,10 @@ refactored:
 dtops:
     read+parse              0.001184 s
     headers+write           0.00005 s
+
+parallelize - single proc:
+    index+parse             0.001219 s
+
+parallelize - multiproc:
+    index+parse             
 """

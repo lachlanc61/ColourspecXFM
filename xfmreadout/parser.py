@@ -59,7 +59,7 @@ def indexmap(xfmap, pixelseries):
             
             pxlen, xidx, yidx, det, dt = bufferops.readpxheader(headstream)
 
-            indexlist[det, pxidx] = idx-pxheaderlen
+            indexlist[det, pxidx] = buffer.fidx+idx-pxheaderlen
 
             pixelseries = pixelseries.receiveheader(pxidx, pxlen, xidx, yidx, det, dt)
             
@@ -94,21 +94,30 @@ def parse(xfmap, pixelseries, indexlist):
         for pxidx in range(pixelseries.npx):
             for det in range(pixelseries.ndet):
 
-                byteindex=indexlist[det,pxidx]+pxheaderlen
                 if not det == pixelseries.det[det,pxidx]:
                     raise ValueError(f"Detector mistmatch at (det,pixel) = ({det},{pxidx})")
                 
-                #NB DOES NOT WORK YET: byteindex being used as idx, need to rebuild this
-                #   need a handler for buffer vs specific byteindexes
-                stream, idx, buffer=bufferops.getstream(buffer, byteindex, pxheaderlen)
-                chan, counts = bufferops.readpxdata(stream, pixelseries.pxlen[det,pxidx], bytesperchan)
-                chan, counts = utils.gapfill(chan,counts, xfmap.nchannels)  #<-should probably go in readpxdata
-                pixelseries.data[det,pxidx,:]=counts
+                start=indexlist[det,pxidx]
+                pxlength=pixelseries.pxlen[det,pxidx]
 
+                try:
+                #should be able to parallelize pullstream + readpx+gapfill + assign
+                    if start+pxlength <= buffer.fidx + buffer.len:
+                        stream = bufferops.pullstream(buffer, start, pxlength, pxheaderlen)
+                    else:
+                        #join
+                        stream, ___, buffer=bufferops.getstream(buffer, int(start-buffer.fidx), pxlength)
 
+                    chan, counts = bufferops.readpxdata(stream, len(stream), bytesperchan)
+                    chan, counts = utils.gapfill(chan,counts, xfmap.nchannels)  #<-should probably go in readpxdata
+                except ValueError:
+                    print(f"{det}, {pxidx}")
+                    exit()
+                finally:
+                    pixelseries.data[det,pxidx,:]=counts
             ___ = endpx(pxidx, idx, buffer, xfmap, pixelseries)
     except MapDone:
-        if not pixelseries.npx == pxidx:
+        if not pixelseries.npx == pxidx+1:
             raise ValueError(f"Index mistmatch ({pixelseries.npx}) vs ({pxidx})")
         if not pixelseries.nrows == pixelseries.yidx[0,pxidx]+1:
             raise ValueError(f"Index mistmatch ({pixelseries.nrows}) vs ({pixelseries.yidx[0,pxidx]+1})")
