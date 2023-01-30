@@ -61,6 +61,8 @@ try:
     pixelseries, indexlist = parser.indexmap(xfmap, pixelseries)
 
     pixelseries = parser.parse(xfmap, pixelseries, indexlist)
+
+    parser.writemap(xfmap, pixelseries) #not implemented yet
 finally:
     xfmap.closefiles(config)
 

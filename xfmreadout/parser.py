@@ -123,3 +123,13 @@ def parse(xfmap, pixelseries, indexlist):
         buffer.wait()
         xfmap.resetfile()
         return pixelseries
+
+
+def writemap(xfmap, pixelseries):
+    """
+    write a map or submap
+        cropping coordinates and updating headers/pxheaders
+            and/or
+        filling/predicting/correcting deadtimes when missing
+    """
+    pass
