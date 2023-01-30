@@ -173,7 +173,9 @@ OO:
     chunk parsing:          0.002505 s
 
 refactored:
-    parse+write:             0.000643 s
+    parse+write:            0.000643 s
+main #147424d 26/11/2022
+    parse                   0.001215
 
 dtops:
     read+parse              0.001184 s
