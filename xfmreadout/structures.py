@@ -227,8 +227,12 @@ class PixelSeries:
         self.xidx=np.zeros((self.ndet,npx),dtype=np.uint16)
         self.yidx=np.zeros((self.ndet,npx),dtype=np.uint16)
         self.det=np.zeros((self.ndet,npx),dtype=np.uint16)
-        self.sum=np.zeros((self.ndet,npx),dtype=np.uint32)        
         self.dt=np.zeros((self.ndet,npx),dtype=np.float32)
+
+        #initalise derived arrays
+        self.flattened=np.zeros((self.ndet,npx),dtype=np.uint32) 
+        self.sum=np.zeros((self.ndet,npx),dtype=np.uint32)   
+        self.flatsum=np.zeros((self.ndet,npx),dtype=np.uint32) 
 
         #create colour-associated attrs even if not doing colours
         self.rvals=np.zeros(npx)
@@ -254,6 +258,13 @@ class PixelSeries:
         self.det[det,pxidx]=det
         self.dt[det,pxidx]=dt
         
+        return self
+
+    def get_derived(self):
+        self.flattened = np.sum(self.data, axis=0, dtype=np.uint32)
+        self.sum = np.sum(self.data, axis=2, dtype=np.uint32)
+        self.flatsum = np.sum(self.sum, axis=0, dtype=np.uint32)
+
         return self
 
     def flatten(self, data, detarray):

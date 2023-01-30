@@ -29,18 +29,17 @@ def postcalc(config, pixelseries, xfmap):
     dwell = xfmap.dwell
     ndet = pixelseries.ndet
 
-    mergedsum=np.sum(pixelseries.sum, axis=0)
     dtavg=np.sum(pixelseries.dt, axis=0)/ndet
 
-    if len(mergedsum) != len(dtavg):
+    if len(pixelseries.flatsum) != len(dtavg):
         raise ValueError("sum and dt array sizes differ")
 
     dtpred=np.zeros(len(dtavg),dtype=np.float32)
 
-    for i in range(len(mergedsum)):
-        dtpred[i]=predictdt(config, mergedsum[i], dwell, timeconst)
+    for i in range(len(pixelseries.flatsum)):
+        dtpred[i]=predictdt(config, pixelseries.flatsum[i], dwell, timeconst)
 
-    return dtpred, dtavg, mergedsum
+    return dtpred, dtavg
 
 
 def export(dir:str, dtpred, mergedsum):

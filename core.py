@@ -59,36 +59,11 @@ pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray)
 #start a timer
 starttime = time.time() 
 
-pixelseries, indexlist = parser.indexmap(xfmap, pixelseries)
-
-pixelseries = parser.parse(xfmap, pixelseries, indexlist)
-
-runtime = time.time() - starttime
-
-print(
-"---------------------------\n"
-"MAP COMPLETE\n"
-"---------------------------\n"
-f"dimensions expected (x,y): {xfmap.xres},{xfmap.yres}\n"
-f"pixels expected (X*Y): {xfmap.npx}\n"
-f"pixels found: {pixelseries.npx}\n"
-f"total time: {round(runtime,2)} s\n"
-f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
-"---------------------------"
-)
-
-
-exit()
-
-
 try:
-    #if we are parsing the .GeoPIXE file
-    #   begin parsing
-    if config['FORCEPARSE']:
-        pixelseries = xfmap.parse(config, pixelseries)
-    #else read from a pre-parsed csv
-    else:   
-        pixelseries = pixelseries.readpxdata(config, dirs.exports)
+  
+    pixelseries, indexlist = parser.indexmap(xfmap, pixelseries)
+
+    pixelseries = parser.parse(xfmap, pixelseries, indexlist)
 finally:
     xfmap.closefiles(config)
 
@@ -109,12 +84,10 @@ f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
 "---------------------------"
 )
 
-pixelseries.exportpxstats(config, dirs.exports)
+#calculate derived pixel properties - eg. sums, flattened
+pixelseries = pixelseries.get_derived()
 
-if not config['PARSEMAP']:
-    print("WRITE COMPLETE")
-    print("---------------------------")
-    exit()
+pixelseries.exportpxstats(config, dirs.exports)
 
 if config['SAVEPXSPEC']:
     pixelseries.exportpxdata(config, dirs.exports)
@@ -125,27 +98,26 @@ UDET=config['use_detector'] #define working detector for multi-detector files
 
 #generate deadtime/sum reports
 if config['DODTCALCS'] == True:
-    dtpred, dtavg, mergedsum = dtops.postcalc(config, pixelseries, xfmap)
 
-    dtops.export(dirs.exports, dtpred, mergedsum)
+    dtpred, dtavg = dtops.postcalc(config, pixelseries, xfmap)
 
-    dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, dtpred, dtavg, mergedsum, xfmap.xres, xfmap.yres, pixelseries.ndet)
+    dtops.export(dirs.exports, dtpred, pixelseries.flatsum)
 
+    dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, dtpred, dtavg, pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet)
 
 #create and show colour map
 if config['DOCOLOURS'] == True:
-
     colour.initialise(config, xfmap.energy)
     
     for i in np.arange(pixelseries.npx):
-        counts=pixelseries.data[UDET,i,:]
+        counts=pixelseries.flattened[i,:]
         pixelseries.rvals[i], pixelseries.bvals[i], pixelseries.gvals[i], pixelseries.totalcounts[i] = colour.spectorgb(config, xfmap.energy, counts)
 
     rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, dirs)
 
 #perform clustering
 if config['DOCLUST']:
-    categories, classavg = clustering.complete(config, pixelseries.data[UDET], xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
+    categories, classavg = clustering.complete(config, pixelseries.flattened, xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
 
 print("Processing complete")
 
@@ -153,6 +125,7 @@ sys.exit()
 
 """
 runtime log:
+test on: ts2.GeoPIXE, hw
                             t/px
 reading only:               0.000140 s
 +clustering                 0.001296 s     

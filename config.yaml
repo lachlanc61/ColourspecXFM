@@ -15,9 +15,9 @@ PARSEMAP: True   #load spectrum-by-pixel data
 
 chunksize: 30    #size in Mb to load into memory at a time
 
-DOCOLOURS: False   #run colourmap
-DOCLUST: False     #run clustering
-DODTCALCS: False    #generate deadtime plots
+DOCOLOURS: True   #run colourmap
+DOCLUST: True     #run clustering
+DODTCALCS: True    #generate deadtime plots
 
 #recalc flags
 FORCEPARSE: True     #always parse datafile
