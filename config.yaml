@@ -26,9 +26,9 @@ FORCEKMEANS: True    #always recalc kmeans
 
 
 #SUBMAP
-WRITESUBMAP: False    #write a submap
+WRITESUBMAP: True    #write a submap
 FILL_DT: False
-PREDICT_DT: True
+PREDICT_DT: False
 submap_x: #x coordinates for writing submap
   - 0
   - 0

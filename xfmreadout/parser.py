@@ -116,20 +116,52 @@ def parse(xfmap, pixelseries, indexlist):
                     pixelseries.data[det,pxidx,:]=counts
             ___ = endpx(pxidx, idx, buffer, xfmap, pixelseries)
     except MapDone:
+        pixelseries = pixelseries.get_derived()
+        
         if not pixelseries.npx == pxidx+1:
             raise ValueError(f"Index mistmatch ({pixelseries.npx}) vs ({pxidx})")
         if not pixelseries.nrows == pixelseries.yidx[0,pxidx]+1:
             raise ValueError(f"Index mistmatch ({pixelseries.nrows}) vs ({pixelseries.yidx[0,pxidx]+1})")
         buffer.wait()
         xfmap.resetfile()
+        
         return pixelseries
 
 
-def writemap(xfmap, pixelseries):
+def writemap(config, xfmap, pixelseries):
     """
-    write a map or submap
-        cropping coordinates and updating headers/pxheaders
-            and/or
-        filling/predicting/correcting deadtimes when missing
+    Write a map or submap
+        Updates headers and pixel headers
+            !Does not change pixel data!
+
+        Crops to coordinates
+        Fills/predicts/corrects deadtimes if needed
     """
-    pass
+    #write file header
+    bufferops.writefileheader(config, xfmap)
+
+    try:
+        xfmap.resetfile()
+        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
+        idx = xfmap.datastart
+        pxheaderlen = xfmap.PXHEADERLEN
+
+        pxidx=0
+        while True:
+
+            headstream, idx, buffer = bufferops.getstream(buffer, idx, pxheaderlen)
+            
+            ___, ___, ___, det, ___ = bufferops.readpxheader(headstream)
+
+            bufferops.writepxheader(config, xfmap, pixelseries, det, pxidx)
+           
+            #get the pixel header
+            stream, idx, buffer = bufferops.getstream(buffer, idx, pixelseries.pxlen[det,pxidx]-pxheaderlen)
+
+            if det == xfmap.maxdet:
+                pxidx = endpx(pxidx, idx, buffer, xfmap, pixelseries)
+
+    except MapDone:
+        buffer.wait()
+        xfmap.resetfile()
+        return 

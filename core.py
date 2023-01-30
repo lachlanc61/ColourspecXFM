@@ -44,29 +44,29 @@ config, dirs = utils.initfiles(config)
 #MAIN START
 #-----------------------------------
 
-#initialise map object
-#   parses header into map.headerdict
-#   places pointer (map.idx) at start of first pixel record
-xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub)
-
-#initialise the spectrum-by-pixel object
-#       pre-creates all arrays for storing data, pixel header values etc
-#       WARNING: big memory spike here if map is large
-pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray)
-
-#start a timer
-starttime = time.time()             #init timer
-
 try:
+    #start a timer
+    starttime = time.time() 
+
+    #initialise map object
+    xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub)
+
+    #initialise the spectrum-by-pixel object
+    pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray)
+
     pixelseries, indexlist = parser.indexmap(xfmap, pixelseries)
 
-    pixelseries = parser.parse(xfmap, pixelseries, indexlist)
+    if config['PARSEMAP']:
+        pixelseries = parser.parse(xfmap, pixelseries, indexlist)
 
-    parser.writemap(xfmap, pixelseries) #not implemented yet
+    if config['WRITESUBMAP']:
+        parser.writemap(config, xfmap, pixelseries)
+
 finally:
     xfmap.closefiles(config)
 
-runtime = time.time() - starttime
+    #complete the timer
+    runtime = time.time() - starttime
 
 print(
 "---------------------------\n"
@@ -81,7 +81,6 @@ f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
 )
 
 #calculate derived pixel properties - eg. sums, flattened
-pixelseries = pixelseries.get_derived()
 
 pixelseries.exportpxstats(config, dirs.exports)
 

@@ -287,47 +287,6 @@ def readpxdata(stream, readlength, bytesperchan):
     return(list(chan), list(counts))
 
 
-
-
-"""
-def readpxdata(locstream, config, readlength):
-
-    #initialise channel index and result arrays
-    chan=np.zeros(int((readlength)/config['BYTESPERCHAN']), dtype=int)
-    counts=np.zeros(int((readlength)/config['BYTESPERCHAN']), dtype=int)
-    #       4 = no. bytes in each x,y pair
-    #         = 2x2 bytes each 
-
-    #create struct object for reading
-    fmt= "<%dH" % ((readlength) // 2)
-    chanstruct=struct.Struct(fmt)
-
-    #read the channel data
-    chandata=chanstruct.unpack(locstream[:readlength])
-    #take even indexes for channels
-    chan=chandata[::2]
-    #take odd indexes for counts
-    counts=chandata[1::2]
-
-    #return as lists
-    return(list(chan), list(counts))
-"""
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def writefileheader(config, xfmap):
     #modify width and height in header and re-print
 
@@ -369,9 +328,9 @@ def writefileheader(config, xfmap):
     #   think we can ignore this, the info is not used, but header is different when rewritten
 
 
-def writepxheader(config, xfmap, pxseries, det):
+def writepxheader(config, xfmap, pxseries, det, pxidx):
 
-    dt=pxseries.dt[det,xfmap.pxidx]
+    dt=pxseries.dt[det,pxidx]
 
     #assign or predict deadtime values if not present
     if config['FILL_DT'] and pxseries.ndet == 1:
@@ -384,7 +343,7 @@ def writepxheader(config, xfmap, pxseries, det):
         if dt > 0:
             raise ValueError("WARNING: Found nonzero deadtime while overwriting")
         #predict from pixel sum
-        dt=dtops.predictdt(config, pxseries.sum[det,xfmap.pxidx], xfmap.dwell, xfmap.timeconst)
+        dt=dtops.predictdt(config, pxseries.sum[det,pxidx], xfmap.dwell, xfmap.timeconst)
     else:
         #leave unchanged
         dt=dt
@@ -393,25 +352,19 @@ def writepxheader(config, xfmap, pxseries, det):
     pxflag0=pxflag[0].encode(config['CHARENCODE'])
     pxflag1=pxflag[1].encode(config['CHARENCODE'])
 
-    pxlen=pxseries.pxlen[det,xfmap.pxidx]
-    xcoord=pxseries.xidx[det,xfmap.pxidx]
-    ycoord=pxseries.yidx[det,xfmap.pxidx]
-    usedet=pxseries.det[det,xfmap.pxidx]
+    pxlen=pxseries.pxlen[det,pxidx]
+    xcoord=pxseries.xidx[det,pxidx]
+    ycoord=pxseries.yidx[det,pxidx]
+    usedet=pxseries.det[det,pxidx]
     
     if usedet != det:
         raise ValueError("WARNING: Detector value mismatch")
 
     #write the header with x/y coords adjusted
-    outstream=xfmap.headstruct.pack(pxflag0,pxflag1, pxlen, xcoord-config['submap_x'][0], \
+    outstream=pxheadstruct.pack(pxflag0,pxflag1, pxlen, xcoord-config['submap_x'][0], \
                                     ycoord-config['submap_y'][0], det, dt)
     xfmap.outfile.write(outstream)
         
 
-def writepxrecord(locstream, readlength, xfmap):
-    xfmap.outfile.write(locstream[:readlength])
-
-
-def endrow(xfmap):
-    xfmap.fullidx=xfmap.chunkidx+xfmap.idx
-    print(f"Row {xfmap.rowidx}/{xfmap.yres-1} at pixel {xfmap.pxidx}, byte {xfmap.fullidx} ({100*xfmap.fullidx/xfmap.fullsize:.1f} %)", end='\r')
-    xfmap.rowidx+=1    
+def writepxrecord(stream, length, xfmap):
+    xfmap.outfile.write(stream[:length])
