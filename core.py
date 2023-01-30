@@ -173,15 +173,15 @@ OO:
     chunk parsing:          0.002505 s
 
 refactored:
-    parse+write:            0.000643 s
-main #147424d 26/11/2022
+    write only:             0.000643 s
+main:                                       #147424d 26/11/2022
     parse                   0.001215
 
-dtops:
-    read+parse              0.001184 s
+dtops:                                      #65c5eac 27/01/23     
+    parse                   0.001184 s
     headers+write           0.00005 s
 
-parallelize - single proc:
+parallelize - single proc:                  #f3ea355 30/01/23
     index+parse             0.001219 s
 
 parallelize - multiproc:
