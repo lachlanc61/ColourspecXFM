@@ -119,7 +119,7 @@ class MapBuffer:
         """
         wait for running cache to complete
         """
-        #need to receive sends first, otherwise will not complete
+        #need to receive sends, otherwise will block indefinitely
         ___=self.pipe_parent.recv()
         ___=self.pipe_parent.recv()
         self.process.join()
