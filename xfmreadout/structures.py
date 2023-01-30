@@ -1,19 +1,7 @@
-import struct 
 import os
 import numpy as np
-import json
-import copy
-import time
 
-import xfmreadout.utils as utils
-import xfmreadout.colour as colour
-import xfmreadout.fitting as fitting
-import xfmreadout.byteops as byteops
 import xfmreadout.bufferops as bufferops
-import xfmreadout.parser as parser
-
-
-
 
 #CLASSES
 class Xfmap:
@@ -41,22 +29,6 @@ class Xfmap:
 
         if self.fidx != 0:
             raise ValueError(f"File pointer at {self.fidx} - Expected 0 (start of file)")
-
-        """
-        #generate initial bytestream
-        #self.stream = self.infile.read()         
-        self.stream = self.infile.read(self.chunksize)   
-        self.streamlen=len(self.stream)
-
-        #pointers
-        self.idx=0      #byte pointer
-        self.pxidx=0    #pixel pointer
-        self.rowidx=0   #row pointer
-        self.pxstart=0  #pointer for start of pixel
-
-        self.fullidx = self.idx
-        self.chunkidx = self.idx        
-        """
 
         #read the beginning of the file into buffer
         buffer = bufferops.MapBuffer(self.infile, self.chunksize)
@@ -107,110 +79,6 @@ class Xfmap:
         self.infile.close()
         if config['WRITESUBMAP']:
             self.outfile.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def parse(self, config, pxseries):
-
-        print(f"pixels expected: {self.npx}")
-        print("---------------------------")
-
-        if config['WRITESUBMAP']:
-            bufferops.writefileheader(config, self)
-
-        #https://stackoverflow.com/questions/16073396/breaking-while-loop-with-function
-        try:
-            while True:
-                
-                headstream, self.idx = bufferops.getstream(self,self.idx,self.PXHEADERLEN)
-
-                pxlen, xidx, yidx, det, dt = bufferops.readpxheader(headstream, config, self.PXHEADERLEN, self)
-
-                readlength=pxlen-self.PXHEADERLEN
-
-                pxseries = pxseries.receiveheader(self.pxidx, pxlen, xidx, yidx, det, dt)
-            
-                locstream, self.idx = bufferops.getstream(self,self.idx,readlength)
-
-                if config['PARSEMAP']:
-                    chan, counts = bufferops.readpxdata(locstream, config, readlength)
-
-                    #fill gaps in spectrum 
-                    #   (ie. assign all zero-count chans = 0)
-                    chan, counts = utils.gapfill(chan,counts, config['NCHAN'])
-
-                    #warn if recieved channel list is different length to chan array
-                    if len(chan) != len(self.chan):
-                        print("WARNING: unexpected length of channel list")
-
-                    #store pixel sum
-                    pxsum=int(np.sum(counts))
-                    pxseries.sum[det,self.pxidx]=pxsum    #sum normalised for dwelltime
-
-                    #assign counts into data array
-                    pxseries.data[det,self.pxidx,:]=counts
-
-                if config['WRITESUBMAP'] and utils.pxinsubmap(config, xidx, yidx):
-                        bufferops.writepxheader(config, self, pxseries, det)
-                        bufferops.writepxrecord(locstream, readlength, self)
-
-                self.fullidx=self.chunkidx+self.idx
-
-                #if on last detector for this pixel, increment counters and check end
-                if det == max(self.detarray):
-                    #stop when pixel index greater than expected no. pixels
-                    if (self.pxidx >= (self.npx-1)):
-                        print(f"\nENDING AT: Row {self.rowidx}/{self.yres} at pixel {self.pxidx}")
-                        raise parser.MapDone
-
-                    #print pixel index at end of every row
-                    if self.pxidx % self.xres == (self.xres-1): 
-                        print(f"\rRow {self.rowidx}/{self.yres-1} at pixel {self.pxidx}, byte {self.fullidx} ({100*self.fullidx/self.fullsize:.1f} %)", end='')
-                        self.rowidx+=1
-
-                    self.pxidx+=1    #next pixel
-        except parser.MapDone:
-            #store no. pixels and rows read successfully
-            pxseries.npx=self.pxidx+1
-            pxseries.nrows=self.rowidx+1 
-
-            return pxseries
-
-    def nextchunk(self):
-        #NB: chunkdx likely broken after refactor
-        self.chunkidx = self.chunkidx + self.idx
-
-        self.stream = self.infile.read(self.chunksize)
-
-        if len(self.stream) != self.streamlen:
-            print("\n NOTE: final chunk")
-
-        self.streamlen=len(self.stream)
-        self.idx=0
-
-        if not self.stream:
-            print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-            raise parser.MapDone
-
 
 
 

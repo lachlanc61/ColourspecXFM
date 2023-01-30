@@ -40,8 +40,6 @@ config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG, USER_CONFIG)
 #initialise read file and directory structure 
 config, dirs = utils.initfiles(config)
 
-starttime = time.time()             #init timer
-
 #-----------------------------------
 #MAIN START
 #-----------------------------------
@@ -57,10 +55,9 @@ xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub)
 pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray)
 
 #start a timer
-starttime = time.time() 
+starttime = time.time()             #init timer
 
 try:
-  
     pixelseries, indexlist = parser.indexmap(xfmap, pixelseries)
 
     pixelseries = parser.parse(xfmap, pixelseries, indexlist)
@@ -68,9 +65,6 @@ finally:
     xfmap.closefiles(config)
 
 runtime = time.time() - starttime
-
-#show memory usage
-utils.varsizes(locals().items())
 
 print(
 "---------------------------\n"

@@ -1,6 +1,5 @@
 import numpy as np
 
-import xfmreadout.structures as structures
 import xfmreadout.bufferops as bufferops
 import xfmreadout.utils as utils
 

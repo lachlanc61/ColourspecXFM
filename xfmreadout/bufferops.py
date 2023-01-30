@@ -1,5 +1,4 @@
 import struct 
-import os
 import sys
 import time
 import numpy as np
@@ -10,7 +9,6 @@ import multiprocessing as mp
 
 import xfmreadout.byteops as byteops
 import xfmreadout.dtops as dtops
-import xfmreadout.structures as structures
 import xfmreadout.parser as parser
 
 #assign an identifier to the local namespace
