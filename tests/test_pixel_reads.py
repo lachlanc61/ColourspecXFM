@@ -44,15 +44,19 @@ def test_datafile_multiple(datafiles):
     """
     #confirm pytest-datafiles correctly pulls files
     """
-    for file in datafiles.listdir():
-        assert os.path.isfile(file)
+    for f in datafiles.listdir():
+        assert os.path.isfile(f)
 
 
-def test_readpxheader_standard_det0():
+
+@pytest.mark.datafiles(
+    os.path.join(DATA_DIR, 'endpxheader.bin'),
+    )
+def test_readpxheader_standard_det0(datafiles):
     """
     regular pixel header from single-detector, no-deadtime format
     """
-    f=os.path.join(TEST_DIR, 'data/endpxheader.bin')    #16-byte pixel header
+    f = datafiles.listdir()[0]
     fi = open(f, mode='rb')
     stream = fi.read(PXHEADERLEN)
 
@@ -64,11 +68,16 @@ def test_readpxheader_standard_det0():
 
     assert result == expected
 
-def test_readpxheader_standard_det2():
+@pytest.mark.datafiles(
+    os.path.join(DATA_DIR, 'endpxheader.bin'),
+    )
+def test_readpxheader_standard_det2(datafiles):
     """
     regular pixel header from two-detector, deadtime-inclusive format
+
+    NB: need to pull new data
     """
-    f=os.path.join(TEST_DIR, 'data/endpxheader.bin')    #16-byte pixel header
+    f = datafiles.listdir()[0]
     fi = open(f, mode='rb')
     stream = fi.read(PXHEADERLEN)
 
@@ -80,15 +89,19 @@ def test_readpxheader_standard_det2():
 
     assert result == expected
 
-
+@pytest.mark.datafiles(
+    os.path.join(DATA_DIR, 'endpxheader.bin'),
+    )
 def test_readpxdata_standard_det0(datafiles):
     """
     #regular pixel data from single-detector format
     """
     assert 1
 
-
-def test_readpxdata_standard_det2():
+@pytest.mark.datafiles(
+    os.path.join(DATA_DIR, 'endpxheader.bin'),
+    )
+def test_readpxdata_standard_det2(datafiles):
     """
     regular pixel data from two-detector format
     """
