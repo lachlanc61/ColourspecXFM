@@ -151,6 +151,7 @@ dtops:                                      #65c5eac 27/01/23
 
 parallelize - single proc:                  #f3ea355 30/01/23
     index+parse             0.001219 s
+    index+parse+write       0.001293 s
 
 parallelize - multiproc:
     index+parse             

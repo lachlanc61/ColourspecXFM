@@ -12,11 +12,11 @@ def endpx(pxidx, idx, buffer, xfmap, pixelseries):
     row=pixelseries.yidx[0,pxidx]+1
 
     if pxidx % xfmap.xres == (xfmap.xres-1): 
-        print(f"\rRow {row}/{xfmap.yres} at pixel {pxidx}, byte {buffer.fidx+idx} ({100*(buffer.fidx+idx)/xfmap.fullsize:.1f} %)", end='')
+        print(f"\rRow {row}/{xfmap.yres} at pixel {pxidx}, byte {int(buffer.fidx+idx)} ({100*(idx)/xfmap.fullsize:.1f} %)", end='')
         pass
     #stop when pixel index greater than expected no. pixels
     if (pxidx >= (xfmap.npx-1)):
-        print(f"\nENDING AT: Row {row}/{xfmap.yres} at pixel {pxidx}")
+        print(f"\nEND OF MAP: row {row}/{xfmap.yres}, pixel {pxidx}")
         raise MapDone
 
     pxidx+=1
@@ -41,8 +41,8 @@ def indexmap(xfmap, pixelseries):
     - get pixel statistics
     index the file
     """
-
-    print("BEGIN INDEXING")
+    print("--------------")
+    print("INDEXING")
     try:
         indexlist=np.zeros((pixelseries.ndet,xfmap.npx),dtype=np.uint64)
 
@@ -66,7 +66,7 @@ def indexmap(xfmap, pixelseries):
             __, idx, buffer = bufferops.getstream(buffer, idx, pxlen-pxheaderlen)
 
             if det == xfmap.maxdet:
-                pxidx = endpx(pxidx, idx, buffer, xfmap, pixelseries)
+                pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)
 
     except MapDone:
         pixelseries.npx=pxidx+1
@@ -76,13 +76,14 @@ def indexmap(xfmap, pixelseries):
         return pixelseries, indexlist
 
 
-
 def parse(xfmap, pixelseries, indexlist):
     """
     read in the map data after indexing
 
     NB. no longer getting sum from parser, do this in postana using pixelseries.data
     """
+    print("--------------")
+    print("PARSING PIXEL DATA")
     try:
         xfmap.resetfile()
         buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
@@ -114,7 +115,7 @@ def parse(xfmap, pixelseries, indexlist):
                     exit()
                 finally:
                     pixelseries.data[det,pxidx,:]=counts
-            ___ = endpx(pxidx, idx, buffer, xfmap, pixelseries)
+            ___ = endpx(pxidx, start, buffer, xfmap, pixelseries)
     except MapDone:
         pixelseries = pixelseries.get_derived()
         
@@ -140,6 +141,8 @@ def writemap(config, xfmap, pixelseries):
     #write file header
     bufferops.writefileheader(config, xfmap)
 
+    print("--------------")
+    print("EXPORTING MAP")
     try:
         xfmap.resetfile()
         buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
@@ -159,7 +162,7 @@ def writemap(config, xfmap, pixelseries):
             stream, idx, buffer = bufferops.getstream(buffer, idx, pixelseries.pxlen[det,pxidx]-pxheaderlen)
 
             if det == xfmap.maxdet:
-                pxidx = endpx(pxidx, idx, buffer, xfmap, pixelseries)
+                pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)
 
     except MapDone:
         buffer.wait()

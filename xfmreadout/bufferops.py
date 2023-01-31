@@ -105,7 +105,8 @@ class MapBuffer:
             run after new chunk is loaded
         """
         if self.len < self.chunksize and not self.len == 0:
-            print("\n NOTE: final chunk")
+            #print("\n NOTE: final chunk")
+            pass
         
         if self.data == "":
             print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
