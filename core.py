@@ -147,11 +147,12 @@ main:                                       #147424d 26/11/2022
 
 dtops:                                      #65c5eac 27/01/23     
     parse                   0.001184 s
-    headers+write           0.00005 s
+    headers+write           0.000050 s
 
 parallelize - single proc:                  #f3ea355 30/01/23
     index+parse             0.001219 s
     index+parse+write       0.001293 s
+    index+write             0.000097 s
 
 parallelize - multiproc:
     index+parse             
