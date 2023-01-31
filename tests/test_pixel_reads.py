@@ -68,6 +68,9 @@ def test_readpxheader_standard_det0(datafiles):
 
     assert result == expected
 
+
+
+
 @pytest.mark.datafiles(
     os.path.join(DATA_DIR, 'endpxheader.bin'),
     )
@@ -89,6 +92,9 @@ def test_readpxheader_standard_det2(datafiles):
 
     assert result == expected
 
+
+
+
 @pytest.mark.datafiles(
     os.path.join(DATA_DIR, 'endpxheader.bin'),
     )
@@ -97,6 +103,9 @@ def test_readpxdata_standard_det0(datafiles):
     #regular pixel data from single-detector format
     """
     assert 1
+
+
+
 
 @pytest.mark.datafiles(
     os.path.join(DATA_DIR, 'endpxheader.bin'),
@@ -107,6 +116,7 @@ def test_readpxdata_standard_det2(datafiles):
     """
 
     assert 1
+
 
 
 def test_readpxdata_empty():
