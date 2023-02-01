@@ -25,7 +25,6 @@ NCHAN=config['NCHAN']
 BYTESPERCHAN=config['BYTESPERCHAN']
 
 
-
 # https://pypi.org/project/pytest-datafiles/#description
 # pytest datafiles
 # multiple files:
@@ -37,19 +36,6 @@ BYTESPERCHAN=config['BYTESPERCHAN']
 """
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'px14387_0_header.bin'),
-    os.path.join(DATA_DIR, 'px14387_1_data.bin'),
-    )
-def test_datafile_multiple(datafiles):
-    """
-    #confirm pytest-datafiles correctly pulls files
-    """
-    for f in datafiles.listdir():
-        assert os.path.isfile(f)
-
-
-
-@pytest.mark.datafiles(
     os.path.join(DATA_DIR, 'px4398_f_header.bin'),
     )
 def test_readpxheader_standard_flat(datafiles):
@@ -57,18 +43,16 @@ def test_readpxheader_standard_flat(datafiles):
     regular pixel header from single-detector, no-deadtime format
     """
     f = datafiles.listdir()[0]
-    fi = open(f, mode='rb')
-    stream = fi.read(PXHEADERLEN)
+    with open(f, mode='rb') as fi:
+        stream = fi.read(PXHEADERLEN)
 
-    expected = [4880, 46, 17, 0, 0.0] 
+        expected = [4880, 46, 17, 0, 0.0] 
 
-    pxlen, xidx, yidx, det, dt = bufferops.readpxheader(stream)
+        pxlen, xidx, yidx, det, dt = bufferops.readpxheader(stream)
 
-    result = [pxlen, xidx, yidx, det, dt]
+        result = [pxlen, xidx, yidx, det, dt]
 
-    assert result == expected
-
-
+        assert result == expected
 
 
 @pytest.mark.datafiles(
@@ -84,17 +68,15 @@ def test_readpxheader_standard_det01(datafiles):
                 [ 4040, 51, 56, 1, 12.854915618896484 ] ]
     i=0
     for f in datafiles.listdir():
-        fi = open(f, mode='rb')
-        stream = fi.read(PXHEADERLEN)
+        with open(f, mode='rb') as fi:
+            stream = fi.read(PXHEADERLEN)
 
-        pxlen, xidx, yidx, det, dt = bufferops.readpxheader(stream)
+            pxlen, xidx, yidx, det, dt = bufferops.readpxheader(stream)
 
-        result = [ pxlen, xidx, yidx, det, dt ]
+            result = [ pxlen, xidx, yidx, det, dt ]
 
-        assert result == expected[i]
+            assert result == expected[i]
         i+=1
-
-
 
 
 @pytest.mark.datafiles(
@@ -113,8 +95,8 @@ def test_readpxdata_standard_flat(datafiles):
 
 @pytest.mark.datafiles(
     os.path.join(DATA_DIR, 'px14387_1_data.bin'),
-    os.path.join(DATA_DIR, 'px14387_1_data_counts.npy'),
     os.path.join(DATA_DIR, 'px14387_1_data_chan.npy'),
+    os.path.join(DATA_DIR, 'px14387_1_data_counts.npy'),
     )
 def test_readpxdata_standard_det01(datafiles):
     """
@@ -124,7 +106,7 @@ def test_readpxdata_standard_det01(datafiles):
         #miserable hack here 
         # - pytest.mark.datafiles not loading files in consistent order
         #   have to search array for addendum (ie. after last underscore)
-        #   and check that way....
+        #   and assign that way....
         fpath, ext = os.path.splitext(str(f))
         addendum = fpath.split('_')[-1]
         if addendum == 'counts':
@@ -132,8 +114,8 @@ def test_readpxdata_standard_det01(datafiles):
         elif addendum == 'chan':
             expected_chan = np.load(str(f))   
         elif addendum == 'data':
-            fi = open(f, mode='rb')
-            stream = fi.read() 
+            with open(f, mode='rb') as fi:
+                stream = fi.read() 
 
     """
     should be this:
