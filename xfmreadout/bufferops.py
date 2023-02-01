@@ -259,7 +259,7 @@ def readpxheader(headstream):
     if not (pxflag == b'DP'):
         raise ValueError(f"ERROR: pixel flag 'DP' expected but not found")
 
-    return pxlen, xidx, yidx, det, round(dt,3)
+    return pxlen, xidx, yidx, det, dt
 
 
 def readpxdata(stream, readlength, bytesperchan):

@@ -52,7 +52,7 @@ def test_datafile_multiple(datafiles):
 @pytest.mark.datafiles(
     os.path.join(DATA_DIR, 'endpxheader.bin'),
     )
-def test_readpxheader_standard_det0(datafiles):
+def test_readpxheader_standard_flat(datafiles):
     """
     regular pixel header from single-detector, no-deadtime format
     """
@@ -72,7 +72,8 @@ def test_readpxheader_standard_det0(datafiles):
 
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'pixel14387_1.bin'),
+    os.path.join(DATA_DIR, 'px14387_1_header.bin'),
+#    os.path.join(DATA_DIR, 'px14387_1_header.bin'),
     )
 def test_readpxheader_standard_det2(datafiles):
     """
@@ -83,7 +84,8 @@ def test_readpxheader_standard_det2(datafiles):
     fi = open(f, mode='rb')
     stream = fi.read(PXHEADERLEN)
 
-    expected = [ 4040, 51, 56, 1, 12.855 ] 
+    expected = [ 3868, 51, 56, 0, 15.940695762634277 ]
+    expected = [ 4040, 51, 56, 1, 12.854915618896484 ] 
 
     pxlen, xidx, yidx, det, dt = bufferops.readpxheader(stream)
 
@@ -95,7 +97,7 @@ def test_readpxheader_standard_det2(datafiles):
 
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'pixel14387.bin'),
+    os.path.join(DATA_DIR, 'endpxheader.bin'),
     )
 def test_readpxdata_standard_det0(datafiles):
 
@@ -193,7 +195,9 @@ working with files:
         self.stream[self.idx-self.PXHEADERLEN:self.idx]
     
     #write stream to file
-    tfo=open('tests/data/endpxcontent.bin', mode='wb')
-    tfo.write(locstream)
+    tf = open('/home/lachlan/CODEBASE/ReadoutXFM/binout.bin', 'wb')
+    tf.write(stream)
+    tf.close()
 
+    #mv with bash
 """
