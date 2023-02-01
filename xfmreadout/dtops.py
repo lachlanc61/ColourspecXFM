@@ -42,13 +42,20 @@ def postcalc(config, pixelseries, xfmap):
     return dtpred, dtavg
 
 
-def export(dir:str, dtpred, mergedsum):
+def export(dir:str, dtpred, flatsum):
+    """
+    export the derived deadtime values
+    - pass if arrays are zero - eg. if map was not parsed to generate them
+    """
+
     #NB: printing as if dtpred is list of lists -> newlines after each value
     #   not sure why, workaround is to pass as list of itself
     # https://stackoverflow.com/questions/42068144/numpy-savetxt-is-not-adding-comma-delimiter
-    np.savetxt(os.path.join(dir, "pxstats_dtpred.txt"), [dtpred], fmt='%f', delimiter=",")
-    np.savetxt(os.path.join(dir, "pxstats_mergedsum.txt"), [mergedsum], fmt='%d', delimiter=",")
-
+    if np.sum(dtpred[0] > 0) and np.sum(flatsum > 0):
+        np.savetxt(os.path.join(dir, "pxstats_dtpred.txt"), [dtpred], fmt='%f', delimiter=",")
+        np.savetxt(os.path.join(dir, "pxstats_flatsum.txt"), [flatsum], fmt='%d', delimiter=",")
+    else:
+        pass
     return
 
 

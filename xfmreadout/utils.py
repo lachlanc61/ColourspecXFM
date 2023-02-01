@@ -216,6 +216,7 @@ def initcfg(args, pkgconfig, usrconfig):
         config['DOCOLOURS']=False
         config['DOCLUST']=False
         config['DOBG']=False
+        config['DODTCALCS']=False
 
     if config['WRITESUBMAP']:
         if config['submap_x'][1] == 0:

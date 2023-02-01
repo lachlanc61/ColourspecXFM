@@ -70,7 +70,7 @@ finally:
 
 print(
 "---------------------------\n"
-"MAP COMPLETE\n"
+"COMPLETE\n"
 "---------------------------\n"
 f"dimensions expected (x,y): {xfmap.xres},{xfmap.yres}\n"
 f"pixels expected (X*Y): {xfmap.npx}\n"

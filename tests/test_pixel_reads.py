@@ -72,23 +72,22 @@ def test_readpxheader_standard_det0(datafiles):
 
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'endpxheader.bin'),
+    os.path.join(DATA_DIR, 'pixel14387_1.bin'),
     )
 def test_readpxheader_standard_det2(datafiles):
     """
     regular pixel header from two-detector, deadtime-inclusive format
 
-    NB: need to pull new data
     """
     f = datafiles.listdir()[0]
     fi = open(f, mode='rb')
     stream = fi.read(PXHEADERLEN)
 
-    expected = [int(4880), int(46), int(17), int(0), float(0.0)] 
+    expected = [ 4040, 51, 56, 1, 12.855 ] 
 
     pxlen, xidx, yidx, det, dt = bufferops.readpxheader(stream)
 
-    result = [pxlen, xidx, yidx, det, dt]
+    result = [ pxlen, xidx, yidx, det, dt ]
 
     assert result == expected
 
@@ -96,9 +95,10 @@ def test_readpxheader_standard_det2(datafiles):
 
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'endpxheader.bin'),
+    os.path.join(DATA_DIR, 'pixel14387.bin'),
     )
 def test_readpxdata_standard_det0(datafiles):
+
     """
     #regular pixel data from single-detector format
     """
