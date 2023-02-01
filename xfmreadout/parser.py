@@ -153,13 +153,19 @@ def writemap(config, xfmap, pixelseries):
         while True:
 
             headstream, idx, buffer = bufferops.getstream(buffer, idx, pxheaderlen)
-            
-            ___, ___, ___, det, ___ = bufferops.readpxheader(headstream)
 
-            bufferops.writepxheader(config, xfmap, pixelseries, det, pxidx)
+            ___, xidx, yidx, det, ___ = bufferops.readpxheader(headstream)
+
+            if not [ xidx, yidx, det ] == [ pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx], pixelseries.det[det,pxidx] ]:
+                raise ValueError(f"values read from pixel header do not match result from indexing")
+
+            if utils.pxinsubmap(config, pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx]):            
+                bufferops.writepxheader(config, xfmap, pixelseries, det, pxidx)
            
-            #get the pixel header
             stream, idx, buffer = bufferops.getstream(buffer, idx, pixelseries.pxlen[det,pxidx]-pxheaderlen)
+            
+            if utils.pxinsubmap(config, pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx]):            
+                bufferops.writepxrecord(xfmap, stream, pixelseries.pxlen[det,pxidx]-pxheaderlen)
 
             if det == xfmap.maxdet:
                 pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)

@@ -11,13 +11,13 @@ outdir:   #blank = assigned to directory of infile
 - "out/" 
 #- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/PXVALS"
 
-PARSEMAP: False   #load spectrum-by-pixel data
+PARSEMAP: True   #load spectrum-by-pixel data
 
 chunksize: 30    #size in Mb to load into memory at a time
 
-DOCOLOURS: False   #run colourmap
-DOCLUST: False     #run clustering
-DODTCALCS: False    #generate deadtime plots
+DOCOLOURS: True   #run colourmap
+DOCLUST: True     #run clustering
+DODTCALCS: True    #generate deadtime plots
 
 #recalc flags
 FORCEPARSE: True     #always parse datafile
@@ -26,12 +26,12 @@ FORCEKMEANS: True    #always recalc kmeans
 
 
 #SUBMAP
-WRITESUBMAP: True    #write a submap
+WRITESUBMAP: False    #write a submap
 FILL_DT: False
 PREDICT_DT: False
 submap_x: #x coordinates for writing submap
-  - 0
-  - 0
+  - 60 #60
+  - 120 #120
 submap_y: #y coordinates for writing submap
-  - 0
-  - 0
+  - 50 #50
+  - 80 #80

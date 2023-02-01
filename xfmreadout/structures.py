@@ -88,7 +88,8 @@ class PixelSeries:
         self.source=xfmap
 
         #assign number of detectors
-        self.ndet=max(detarray)+1
+        self.detarray = detarray
+        self.ndet=max(self.detarray)+1
 
         #initialise pixel value arrays
         self.pxlen=np.zeros((self.ndet,npx),dtype=np.uint16)
@@ -165,21 +166,27 @@ class PixelSeries:
         """
         writes the spectrum-by-pixel data to csv
         """
-        print("saving spectrum-by-pixel to file")
-        np.savetxt(os.path.join(dir,  config['outfile'] + ".dat"), self.data, fmt='%i')   
+        if config['SAVEFMT_READABLE']:
+            for i in self.detarray:
+                np.savetxt(os.path.join(dir,  config['outfile'] + f"{i}.txt"), self.data[i], fmt='%i')
+        else:
+            np.save(os.path.join(dir,  config['outfile'] + ".dat"))
 
-    def readpxdata(self, config, dir):
+
+    def importpxdata(self, config, dir):
         """
         read data from csv
             does not currently return as much information as the full parse
+
+        NB: currently broken after refactor
         """
         print("loading from file", config['outfile'])
         self.data = np.loadtxt(os.path.join(dir, config['outfile']), dtype=np.uint16, delimiter=",")
-        self.pxlen=np.loadtxt(os.path.join(dir, "pxlen.txt"), dtype=np.uint16, delimiter=",")
-        self.xidx=np.loadtxt(os.path.join(dir, "xidx.txt"), dtype=np.uint16, delimiter=",")
-        self.yidx=np.loadtxt(os.path.join(dir, "yidx.txt"), dtype=np.uint16, delimiter=",")
-        self.det=np.loadtxt(os.path.join(dir, "detector.txt"), dtype=np.uint16, delimiter=",")
-        self.dt=np.loadtxt(os.path.join(dir, "dt.txt"), dtype=np.float32, delimiter=",")
+        self.pxlen=np.loadtxt(os.path.join(dir, "pxstats_pxlen.txt"), dtype=np.uint16, delimiter=",")
+        self.xidx=np.loadtxt(os.path.join(dir, "pxstats_xidx.txt"), dtype=np.uint16, delimiter=",")
+        self.yidx=np.loadtxt(os.path.join(dir, "pxstats_yidx.txt"), dtype=np.uint16, delimiter=",")
+        self.det=np.loadtxt(os.path.join(dir, "pxstats_detector.txt"), dtype=np.uint16, delimiter=",")
+        self.dt=np.loadtxt(os.path.join(dir, "pxstats_dt.txt"), dtype=np.float32, delimiter=",")
         
         print("loaded successfully", config['outfile']) 
 
