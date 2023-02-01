@@ -170,7 +170,7 @@ class PixelSeries:
             for i in self.detarray:
                 np.savetxt(os.path.join(dir,  config['outfile'] + f"{i}.txt"), self.data[i], fmt='%i')
         else:
-            np.save(os.path.join(dir,  config['outfile'] + ".dat"))
+            np.save(os.path.join(dir,  config['outfile'] + ".dat"), self.data[i])
 
 
     def importpxdata(self, config, dir):

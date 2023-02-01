@@ -37,8 +37,8 @@ BYTESPERCHAN=config['BYTESPERCHAN']
 """
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'endpxheader.bin'),
-    os.path.join(DATA_DIR, 'endpxcontent.bin'),
+    os.path.join(DATA_DIR, 'px14387_0_header.bin'),
+    os.path.join(DATA_DIR, 'px14387_1_data.bin'),
     )
 def test_datafile_multiple(datafiles):
     """
@@ -50,7 +50,7 @@ def test_datafile_multiple(datafiles):
 
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'endpxheader.bin'),
+    os.path.join(DATA_DIR, 'px4398_f_header.bin'),
     )
 def test_readpxheader_standard_flat(datafiles):
     """
@@ -60,7 +60,7 @@ def test_readpxheader_standard_flat(datafiles):
     fi = open(f, mode='rb')
     stream = fi.read(PXHEADERLEN)
 
-    expected = [int(4880), int(46), int(17), int(0), float(0.0)] 
+    expected = [4880, 46, 17, 0, 0.0] 
 
     pxlen, xidx, yidx, det, dt = bufferops.readpxheader(stream)
 
@@ -72,53 +72,89 @@ def test_readpxheader_standard_flat(datafiles):
 
 
 @pytest.mark.datafiles(
+    os.path.join(DATA_DIR, 'px14387_0_header.bin'),
     os.path.join(DATA_DIR, 'px14387_1_header.bin'),
-#    os.path.join(DATA_DIR, 'px14387_1_header.bin'),
     )
-def test_readpxheader_standard_det2(datafiles):
+def test_readpxheader_standard_det01(datafiles):
     """
     regular pixel header from two-detector, deadtime-inclusive format
 
-    """
-    f = datafiles.listdir()[0]
-    fi = open(f, mode='rb')
-    stream = fi.read(PXHEADERLEN)
+    """             
+    expected =  [[ 3868, 51, 56, 0, 15.940695762634277 ], \
+                [ 4040, 51, 56, 1, 12.854915618896484 ] ]
+    i=0
+    for f in datafiles.listdir():
+        fi = open(f, mode='rb')
+        stream = fi.read(PXHEADERLEN)
 
-    expected = [ 3868, 51, 56, 0, 15.940695762634277 ]
-    expected = [ 4040, 51, 56, 1, 12.854915618896484 ] 
+        pxlen, xidx, yidx, det, dt = bufferops.readpxheader(stream)
 
-    pxlen, xidx, yidx, det, dt = bufferops.readpxheader(stream)
+        result = [ pxlen, xidx, yidx, det, dt ]
 
-    result = [ pxlen, xidx, yidx, det, dt ]
-
-    assert result == expected
+        assert result == expected[i]
+        i+=1
 
 
 
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'endpxheader.bin'),
+    os.path.join(DATA_DIR, 'px4398_f_data.bin'),
+    #os.path.join(DATA_DIR, 'px4398_f_data.npy'),
     )
-def test_readpxdata_standard_det0(datafiles):
+def test_readpxdata_standard_flat(datafiles):
 
     """
     #regular pixel data from single-detector format
     """
-    assert 1
 
+    assert 1
 
 
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'endpxheader.bin'),
+    os.path.join(DATA_DIR, 'px14387_1_data.bin'),
+    os.path.join(DATA_DIR, 'px14387_1_data_counts.npy'),
+    os.path.join(DATA_DIR, 'px14387_1_data_chan.npy'),
     )
-def test_readpxdata_standard_det2(datafiles):
+def test_readpxdata_standard_det01(datafiles):
     """
     regular pixel data from two-detector format
     """
+    for f in datafiles.listdir():
+        #miserable hack here 
+        # - pytest.mark.datafiles not loading files in consistent order
+        #   have to search array for addendum (ie. after last underscore)
+        #   and check that way....
+        fpath, ext = os.path.splitext(str(f))
+        addendum = fpath.split('_')[-1]
+        if addendum == 'counts':
+            expected_counts = np.load(str(f))         
+        elif addendum == 'chan':
+            expected_chan = np.load(str(f))   
+        elif addendum == 'data':
+            fi = open(f, mode='rb')
+            stream = fi.read() 
 
-    assert 1
+    """
+    should be this:
+    
+    #get expected results
+    f_chan = str(datafiles.listdir()[0])
+    expected_chan = np.load(f_chan)
 
+    f_counts = str(datafiles.listdir()[1])
+    expected_counts = np.load(f_counts)
+
+    #get input data
+    f = datafiles.listdir()[2]
+    fi = open(f, mode='rb')
+    stream = fi.read()
+    """
+
+    chan, counts = bufferops.readpxdata(stream, len(stream), BYTESPERCHAN)
+
+    assert np.array_equal(chan, expected_chan)
+    assert np.array_equal(counts, expected_counts)
 
 
 def test_readpxdata_empty():
@@ -200,4 +236,11 @@ working with files:
     tf.close()
 
     #mv with bash
+
+
+
+    np.save('/home/lachlan/CODEBASE/ReadoutXFM/binout',counts)
+
+    reload = np.load('/home/lachlan/CODEBASE/ReadoutXFM/binout.npdat')
+
 """
