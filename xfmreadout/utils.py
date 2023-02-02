@@ -196,7 +196,7 @@ def initcfg(args, pkgconfig, usrconfig):
         config['FORCEKMEANS'] = True
 
     if args.chunksize is not None:
-        config['chunksize'] = args.chunksize
+        config['CHUNKSIZE'] = args.chunksize
 
     if args.xcoords is not None:
         config['submap_x'][0]=args.coords[0]

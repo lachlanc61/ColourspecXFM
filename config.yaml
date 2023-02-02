@@ -12,8 +12,8 @@ outdir:   #blank = assigned to directory of infile
 #- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/PXVALS"
 
 PARSEMAP: True   #load spectrum-by-pixel data
-
-chunksize: 30    #size in Mb to load into memory at a time
+MULTIPROC: False
+CHUNKSIZE: 30    #size in Mb to load into memory at a time
 
 #Analysis flags
 #   ignored if PARSEMAP = False

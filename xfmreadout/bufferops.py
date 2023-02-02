@@ -17,7 +17,7 @@ this = sys.modules[__name__]
 
 pxheadstruct = struct.Struct("<ccI3Hf")
 
-def worker(infile, chunksize, conn):
+def worker(infile, chunksize, pipe_child):
     """
     Worker for multiprocess
         loads new buffer object in a subprocess to cache it 
@@ -28,17 +28,17 @@ def worker(infile, chunksize, conn):
     NB: reads from infile concurrently, make sure completed before main
         reinitialises buffer or moves file head
     """
-    nextbuffer=MapBuffer(infile, chunksize)
-    conn.send(nextbuffer.data)
-    conn.send(nextbuffer.fidx)
-    conn.close()
+    nextbuffer=MapBuffer(infile, chunksize, True)
+    pipe_child.send(nextbuffer.data)
+    pipe_child.send(nextbuffer.fidx)
+    pipe_child.close()
     #should wait here until received
 
 class MapBuffer:
     """
     Object holding current chunk of file for processing
     """
-    def __init__(self, infile, chunksize):
+    def __init__(self, infile, chunksize: int, multiproc: bool):
         self.infile=infile
         self.fidx = self.infile.tell()
 
@@ -48,19 +48,18 @@ class MapBuffer:
             cache_flag = False
 
         self.chunksize=chunksize
+        self.multiproc=multiproc
         self.len = 0
         try:
             self.data = self.infile.read(self.chunksize) 
             self.len = len(self.data)
-            #print(f"\nloading buffer at {self.fidx}")
-            time.sleep(0.1)
-            #print(f"loaded buffer at {self.fidx}\n")               
+            #time.sleep(0.1)            
         except:
             raise EOFError(f"No data to load from {self.infile}")
 
         self.check()
 
-        if cache_flag:
+        if self.multiproc and cache_flag:
             self.cache()
 
         return
@@ -83,19 +82,28 @@ class MapBuffer:
             Assign new data to current buffer
             Begin caching next chunk
         """
-        #print('Retrieving...')
-        nextdata=self.pipe_parent.recv()
-        nextfidx=self.pipe_parent.recv()
-        self.process.join()    
-        self.pipe_parent.close
-        self.pipe_child.close
+        if self.multiproc:
+            nextdata=self.pipe_parent.recv()
+            nextfidx=self.pipe_parent.recv()
 
-        self.data = nextdata
-        self.fidx = nextfidx
-        self.len = len(nextdata)
+            self.process.join()    
+            self.pipe_parent.close
+            self.pipe_child.close
 
-        #print('Retrieved, caching next...')
-        self.cache()
+            self.data = nextdata
+            self.fidx = nextfidx
+            self.len = len(nextdata)
+
+            self.cache()
+        else:
+            try:
+                self.fidx = self.infile.tell()
+                self.data = self.infile.read(self.chunksize) 
+                self.len = len(self.data)
+            except:
+                raise EOFError(f"No data to load from {self.infile}")    
+
+        self.check()
 
         return self
 
@@ -118,10 +126,13 @@ class MapBuffer:
         """
         wait for running cache to complete
         """
-        #need to receive sends, otherwise will block indefinitely
-        ___=self.pipe_parent.recv()
-        ___=self.pipe_parent.recv()
-        self.process.join()
+        if self.multiproc:
+            #need to receive sends, otherwise will block indefinitely
+            ___=self.pipe_parent.recv()
+            ___=self.pipe_parent.recv()
+            self.process.join()
+        else:
+            pass
 
 def getstream(buffer, idx: int, length: int):
     #if we have enough remaining in the chunk, proceed (CHECK not sure if > or >=)

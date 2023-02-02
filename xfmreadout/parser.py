@@ -24,18 +24,18 @@ def endpx(pxidx, idx, buffer, xfmap, pixelseries):
     return pxidx
 
 
-def initparse(xfmap):
+def initparse(xfmap, multiproc):
     """
     unused for now
     """
     xfmap.resetfile()
-    buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
+    buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
     idx = xfmap.datastart
     pxheaderlen = xfmap.PXHEADERLEN    
 
     return buffer, idx, pxheaderlen
 
-def indexmap(xfmap, pixelseries):
+def indexmap(xfmap, pixelseries, multiproc):
     """
     parse the pixel headers
     - get pixel statistics
@@ -47,7 +47,7 @@ def indexmap(xfmap, pixelseries):
         indexlist=np.zeros((pixelseries.ndet,xfmap.npx),dtype=np.uint64)
 
         xfmap.resetfile()
-        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
+        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
         idx = xfmap.datastart
         pxheaderlen = xfmap.PXHEADERLEN    
 
@@ -76,7 +76,7 @@ def indexmap(xfmap, pixelseries):
         return pixelseries, indexlist
 
 
-def parse(xfmap, pixelseries, indexlist):
+def parse(xfmap, pixelseries, indexlist, multiproc):
     """
     read in the map data after indexing
 
@@ -86,7 +86,7 @@ def parse(xfmap, pixelseries, indexlist):
     print("PARSING PIXEL DATA")
     try:
         xfmap.resetfile()
-        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
+        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
         idx = xfmap.datastart
         pxheaderlen = xfmap.PXHEADERLEN
         bytesperchan = xfmap.BYTESPERCHAN

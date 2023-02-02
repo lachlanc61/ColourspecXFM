@@ -40,6 +40,12 @@ config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG, USER_CONFIG)
 #initialise read file and directory structure 
 config, dirs = utils.initfiles(config)
 
+MULTIPROC=config['MULTIPROC']
+INFILE=config['infile']
+OUTFILE=config['outfile']
+PARSEMAP=config['PARSEMAP']
+WRITESUBMAP=config['WRITESUBMAP']
+
 #-----------------------------------
 #MAIN START
 #-----------------------------------
@@ -54,13 +60,13 @@ try:
     #initialise the spectrum-by-pixel object
     pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray)
 
-    pixelseries, indexlist = parser.indexmap(xfmap, pixelseries)
+    pixelseries, indexlist = parser.indexmap(xfmap, pixelseries, MULTIPROC)
 
-    if config['PARSEMAP']:
-        pixelseries = parser.parse(xfmap, pixelseries, indexlist)
+    if PARSEMAP:
+        pixelseries = parser.parse(xfmap, pixelseries, indexlist, MULTIPROC)
 
-    if config['WRITESUBMAP']:
-        parser.writemap(config, xfmap, pixelseries)
+    if WRITESUBMAP:
+        parser.writemap(config, xfmap, pixelseries, MULTIPROC)
 
 finally:
     xfmap.closefiles(config)

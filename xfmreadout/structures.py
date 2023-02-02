@@ -24,14 +24,14 @@ class Xfmap:
 
         #get total size of file to parse
         self.fullsize = os.path.getsize(fi)
-        self.chunksize = int(config['chunksize'])*int(config['MBCONV'])
+        self.chunksize = int(config['CHUNKSIZE'])*int(config['MBCONV'])
         self.fidx=self.infile.tell()
 
         if self.fidx != 0:
             raise ValueError(f"File pointer at {self.fidx} - Expected 0 (start of file)")
 
         #read the beginning of the file into buffer
-        buffer = bufferops.MapBuffer(self.infile, self.chunksize)
+        buffer = bufferops.MapBuffer(self.infile, self.chunksize, config['MULTIPROC'])
 
         #read the JSON header and store position of first pixel
         self.headerdict, self.datastart, buffer = bufferops.readjsonheader(buffer, 0)

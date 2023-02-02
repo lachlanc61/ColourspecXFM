@@ -37,11 +37,14 @@ def buffer(infile, chunksize):
     )
 def test_buffer_flat_load(datafiles):
     """
-    validate buffer load & retrieval via multiprocess
+    validate buffer load & retrieval
         single-detector format
-    """
-    chunksize=int(3*MBCONV) #DO NOT MODIFY, expected dependent on size
+    tests single-process and multiprocess
 
+    """
+    #Future: pull first ~20 bytes of each chunk and also check those
+
+    chunksize=int(3*MBCONV) #DO NOT MODIFY, affects expected
     expected = \
         [[ 0, 3145728, 3145728 ], \
         [ 3145728, 3145728, 3145728 ], \
@@ -49,18 +52,19 @@ def test_buffer_flat_load(datafiles):
         [ 8963229, 0, 3145728]] #EOF
     #      b.fidx, b.len, b.chunksize
 
-    f = datafiles.listdir()[0]
-    with open(f, mode='rb') as fi:
-        buffer=bufferops.MapBuffer(fi, chunksize)
+    for multiproc in [ True, False]:
+        f = datafiles.listdir()[0]
+        with open(f, mode='rb') as fi:
+            buffer=bufferops.MapBuffer(fi, chunksize, multiproc)
 
-        assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[0]
-        buffer=buffer.retrieve()
-        assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[1]
-        buffer=buffer.retrieve()
-        assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[2]
-        buffer=buffer.retrieve()
-        buffer.wait()
-        assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[3]
+            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[0]
+            buffer=buffer.retrieve()
+            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[1]
+            buffer=buffer.retrieve()
+            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[2]
+            buffer=buffer.retrieve()
+            buffer.wait()
+            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[3]
 
 
 @pytest.mark.datafiles(
@@ -70,26 +74,28 @@ def test_buffer_01_load(datafiles):
     """
     validate buffer load & retrieval via multiprocess
         dual-detector format
+    tests single-process and multiprocess
     """
-    chunksize=int(5*MBCONV) #DO NOT MODIFY
-
+    chunksize=int(5*MBCONV) #DO NOT MODIFY, affects expected
     expected = \
         [[ 0, 5242880, 5242880 ], \
         [ 5242880, 5242880, 5242880 ], \
         [ 10485760, 2223685, 5242880 ], \
         [ 12709445, 0, 5242880]] #EOF
-    #     b.fidx, b.len, b.chunksize
-    f = datafiles.listdir()[0]
-    with open(f, mode='rb') as fi:
-        buffer=bufferops.MapBuffer(fi, chunksize)
+        #     b.fidx, b.len, b.chunksize
 
-        assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[0]
-        buffer=buffer.retrieve()
-        assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[1]
-        buffer=buffer.retrieve()
-        assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[2]
-        buffer=buffer.retrieve()
-        buffer.wait()
-        assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[3]
+    for multiproc in [ True, False]:
+        f = datafiles.listdir()[0]
+        with open(f, mode='rb') as fi:
+            buffer=bufferops.MapBuffer(fi, chunksize, multiproc)
+
+            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[0]
+            buffer=buffer.retrieve()
+            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[1]
+            buffer=buffer.retrieve()
+            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[2]
+            buffer=buffer.retrieve()
+            buffer.wait()
+            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[3]
 
         
