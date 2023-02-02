@@ -7,13 +7,12 @@ infile:
 - "data/ts2.GeoPIXE"
 #- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/scan256.GeoPIXE"   #assign input file
 
-outdir:   #blank = assigned to directory of infile
+outdir:   #if blank, assigned to directory of infile
 - "out/" 
 #- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/PXVALS"
 
 PARSEMAP: True   #load spectrum-by-pixel data
 MULTIPROC: False
-CHUNKSIZE: 30    #size in Mb to load into memory at a time
 
 #Analysis flags
 #   ignored if PARSEMAP = False
@@ -25,7 +24,6 @@ DODTCALCS: True    #generate deadtime plots
 FORCEPARSE: True     #always parse datafile
 FORCERED: True       #always recalc dimensionality reduction
 FORCEKMEANS: True    #always recalc kmeans 
-
 
 #SUBMAP
 WRITESUBMAP: False    #write a submap

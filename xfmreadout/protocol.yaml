@@ -6,25 +6,16 @@ SAVEFMT_READABLE: False   #save as human-readable
 
 SEPSUMSPEC: False #sum class spectra
 
+CHUNKSIZE: 30    #size in Mb to load into memory at a time
 
 DOBG: False      #apply background fitting
 LOWBGADJUST: False    #tweak background for low signal data
-
-SHORTRUN: False  #stop after first X% of pixels
-shortpct: 20     #% of lines to run in short config
 
 CMAP: 'Set1' #default colourmap for clusters
 
 #-----------------------------------
 #VARIABLES
 #-----------------------------------
-
-#chunksize: 104857600   #100 Mb
-#chunksize: 1073741824 #1 Gb
-#chunksize: 2147483648  #2 Gb
-#chunksize: 5368709120 #5 Gb
-#chunksize: 10073741824 #10 Gb
-#chunksize: 10737418240
 
 #names of subdirectories for output
 ANADIR: "out"

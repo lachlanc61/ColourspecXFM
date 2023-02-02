@@ -2,6 +2,44 @@ import numpy as np
 
 
 
+
+
+"""
+modularise - refactoring config to use flags/kwargs
+
+-i index 
+    -> save pixel header data
+-p parse 
+    -> save pixel header data + sums, flatsums
+    >> -i
+-w write
+    -> write submap
+    >> -i
+-dt deadtimes
+    -> writes submap with filled deadtimes
+    >> -ipw
+-a analyse
+    -> run analysis
+    >> -ip
+-c clustering
+    -> run clustering analysis
+    >> ip
+    
+-e export
+    -> export pixel data as ascii/numpy blob
+    >> -ip
+-f input file
+    -> assign infile
+
+-o output dir
+    -> assign outdir
+
+"""
+
+
+
+
+
 """
 xfmap object
 static:
@@ -17,38 +55,5 @@ dynamic:
     pxidx   #pixel pointer
     rowidx  #row pointer
     pxstart #pixel origin pointer
-
-"""
-
-
-
-
-def getindexes(start_index, xfmap, npx):
-    pixelindeces=np.zeros(npx, dtype=np.int64)
-
-    pass
-    return pixelindeces
-
-def readpixelheader(pixel_index, xfmap):
-    pass
-    return pxlen, xidx, yidx, det, dt
-
-
-def readpixeldata(pixel_index, xfmap):
-    pass
-    return chan, counts
-
-
-
-
-"""
-current 
-
-    up to end of xfmap init
-        (at getdetectors)
-
-    think we don't need getdetectors anymore
-
-    can index all pixels and do this afterwards, I think
 
 """
