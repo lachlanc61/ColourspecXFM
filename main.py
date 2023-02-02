@@ -43,18 +43,21 @@ def main():
     #get command line arguments
     args = argops.readargs(argparser)
 
+    """
+    to do:
+
+    adjust initcfg to ignore config in main dir
+    -> move any remaining flags from config to protocol
+    rename protocol to config
+
+    also work out how to give default args via VSCode...
+    """
+
     #create input config from args and config files
     config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG, USER_CONFIG)
 
     #initialise read file and directory structure 
     config, dirs = utils.initfiles(config)
-
-    MULTIPROC=config['MULTIPROC']
-    INFILE=config['infile']
-    OUTFILE=config['outfile']
-    PARSEMAP=config['PARSEMAP']
-    WRITESUBMAP=config['WRITESUBMAP']
-
 
     #-----------------------------------
     #MAIN START
@@ -70,13 +73,13 @@ def main():
         #initialise the spectrum-by-pixel object
         pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray)
 
-        pixelseries, indexlist = parser.indexmap(xfmap, pixelseries, MULTIPROC)
+        pixelseries, indexlist = parser.indexmap(xfmap, pixelseries, args.multiprocess)
 
-        if PARSEMAP:
-            pixelseries = parser.parse(xfmap, pixelseries, indexlist, MULTIPROC)
+        if not args.index_only:
+            pixelseries = parser.parse(xfmap, pixelseries, indexlist, args.multiprocess)
 
-        if WRITESUBMAP:
-            parser.writemap(config, xfmap, pixelseries, MULTIPROC)
+        if args.generate_new:
+            parser.writemap(config, xfmap, pixelseries, args.multiprocess)
 
     finally:
         xfmap.closefiles(config)
@@ -100,13 +103,13 @@ def main():
 
     pixelseries.exportpxstats(config, dirs.exports)
 
-    if config['SAVEPXSPEC']:
+    if args.export_data:
         pixelseries.exportpxdata(config, dirs.exports)
 
     #perform post-analysis:
 
     #generate deadtime/sum reports
-    if config['DODTCALCS'] == True:
+    if args.analyse:
 
         dtpred, dtavg = dtops.postcalc(config, pixelseries, xfmap)
 
@@ -115,7 +118,7 @@ def main():
         dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, dtpred, dtavg, pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet)
 
     #create and show colour map
-    if config['DOCOLOURS'] == True:
+    if args.analyse:
         colour.initialise(config, xfmap.energy)
         
         for i in np.arange(pixelseries.npx):
@@ -125,11 +128,10 @@ def main():
         rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, dirs)
 
     #perform clustering
-    if config['DOCLUST']:
+    if args.classify_spectra:
         categories, classavg = clustering.complete(config, pixelseries.flattened, xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
 
     print("Processing complete")
-
 
 if __name__ == "__main__":
     main()

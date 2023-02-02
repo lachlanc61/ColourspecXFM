@@ -1,6 +1,5 @@
 import os
 
-
 def checkargs(args):
     if args.index_only and args.classify_spectra:
         print("-------------------------------")
@@ -20,13 +19,8 @@ def checkargs(args):
         print("continuing with --index-only disabled")
         args.index_only = False
 
-    if args.input_file == None:
+    if args.input_file == None:   
         raise ValueError("No input file specified")
-
-    if not ( args.x_coords == None and args.y_coords == None) and args.generate_new:
-        print("-------------------------------")
-        print("WARNING: coordinates given without --generate-new")
-        print("no .GeoPIXE file will be generated")
 
     if args.generate_new:
         if args.x_coords[1] == None:
@@ -38,6 +32,11 @@ def checkargs(args):
             raise ValueError("First x_coordinate must be < second x_coordinate")
         if (args.y_coords[0] >= args.x_coords[1]):
             raise ValueError("First y_coordinate must be < second y_coordinate")
+
+    elif args.x_coords != None or args.y_coords != None:
+        print("-------------------------------")
+        print("WARNING: crop coordinates given without --generate-new")
+        print("cropped .GeoPIXE file will not will be generated")        
 
     return args
 
