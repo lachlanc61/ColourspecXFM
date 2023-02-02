@@ -144,23 +144,6 @@ def readcfg(filename):
             return yaml.safe_load(f)
 
 
-def readargs():
-    #get the arguments from command line
-    parsed = argparse.ArgumentParser()
-
-    parsed.add_argument("-c", "--usrconfig", help="User config file (.yaml)", type=os.path.abspath)
-    parsed.add_argument("-i", "--infile", help="Input file (.GeoPIXE)", type=os.path.abspath)
-    parsed.add_argument("-o", "--outdir", help="Output path", type=os.path.abspath)
-    parsed.add_argument("-s", "--submap", action='store_true', help="Export submap (.GeoPIXE)")
-    parsed.add_argument("-p", "--parse", action='store_true', help="Only export submap")
-    parsed.add_argument("-f", "--force", action='store_true', help="Force recalculation of all pixels/classes")
-    parsed.add_argument('-x', "--xcoords", nargs='+', type=int, help="X coordinates for submap as: xstart xend")
-    parsed.add_argument('-y', "--ycoords", nargs='+', type=int, help="Y coordinates for submap as: ystart yend")
-    parsed.add_argument('-ch', "--chunksize", nargs='+', type=int, help="Chunk size to load (in Mb)")
-
-    return parsed.parse_args()
-
-
 def initcfg(args, pkgconfig, usrconfig):
     #if the user config was given as an arg, use it
     if args.usrconfig is not None:

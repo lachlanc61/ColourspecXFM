@@ -1,0 +1,39 @@
+"""
+runtime log:
+test on: ts2.GeoPIXE, hw
+                            t/px
+reading only:               0.000140 s
++clustering                 0.001296 s     
+colourmap:                  0.007800 s
+
+improving colourmap:    
+    for j:                  0.007625 s
+    vectorise channels:     0.004051 s
+    pre-init gaussians:     0.002641 s   
+    fully vectorised:       0.001886 s
+
+w/ background fitting:
+    snip:                   0.002734 s
+    complex snip:           0.002919 s
+
+OO:
+    map+pxseries:           0.001852 s
+    chunk parsing:          0.002505 s
+
+refactored:
+    write only:             0.000643 s
+main:                                       #147424d 26/11/2022
+    parse                   0.001215
+
+dtops:                                      #65c5eac 27/01/23     
+    parse                   0.001184 s
+    headers+write           0.000050 s
+
+parallelize - single proc:                  #f3ea355 30/01/23
+    index+parse             0.001219 s
+    index+parse+write       0.001293 s
+    index+write             0.000097 s
+
+parallelize - multiproc:
+    index+parse             
+"""

@@ -2,29 +2,37 @@ import numpy as np
 
 
 
-
-
 """
+if args
+    use args
+if not args
+    use config
+always use protocol
+
+
+
+
 modularise - refactoring config to use flags/kwargs
 
--i index 
+always index 
     -> save pixel header data
+
 -p parse 
     -> save pixel header data + sums, flatsums
-    >> -i
+    >> 
 -w write
     -> write submap
-    >> -i
+    >> 
 -dt deadtimes
     -> writes submap with filled deadtimes
-    >> -ipw
+    >> pw
 -a analyse
     -> run analysis
-    >> -ip
+    >> p
 -c clustering
     -> run clustering analysis
-    >> ip
-    
+    >>p
+
 -e export
     -> export pixel data as ascii/numpy blob
     >> -ip
