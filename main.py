@@ -77,8 +77,8 @@ def main():
         if not args.index_only:
             pixelseries = parser.parse(xfmap, pixelseries, indexlist, args.multiprocess)
 
-        if args.generate_new:
-            parser.writemap(config, xfmap, pixelseries, args.multiprocess)
+        if args.write_modified:
+            parser.writemap(config, xfmap, pixelseries, args.x_coords, args.y_coords, args.multiprocess)
 
     finally:
         xfmap.closefiles(config)

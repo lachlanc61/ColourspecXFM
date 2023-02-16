@@ -142,10 +142,12 @@ def getcfgs(f1, f2):
     if f2 != None:
         dict1 = readcfg(f1)
         dict2 = readcfg(f2)
+
+        return {**dict1, **dict2}
     else:
         dict1 = readcfg(f1)
 
-    return {**dict1, **dict2}
+        return {**dict1}
 
 
 def initcfg(args, pkgconfig):

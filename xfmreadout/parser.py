@@ -129,7 +129,7 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
         return pixelseries
 
 
-def writemap(config, xfmap, pixelseries):
+def writemap(config, xfmap, pixelseries, xcoords, ycoords, multiproc):
     """
     Write a map or submap
         Updates headers and pixel headers
@@ -138,6 +138,12 @@ def writemap(config, xfmap, pixelseries):
         Crops to coordinates
         Fills/predicts/corrects deadtimes if needed
     """
+
+    xstart=xcoords[0]
+    xend=xcoords[1]
+    ystart=ycoords[0]
+    yend=ycoords[1]
+
     #write file header
     bufferops.writefileheader(config, xfmap)
 
@@ -145,7 +151,7 @@ def writemap(config, xfmap, pixelseries):
     print("EXPORTING MAP")
     try:
         xfmap.resetfile()
-        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize)
+        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
         idx = xfmap.datastart
         pxheaderlen = xfmap.PXHEADERLEN
 
