@@ -28,12 +28,6 @@ NCHAN=config['NCHAN']
 BYTESPERCHAN=config['BYTESPERCHAN']
 MBCONV=config['MBCONV']
 
-"""
-@pytest.fixture()
-def buffer(infile, chunksize):   
-    #infile.seek(0)
-    return bufferops.MapBuffer(infile, chunksize)
-"""
 
 @pytest.mark.datafiles(
     os.path.join(DATA_DIR, 'ts2_01_sub.GeoPIXE'),
@@ -46,13 +40,11 @@ def test_integration_index(datafiles):
     """
         index datafile 
 
-        read pixel headers back in
+        compare to known:
             - pixel lengths
             - deadtimes
             - xcoords
             - ycoords
-
-        compare to known results
     """
     #get expected
     ef = ut.findin("pxlen.txt", datafiles)
@@ -66,13 +58,9 @@ def test_integration_index(datafiles):
 
     #prep
     f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
-    fpath = os.path.join(f.dirname, f.basename)
-    fname = os.path.splitext(os.path.basename(f))[0]
-    datadir=os.path.dirname(f)
-    outdir=os.path.join(datadir, config['OUTDIR']+"_"+fname)
 
     #arguments
-    args_in = ["-f", fpath, "-o", outdir, "-i", ]
+    args_in = ["-f", f.strpath, "-i", ]
 
     #run
     pixelseries, ___, ___, ___ = main.main(args_in)
@@ -84,12 +72,72 @@ def test_integration_index(datafiles):
 
 @pytest.mark.datafiles(
     os.path.join(DATA_DIR, 'ts2_01_sub.GeoPIXE'),
+    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxspec.npy'),
     )
-def test_integration_write(datafiles):
+def test_integration_parse(datafiles):
     """
-        read datafile and write cropped file
+        parse datafile 
+    """
+    #get expected
+    ef = ut.findin("pxspec.npy", datafiles)
+    expected_pxdata = np.load(ef.strpath)       
+    #   np.load seems to need str path while np.loadtxt doesn't
 
-        assert filesizes and adjusted header values
+    #prep
+    f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
+
+    #arguments
+    args_in = [ "-f", f.strpath, ]
+
+    #run
+    pixelseries, ___, ___, ___ = main.main(args_in)
+
+    assert np.allclose(pixelseries.data, expected_pxdata)
+
+
+@pytest.mark.datafiles(
+    os.path.join(DATA_DIR, 'ts2_01_sub.GeoPIXE'),
+    os.path.join(DATA_DIR, 'out_ts2_01_sub_export/pixeldata/pxspec.npy')
+    )
+def test_integration_cycle(datafiles):
     """
-    assert True
-    #python main.py -f ./tests/test_buffer_reads/ts2_01_sub.GeoPIXE -o "./out" -w -x 20 40 -y 10 20 -ff
+        full read->write->read cycle:
+            writes a cropped .GeoPIXE file, then parses this new cropped file and confirms data
+
+        - read datafile and write cropped file
+        - assert filesize is correct
+        - read cropped output file back in
+        - assert parsed pixel array is correct
+
+        FUTURE: assert header values for cropped file
+    """
+    expected_size = int(1407157)    #size for written, cropped .GeoPIXE file
+
+    #get expected
+    ef = ut.findin("pxspec.npy", datafiles)
+    expected_pxdata = np.load(ef.strpath)   
+    #   np.load seems to need str path while np.loadtxt doesn't
+
+    #prep
+    f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
+
+    #arguments for crop/write
+    args_in = [ "-f", f.strpath, "-w", "-x", "20", "40", "-y", "10", "20", ]
+
+    #run crop/write
+    ___, ___, ___, ___ = main.main(args_in)
+
+    #use output from crop/write as next input
+    f_result = os.path.join(f.dirname, "out_ts2_01_sub/pixeldata/ts2_01_sub_export.GeoPIXE")
+
+    #check filesize is correct
+    assert os.path.getsize(f_result) == expected_size
+
+    #use output file as input for next run
+    next_args_in = [ "-f", f_result, ]
+
+    #run
+    pixelseries, ___, ___, ___ = main.main(next_args_in)
+
+    #check results
+    assert np.allclose(pixelseries.data, expected_pxdata)
