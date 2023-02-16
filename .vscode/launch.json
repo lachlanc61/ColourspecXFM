@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["-f", "./data/ts2.GeoPIXE",  "-w", "-a", "-c", "-x", "50", "100", "-y", "10", "20", "-ff",]
+        },
+    ]
+}
+
+
+//standard
+//python main.py -f "./data/ts2.GeoPIXE" -o "./out" -w -x 50 100 -y 10 20 -ff
+
+//output-as-input
+//python main.py -f ./out/pixeldata/ts2_export.GeoPIXE -o ./out/ -a -c
