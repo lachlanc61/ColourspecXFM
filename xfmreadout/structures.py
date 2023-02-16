@@ -175,8 +175,12 @@ class PixelSeries:
         np.savetxt(os.path.join(dir, "pxstats_detector.txt"), self.det, fmt='%i', delimiter=",")
         np.savetxt(os.path.join(dir, "pxstats_dt.txt"), self.dt, fmt='%f', delimiter=",")    
         
+        #include derived stats if data was fully parsed
         if self.parsing:
-            np.savetxt(os.path.join(dir, "pxstats_sum.txt"), self.sum, fmt='%d', delimiter=",")    
+            np.savetxt(os.path.join(dir, "pxstats_sum.txt"), self.sum, fmt='%d', delimiter=",")  
+            np.savetxt(os.path.join(dir, "pxstats_dtpred.txt"), self.dtpred, fmt='%d', delimiter=",")    
+            np.savetxt(os.path.join(dir, "pxstats_dtflat.txt"), self.dtflat, fmt='%d', delimiter=",")  
+
 
 
     def exportpxdata(self, config, dir):

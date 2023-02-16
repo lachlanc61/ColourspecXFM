@@ -66,7 +66,8 @@ def reduce(config, data, output_path):
         start_time = time.time()
         print(f'REDUCER {i+1} of {nred}: {redname} across {npx} elements')
 
-        if config['FORCERED']:
+        if True:
+        #if config['FORCERED']:
             #utils.varsizes(locals().items())
             embed = reducer(n_components=2, **args).fit_transform(data)
             np.savetxt(os.path.join(output_path, redname + ".dat"), embed)
@@ -103,7 +104,8 @@ def dokmeans(config, embedding, npx, output_path):
 
         print(f'KMEANS clustering {i+1} of {nred}, reducer {redname} across {npx} elements')
 
-        if config['FORCEKMEANS']:
+        if True:
+        #if config['FORCEKMEANS']:
             kmeans.fit(embed)
             categories[i]=kmeans.labels_
             np.savetxt(os.path.join(output_path, redname + "_kmeans.txt"), categories[i])

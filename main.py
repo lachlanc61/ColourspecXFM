@@ -110,9 +110,10 @@ def main():
     #perform post-analysis:
     #   create and show colourmap, deadtime/sum reports
     if args.analyse:
-        dtops.export(dirs.exports, pixelseries.dtpred, pixelseries.flatsum)
+        #dtops.export(dirs.exports, pixelseries.dtpred, pixelseries.flatsum)
 
-        dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtpred[0], pixelseries.dtflat, pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet)
+        dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtpred[0], pixelseries.dtflat, \
+            pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
 
         colour.initialise(config, xfmap.energy)
         

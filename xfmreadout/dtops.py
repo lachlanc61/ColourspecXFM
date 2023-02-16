@@ -214,12 +214,12 @@ def predscatter(dt, dtpred, sum, dir: str, ndet: int):
     return
 
 
-def dtplots(config, dir: str, dt, sum, dtpred, dtavg, mergedsum, xres: int, yres: int, ndet: int):
-
+def dtplots(config, dir: str, dt, sum, dtpred, dtavg, mergedsum, xres: int, yres: int, ndet: int, INDEX_ONLY: bool):
+    
     dthist(dt, dir, ndet)
     dtimages(dt, dir, xres, yres, ndet)
     
-    if config['PARSEMAP'] and (np.amax(sum) > 0):
+    if not INDEX_ONLY and (np.amax(sum) > 0):
         
         if ndet == 2:
         #difference map requires two detectors
