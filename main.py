@@ -27,7 +27,7 @@ Parses spectrum-by-pixel maps from IXRF XFM
 #-----------------------------------
 #vars
 #-----------------------------------
-PACKAGE_CONFIG='xfmreadout/protocol.yaml'
+PACKAGE_CONFIG='xfmreadout/config.yaml'
 
 #-----------------------------------
 #INITIALISE
