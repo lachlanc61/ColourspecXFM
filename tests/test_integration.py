@@ -122,7 +122,7 @@ def test_integration_cycle(datafiles):
     f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
 
     #arguments for crop/write
-    args_in = [ "-f", f.strpath, "-w", "-x", "20", "40", "-y", "10", "20", ]
+    args_in = [ "-f", f.strpath, "-i", "-w", "-x", "20", "40", "-y", "10", "20", ]
 
     #run crop/write
     ___, ___, ___, ___ = main.main(args_in)
