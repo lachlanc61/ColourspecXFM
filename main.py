@@ -27,7 +27,6 @@ Parses spectrum-by-pixel maps from IXRF XFM
 #-----------------------------------
 #vars
 #-----------------------------------
-USER_CONFIG='config.yaml'
 PACKAGE_CONFIG='xfmreadout/protocol.yaml'
 
 #-----------------------------------
@@ -54,7 +53,7 @@ def main():
     """
 
     #create input config from args and config files
-    config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG, USER_CONFIG)
+    config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG)
 
     #initialise read file and directory structure 
     config, dirs = utils.initfiles(config)
@@ -132,6 +131,7 @@ def main():
         categories, classavg = clustering.complete(config, pixelseries.flattened, xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
 
     print("Processing complete")
+
 
 if __name__ == "__main__":
     main()

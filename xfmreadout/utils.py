@@ -122,17 +122,6 @@ class DirectoryStructure:
         return
 
 
-def getcfgs(f1, f2):
-    """
-    merges two dicts from filenames
-        NB: watch duplicates, f2 will override
-    """    
-    dict1 = readcfg(f1)
-    dict2 = readcfg(f2)
-
-    return {**dict1, **dict2}
-
-
 def readcfg(filename):
         dir = os.path.realpath(__file__) #_file = current file (ie. utils.py)
         dir=os.path.dirname(dir) 
@@ -143,17 +132,26 @@ def readcfg(filename):
         with open(yamlfile, "r") as f:
             return yaml.safe_load(f)
 
-
-def initcfg(args, pkgconfig, usrconfig):
-    #if the user config was given as an arg, use it
-    if args.usrconfig is not None:
-        usrconfig = args.usrconfig
-    #otherwise just use the default 
+def getcfgs(f1, f2):
+    """
+    merges two dicts from filenames
+        NB: watch duplicates, f2 will override
+    
+    CURRENTLY UNUSED
+    """    
+    if f2 != None:
+        dict1 = readcfg(f1)
+        dict2 = readcfg(f2)
     else:
-        usrconfig = usrconfig
+        dict1 = readcfg(f1)
+
+    return {**dict1, **dict2}
+
+
+def initcfg(args, pkgconfig):
     
     #parse the config files 
-    rawconfig=getcfgs(pkgconfig, usrconfig) 
+    rawconfig=getcfgs(pkgconfig, None) 
 
     #create a working copy
     config=deepcopy(rawconfig)

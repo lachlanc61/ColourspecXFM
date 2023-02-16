@@ -1,6 +1,7 @@
 #-----------------------------------
 #FLAGS
 #-----------------------------------
+
 SAVEPXSPEC: False          #save pixel spectra
 SAVEFMT_READABLE: False   #save as human-readable 
 
@@ -12,6 +13,11 @@ DOBG: False      #apply background fitting
 LOWBGADJUST: False    #tweak background for low signal data
 
 CMAP: 'Set1' #default colourmap for clusters
+
+#-------
+#from user config
+
+
 
 #-----------------------------------
 #VARIABLES
