@@ -33,24 +33,10 @@ PACKAGE_CONFIG='xfmreadout/protocol.yaml'
 #INITIALISE
 #-----------------------------------
 
-def main():
-    #get the arguments from command line
-    argparser = argparse.ArgumentParser(
-        description="XFM data loader and analysis package"
-    )
+def main(args_in):
 
     #get command line arguments
-    args = argops.readargs(argparser)
-
-    """
-    to do:
-
-    adjust initcfg to ignore config in main dir
-    -> move any remaining flags from config to protocol
-    rename protocol to config
-
-    also work out how to give default args via VSCode...
-    """
+    args = argops.readargs(args_in)
 
     #create input config from args and config files
     config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG)
@@ -58,14 +44,10 @@ def main():
     #initialise read file and directory structure 
     config, dirs = utils.initfiles(args, config)
 
-    #-----------------------------------
-    #MAIN START
-    #-----------------------------------
-
+    #start a timer
+    starttime = time.time() 
+    
     try:
-        #start a timer
-        starttime = time.time() 
-
         #initialise map object
         xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub, args.write_modified, args.chunk_size, args.multiprocess)
 
@@ -130,6 +112,6 @@ def main():
     print("Processing complete")
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])      #NB: exclude 0 == script name
 
 sys.exit()

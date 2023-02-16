@@ -1,4 +1,5 @@
 import os
+import argparse
 
 def checkargs(args):
     if args.index_only and args.classify_spectra:
@@ -41,7 +42,18 @@ def checkargs(args):
     return args
 
 
-def readargs(argparser):
+def readargs(args_in):
+    """
+    read in a set of command-line args and return the parsed object
+    """
+
+    #initialise the parser
+    argparser = argparse.ArgumentParser(
+        description="XFM data loader and analysis package"
+    )
+
+    #--------------------------
+    #set up the expected args
     #--------------------------
     #inputs and outputs locations
     argparser.add_argument(
@@ -148,7 +160,7 @@ def readargs(argparser):
     #    default=int(config['CHUNKSIZE'])*int(config['MBCONV'],
     )
 
-    args = argparser.parse_args()
+    args = argparser.parse_args(args_in)
 
     args = checkargs(args)
 
