@@ -2,6 +2,12 @@ import os
 import argparse
 
 def checkargs(args):
+    """
+    sanity check on arg combinations
+    - warns and adjusts args on soft conflicts
+    - flags and raises on hard conflicts
+    """
+
     if args.index_only and args.classify_spectra:
         print("-------------------------------")
         print("WARNING: must parse map to use --classify-spectra")
@@ -42,9 +48,11 @@ def checkargs(args):
     return args
 
 
-def readargs(args_in):
+def readargs(args_in, config):
     """
     read in a set of command-line args and return the parsed object
+
+    reads some fallback defaults from config (eg. chunk size)
     """
 
     #initialise the parser
@@ -156,8 +164,7 @@ def readargs(args_in):
         help="Size of memory buffer (in Mb) to load while parsing"
         "Defaults to 1000 (Mb)",
         type=int, 
-        default=1000*1048576
-    #    default=int(config['CHUNKSIZE'])*int(config['MBCONV'],
+        default=int(config['CHUNKSIZE'])*int(config['MBCONV']),
     )
 
     args = argparser.parse_args(args_in)

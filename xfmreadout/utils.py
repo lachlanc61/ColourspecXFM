@@ -138,102 +138,16 @@ def readcfg(filename):
     with open(yamlfile, "r") as f:
         return yaml.safe_load(f)
 
-def getcfgs(f1, f2):
-    """
-    merges two dicts from filenames
-        NB: watch duplicates, f2 will override
-    
-    returns f1 as-is if only passed one dict
-    """    
-    if f2 != None:
-        dict1 = readcfg(f1)
-        dict2 = readcfg(f2)
 
-        return {**dict1, **dict2}
-    else:
-        dict1 = readcfg(f1)
-
-        return {**dict1}
-
-
-def initcfg(args, pkgconfig):
+def initcfg(pkgconfig):
     """
     initialise the config dict
     """
     #parse the config files 
-    rawconfig=getcfgs(pkgconfig, None) 
+    config=readcfg(pkgconfig) 
 
-    #create a working copy
-    config=deepcopy(rawconfig)
+    return config
 
-    """
-    #modify working config based on args
-    if args.infile is not None:
-        config['infile'] = args.infile
-
-    if args.outdir is not None:
-        config['outdir'] = args.outdir
-
-    if args.submap:
-        config['WRITESUBMAP'] = True
-        print("EXPORTING ONLY")
-
-    if args.parse:
-        config['PARSEMAP'] = True
-        print("PARSING MAP")
-
-    if args.force:
-        config['FORCEPARSE'] = True
-        config['FORCERED'] = True
-        config['FORCEKMEANS'] = True
-
-    if args.chunksize is not None:
-        config['CHUNKSIZE'] = args.chunksize
-
-    if args.xcoords is not None:
-        config['submap_x'][0]=args.coords[0]
-        config['submap_x'][1]=args.coords[1]
-
-        if not config['WRITESUBMAP']:
-            print("WARNING: submap coordinates set but submap flag False")
-
-    if args.ycoords is not None:
-        config['submap_y'][0]=args.coords[2]
-        config['submap_y'][1]=args.coords[3]
-
-        if not config['WRITESUBMAP']:
-            print("WARNING: submap coordinates set but submap flag False")
-
-    if not config['PARSEMAP']:
-        config['DOCOLOURS']=False
-        config['DOCLUST']=False
-        config['DOBG']=False
-        config['DODTCALCS']=False
-
-    if config['WRITESUBMAP']:
-        if config['submap_x'][1] == 0:
-            config['submap_x'][1]=int(99999)
-        if config['submap_y'][1] == 0:
-            config['submap_y'][1]=int(99999)
-
-        if (config['submap_x'][0] >= config['submap_x'][1]):
-            raise ValueError("FATAL: x2 nonzero but smaller than x1")
-        if (config['submap_y'][0] >= config['submap_y'][1]):
-            raise ValueError("FATAL: y2 nonzero but smaller than y1")
-    
-    if config['PREDICT_DT'] and config['FILL_DT']:
-        raise ValueError("FATAL: mutually exclusive flags PREDICT_DT and FILL_DT are both set True")
-
-    if config['PREDICT_DT']:
-        print("Predicting deadtimes from count-rates")
-        if not config['PARSEMAP']:
-            raise ValueError("FATAL: cannot predict DTs without parsing map for pixel sums")
-
-    if config['FILL_DT']:
-        print(f"Assigning all pixel deadtimes to {config['assign_dt']}")
-    """
-
-    return config, rawconfig
 
 def initfiles(args, config):
     """

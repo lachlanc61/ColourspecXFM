@@ -35,11 +35,11 @@ PACKAGE_CONFIG='xfmreadout/protocol.yaml'
 
 def main(args_in):
 
-    #get command line arguments
-    args = argops.readargs(args_in)
-
     #create input config from args and config files
-    config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG)
+    config =utils.initcfg(PACKAGE_CONFIG)
+
+    #get command line arguments
+    args = argops.readargs(args_in, config)
 
     #initialise read file and directory structure 
     config, dirs = utils.initfiles(args, config)
