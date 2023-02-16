@@ -56,7 +56,7 @@ def main():
     config, rawconfig=utils.initcfg(args, PACKAGE_CONFIG)
 
     #initialise read file and directory structure 
-    config, dirs = utils.initfiles(config)
+    config, dirs = utils.initfiles(args, config)
 
     #-----------------------------------
     #MAIN START
@@ -67,21 +67,23 @@ def main():
         starttime = time.time() 
 
         #initialise map object
-        xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub)
+        xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub, args.write_modified, args.chunk_size, args.multiprocess)
 
         #initialise the spectrum-by-pixel object
-        pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray)
+        pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray, args.index_only)
 
         pixelseries, indexlist = parser.indexmap(xfmap, pixelseries, args.multiprocess)
 
         if not args.index_only:
             pixelseries = parser.parse(xfmap, pixelseries, indexlist, args.multiprocess)
+            pixelseries = pixelseries.get_derived(config, xfmap)    #calculate additional derived properties after parse
 
         if args.write_modified:
-            parser.writemap(config, xfmap, pixelseries, args.x_coords, args.y_coords, args.multiprocess)
+            parser.writemap(config, xfmap, pixelseries, args.x_coords, args.y_coords, \
+                args.fill_deadtimes, args.multiprocess)
 
     finally:
-        xfmap.closefiles(config)
+        xfmap.closefiles()
 
         #complete the timer
         runtime = time.time() - starttime
@@ -98,7 +100,7 @@ def main():
     "---------------------------"
     )
 
-    #calculate derived pixel properties - eg. sums, flattened
+    #export the pixel header stats and data
 
     pixelseries.exportpxstats(config, dirs.exports)
 
@@ -106,18 +108,12 @@ def main():
         pixelseries.exportpxdata(config, dirs.exports)
 
     #perform post-analysis:
-
-    #generate deadtime/sum reports
+    #   create and show colourmap, deadtime/sum reports
     if args.analyse:
+        dtops.export(dirs.exports, pixelseries.dtpred, pixelseries.flatsum)
 
-        dtpred, dtavg = dtops.postcalc(config, pixelseries, xfmap)
+        dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtpred[0], pixelseries.dtflat, pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet)
 
-        dtops.export(dirs.exports, dtpred, pixelseries.flatsum)
-
-        dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, dtpred, dtavg, pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet)
-
-    #create and show colour map
-    if args.analyse:
         colour.initialise(config, xfmap.energy)
         
         for i in np.arange(pixelseries.npx):

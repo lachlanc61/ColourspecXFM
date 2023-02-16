@@ -1,0 +1,37 @@
+#-----------------------------------
+#USER FLAGS
+#-----------------------------------
+#default input file and output directory
+
+infile:  
+- "data/ts2.GeoPIXE"
+#- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/scan256.GeoPIXE"   #assign input file
+
+outdir:   #if blank, assigned to directory of infile
+- "out/" 
+#- "/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/IXRF_block_230120/40-200/PXVALS"
+
+PARSEMAP: True   #load spectrum-by-pixel data
+MULTIPROC: False
+
+#Analysis flags
+#   ignored if PARSEMAP = False
+DOCOLOURS: True   #run colourmap
+DOCLUST: True     #run clustering
+DODTCALCS: True    #generate deadtime plots
+
+#recalc flags
+FORCEPARSE: True     #always parse datafile
+FORCERED: True       #always recalc dimensionality reduction
+FORCEKMEANS: True    #always recalc kmeans 
+
+#SUBMAP
+WRITESUBMAP: False    #write a submap
+FILL_DT: False
+PREDICT_DT: False
+submap_x: #x coordinates for writing submap
+  - 60 #60
+  - 120 #120
+submap_y: #y coordinates for writing submap
+  - 50 #50
+  - 80 #80

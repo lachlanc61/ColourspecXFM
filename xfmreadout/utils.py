@@ -10,7 +10,10 @@ from copy import deepcopy
 from scipy.stats import norm
 
 class DirectoryStructure:
-    def __init__(self, config):
+    """
+    object holding file locations and directory structure
+    """
+    def __init__(self, args, config):
         """
         Assign input and output directories from the config
             or location of script if relative
@@ -20,20 +23,20 @@ class DirectoryStructure:
         self.spath=os.path.dirname(self.spath)
         
         #check if paths are absolute or relative based on leading /
-        if config['infile'][0].startswith('/'):
-            self.fi=config['infile'][0]
+        if args.input_file.startswith('/'):
+            self.fi=args.input_file
         else:
-            self.fi = os.path.join(self.spath,config['infile'][0])
+            self.fi = os.path.join(self.spath,args.input_file)
 
         #assign output:
         #   to input if output blank
         #   otherwise as assigned
-        if config['outdir'][0] == "" or config['outdir'][0] == None:
+        if args.output_directory == "" or args.output_directory == None:
             self.odir=os.path.join(os.path.dirname(self.fi),config['ANADIR'])
-        elif config['outdir'][0].startswith('/'):   #relative vs absolute
-            self.odir=config['outdir'][0]
+        elif args.output_directory.startswith('/'):   #relative vs absolute
+            self.odir=args.output_directory
         else:
-            self.odir=os.path.join(self.spath,config['outdir'][0])
+            self.odir=os.path.join(self.spath,args.output_directory)
     
         if self.odir.endswith('/'):
             self.odir = os.path.dirname(self.odir)
@@ -57,7 +60,7 @@ class DirectoryStructure:
         self.fname = os.path.splitext(os.path.basename(self.fi))[0]
 
         #setup submap export location and extension
-        if config['WRITESUBMAP']:
+        if args.write_modified:
             self.subname=self.fname+config['convext']
             self.fsub = os.path.join(self.exports,self.subname+config['FTYPE'])
 
@@ -86,7 +89,7 @@ class DirectoryStructure:
     def check(self, config):
         """
         run some basic sanity checks
-            eg. correct filetype
+            eg. check for correct filetype
         """
         #check filetype is recognised - currently hardcoded
         if not config['FTYPE'] == ".GeoPIXE":
@@ -123,21 +126,24 @@ class DirectoryStructure:
 
 
 def readcfg(filename):
-        dir = os.path.realpath(__file__) #_file = current file (ie. utils.py)
-        dir=os.path.dirname(dir) 
-        dir=os.path.dirname(dir)        #second call to get out of src/..
+    """
+    read in the config yaml as a dict
+    """
+    dir = os.path.realpath(__file__) #_file = current file (ie. utils.py)
+    dir=os.path.dirname(dir) 
+    dir=os.path.dirname(dir)        #second call to get out of src/..
 
-        yamlfile=os.path.join(dir,filename)
+    yamlfile=os.path.join(dir,filename)
 
-        with open(yamlfile, "r") as f:
-            return yaml.safe_load(f)
+    with open(yamlfile, "r") as f:
+        return yaml.safe_load(f)
 
 def getcfgs(f1, f2):
     """
     merges two dicts from filenames
         NB: watch duplicates, f2 will override
     
-    CURRENTLY UNUSED
+    returns f1 as-is if only passed one dict
     """    
     if f2 != None:
         dict1 = readcfg(f1)
@@ -151,13 +157,16 @@ def getcfgs(f1, f2):
 
 
 def initcfg(args, pkgconfig):
-    
+    """
+    initialise the config dict
+    """
     #parse the config files 
     rawconfig=getcfgs(pkgconfig, None) 
 
     #create a working copy
     config=deepcopy(rawconfig)
 
+    """
     #modify working config based on args
     if args.infile is not None:
         config['infile'] = args.infile
@@ -222,12 +231,16 @@ def initcfg(args, pkgconfig):
 
     if config['FILL_DT']:
         print(f"Assigning all pixel deadtimes to {config['assign_dt']}")
+    """
 
     return config, rawconfig
 
-def initfiles(config):
+def initfiles(args, config):
+    """
+    initialise directory object and sanity check it
+    """
 
-    dirs = DirectoryStructure(config)
+    dirs = DirectoryStructure(args, config)
     dirs = dirs.create(config)
     dirs.check(config)
     dirs.show()    
@@ -316,9 +329,9 @@ def varsizes(allitems):
             print("{:>30}: {:>8}".format(name, sizeof_fmt(size)))
 
 
-def pxinsubmap(config, xcoord, ycoord):
-    if (xcoord >= config['submap_x'][0] and xcoord < config['submap_x'][1] and
-            ycoord >= config['submap_y'][0] and ycoord < config['submap_y'][1]
+def pxinsubmap(xin, yin, xread, yread):
+    if (xread >= xin[0] and xread < xin[1] and
+            yread >= yin[0] and yread < yin[1]
     ):
         return True
     else:

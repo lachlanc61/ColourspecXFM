@@ -2,6 +2,7 @@ import os
 import numpy as np
 
 import xfmreadout.bufferops as bufferops
+import xfmreadout.dtops as dtops
 
 #CLASSES
 class Xfmap:
@@ -12,26 +13,30 @@ class Xfmap:
         methods to parse pixel header and body, manage memory via chunks
             bufferops.py module contains subsidiary code to parse binary
     """
-    def __init__(self, config, fi, fo):
+    def __init__(self, config, fi, fo, WRITE_MODIFIED: bool, CHUNK_SIZE: int, MULTIPROC: bool):
 
         #assign input file object for reading
         try:
             self.infile = open(fi, mode='rb') # rb = read binary
-            if config['WRITESUBMAP']:
+            if WRITE_MODIFIED:
+                self.writing = True
                 self.outfile = open(fo, mode='wb')   #wb = write binary
+            else:
+                self.writing = False
         except FileNotFoundError:
             print("FATAL: incorrect filepath/files not found")
 
         #get total size of file to parse
         self.fullsize = os.path.getsize(fi)
-        self.chunksize = int(config['CHUNKSIZE'])*int(config['MBCONV'])
+        self.chunksize = CHUNK_SIZE
+
         self.fidx=self.infile.tell()
 
         if self.fidx != 0:
             raise ValueError(f"File pointer at {self.fidx} - Expected 0 (start of file)")
 
         #read the beginning of the file into buffer
-        buffer = bufferops.MapBuffer(self.infile, self.chunksize, config['MULTIPROC'])
+        buffer = bufferops.MapBuffer(self.infile, self.chunksize, MULTIPROC)
 
         #read the JSON header and store position of first pixel
         self.headerdict, self.datastart, buffer = bufferops.readjsonheader(buffer, 0)
@@ -75,17 +80,18 @@ class Xfmap:
     def resetfile(self):
         self.infile.seek(0)
 
-    def closefiles(self, config):
+    def closefiles(self):
         self.infile.close()
-        if config['WRITESUBMAP']:
+        if self.writing:
             self.outfile.close()
 
 
 
 class PixelSeries:
-    def __init__(self, config, xfmap, npx, detarray):
+    def __init__(self, config, xfmap, npx, detarray, INDEX_ONLY):
 
         self.source=xfmap
+
 
         #assign number of detectors
         self.detarray = detarray
@@ -99,9 +105,13 @@ class PixelSeries:
         self.dt=np.zeros((self.ndet,npx),dtype=np.float32)
 
         #initalise derived arrays
-        self.flattened=np.zeros((self.ndet,npx),dtype=np.uint32) 
-        self.sum=np.zeros((self.ndet,npx),dtype=np.uint32)   
-        self.flatsum=np.zeros((self.ndet,npx),dtype=np.uint32) 
+        #flat
+        self.flattened=np.zeros((npx),dtype=np.uint32) 
+        self.flatsum=np.zeros((npx),dtype=np.uint32) 
+        self.dtflat=np.zeros((npx),dtype=np.float32)  
+        #per-detector
+        self.sum=np.zeros((self.ndet,npx),dtype=np.uint32)  
+        self.dtpred=np.zeros((self.ndet,npx),dtype=np.float32)  
 
         #create colour-associated attrs even if not doing colours
         self.rvals=np.zeros(npx)
@@ -110,12 +120,14 @@ class PixelSeries:
         self.totalcounts=np.zeros(npx)
 
         #initialise whole data containers (WARNING: large)
-        if config['PARSEMAP']: 
+        if not INDEX_ONLY:
             self.data=np.zeros((self.ndet,npx,config['NCHAN']),dtype=np.uint16)
 #            if config['DOBG']: self.corrected=np.zeros((xfmap.npx,config['NCHAN']),dtype=np.uint16)
         else:
         #create a small dummy array just in case
             self.data=np.zeros((1024,config['NCHAN']),dtype=np.uint16)
+
+        self.parsing = INDEX_ONLY
 
         self.npx=0
         self.nrows=0
@@ -129,10 +141,15 @@ class PixelSeries:
         
         return self
 
-    def get_derived(self):
+    def get_derived(self, config, xfmap):
+        """
+        calculate derived arrays from values extracted from map
+        """
         self.flattened = np.sum(self.data, axis=0, dtype=np.uint32)
         self.sum = np.sum(self.data, axis=2, dtype=np.uint32)
         self.flatsum = np.sum(self.sum, axis=0, dtype=np.uint32)
+
+        self.dtpred = dtops.predict_dt(config, self, xfmap)
 
         return self
 
@@ -158,7 +175,7 @@ class PixelSeries:
         np.savetxt(os.path.join(dir, "pxstats_detector.txt"), self.det, fmt='%i', delimiter=",")
         np.savetxt(os.path.join(dir, "pxstats_dt.txt"), self.dt, fmt='%f', delimiter=",")    
         
-        if config['PARSEMAP']:
+        if self.parsing:
             np.savetxt(os.path.join(dir, "pxstats_sum.txt"), self.sum, fmt='%d', delimiter=",")    
 
 
@@ -168,9 +185,9 @@ class PixelSeries:
         """
         if config['SAVEFMT_READABLE']:
             for i in self.detarray:
-                np.savetxt(os.path.join(dir,  config['outfile'] + f"{i}.txt"), self.data[i], fmt='%i')
+                np.savetxt(os.path.join(dir,  config['export_filename'] + f"{i}.txt"), self.data[i], fmt='%i')
         else:
-            np.save(os.path.join(dir,  config['outfile'] + ".dat"), self.data[i])
+            np.save(os.path.join(dir,  config['export_filename'] + ".dat"), self.data[i])
 
 
     def importpxdata(self, config, dir):
@@ -180,7 +197,7 @@ class PixelSeries:
 
         NB: currently broken after refactor
         """
-        print("loading from file", config['outfile'])
+        print("loading from file", config['export_filename'])
         self.data = np.loadtxt(os.path.join(dir, config['outfile']), dtype=np.uint16, delimiter=",")
         self.pxlen=np.loadtxt(os.path.join(dir, "pxstats_pxlen.txt"), dtype=np.uint16, delimiter=",")
         self.xidx=np.loadtxt(os.path.join(dir, "pxstats_xidx.txt"), dtype=np.uint16, delimiter=",")
@@ -188,6 +205,6 @@ class PixelSeries:
         self.det=np.loadtxt(os.path.join(dir, "pxstats_detector.txt"), dtype=np.uint16, delimiter=",")
         self.dt=np.loadtxt(os.path.join(dir, "pxstats_dt.txt"), dtype=np.float32, delimiter=",")
         
-        print("loaded successfully", config['outfile']) 
+        print("loaded successfully", config['export_filename']) 
 
         return self

@@ -71,6 +71,8 @@ def indexmap(xfmap, pixelseries, multiproc):
     except MapDone:
         pixelseries.npx=pxidx+1
         pixelseries.nrows=pixelseries.yidx[0,pxidx]+1 
+        pixelseries.dtflat = np.sum(pixelseries.dt, axis=0)/pixelseries.ndet
+
         buffer.wait()
         xfmap.resetfile()
         return pixelseries, indexlist
@@ -117,8 +119,6 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
                     pixelseries.data[det,pxidx,:]=counts
             ___ = endpx(pxidx, start, buffer, xfmap, pixelseries)
     except MapDone:
-        pixelseries = pixelseries.get_derived()
-        
         if not pixelseries.npx == pxidx+1:
             raise ValueError(f"Index mistmatch ({pixelseries.npx}) vs ({pxidx})")
         if not pixelseries.nrows == pixelseries.yidx[0,pxidx]+1:
@@ -129,7 +129,7 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
         return pixelseries
 
 
-def writemap(config, xfmap, pixelseries, xcoords, ycoords, multiproc):
+def writemap(config, xfmap, pixelseries, xcoords, ycoords, dtfill, multiproc):
     """
     Write a map or submap
         Updates headers and pixel headers
@@ -139,13 +139,8 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, multiproc):
         Fills/predicts/corrects deadtimes if needed
     """
 
-    xstart=xcoords[0]
-    xend=xcoords[1]
-    ystart=ycoords[0]
-    yend=ycoords[1]
-
     #write file header
-    bufferops.writefileheader(config, xfmap)
+    bufferops.writefileheader(xfmap, xcoords, ycoords)
 
     print("--------------")
     print("EXPORTING MAP")
@@ -165,12 +160,12 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, multiproc):
             if not [ xidx, yidx, det ] == [ pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx], pixelseries.det[det,pxidx] ]:
                 raise ValueError(f"values read from pixel header do not match result from indexing")
 
-            if utils.pxinsubmap(config, pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx]):            
-                bufferops.writepxheader(config, xfmap, pixelseries, det, pxidx)
+            if utils.pxinsubmap(xcoords, ycoords, pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx]):            
+                bufferops.writepxheader(config, xfmap, pixelseries, det, pxidx, xcoords, ycoords, dtfill)
            
             stream, idx, buffer = bufferops.getstream(buffer, idx, pixelseries.pxlen[det,pxidx]-pxheaderlen)
             
-            if utils.pxinsubmap(config, pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx]):            
+            if utils.pxinsubmap(xcoords, ycoords, pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx]):            
                 bufferops.writepxrecord(xfmap, stream, pixelseries.pxlen[det,pxidx]-pxheaderlen)
 
             if det == xfmap.maxdet:

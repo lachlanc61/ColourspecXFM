@@ -137,15 +137,15 @@ def readargs(argparser):
         help="Pre-cache memory using second process"
         "Prevents parse operation waiting on disk I/O"
         "Increases memory usage for buffer to 2x --memory-size",
-        nargs='+',
-        type=int, 
+        action='store_true', 
     )
     argparser.add_argument(
-        '-s', "--memory-size", 
+        '-s', "--chunk-size", 
         help="Size of memory buffer (in Mb) to load while parsing"
         "Defaults to 1000 (Mb)",
-        nargs='+',
         type=int, 
+        default=1000*1048576
+    #    default=int(config['CHUNKSIZE'])*int(config['MBCONV'],
     )
 
     args = argparser.parse_args()

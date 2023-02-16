@@ -12,34 +12,42 @@ def predictdt(config, pxsum, dwell, timeconst):
     norm_sum=(pxsum/dwell)/2 #sum per pixel, corrected for dwell
                                             # corrected for no. detectors
 
-    if timeconst == 0.5:    #hardcoded for now
-        a=float(config['dtcalc_a'])
-        c=float(config['dtcalc_c'])
-        cutoff=float(config['dtcalc_cutoff'])
+    a=float(config['dtcalc_a'])
+    c=float(config['dtcalc_c'])
+    cutoff=float(config['dtcalc_cutoff'])
 
-        dtpred=norm_sum*a+c
-        dtpred=float(min(dtpred,cutoff))
-    else:
-        raise ValueError(f"Deadtime prediction not yet calibrated for TC={timeconst}")
+    dtpred=norm_sum*a+c
+    dtpred=float(min(dtpred,cutoff))
 
     return dtpred
 
-def postcalc(config, pixelseries, xfmap):
+def predict_dt(config, pixelseries, xfmap):
+    """
+    predict deadtimes-per-pixel from counts
+    
+    """
+
+    #FUTURE: alternate behaviour if flag:
+    #           fill deadtimes with fixed value from average
     timeconst = xfmap.timeconst
     dwell = xfmap.dwell
     ndet = pixelseries.ndet
 
-    dtavg=np.sum(pixelseries.dt, axis=0)/ndet
-
-    if len(pixelseries.flatsum) != len(dtavg):
+    if len(pixelseries.flatsum) != len(pixelseries.dtflat):
         raise ValueError("sum and dt array sizes differ")
 
-    dtpred=np.zeros(len(dtavg),dtype=np.float32)
+    dtpred=np.zeros((ndet,len(pixelseries.dtflat)),dtype=np.float32) 
 
-    for i in range(len(pixelseries.flatsum)):
-        dtpred[i]=predictdt(config, pixelseries.flatsum[i], dwell, timeconst)
+    if timeconst == 0.5:    #hardcoded for now
 
-    return dtpred, dtavg
+        for i in range(ndet):
+            for j in range(len(pixelseries.flatsum)):
+                dtpred[i,j]=predictdt(config, pixelseries.flatsum[j], dwell, timeconst)
+    
+    else:
+        raise ValueError(f"Deadtime prediction not yet calibrated for TC={timeconst}")        
+
+    return dtpred
 
 
 def export(dir:str, dtpred, flatsum):
