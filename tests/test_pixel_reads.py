@@ -8,7 +8,7 @@ BASE_DIR=os.path.dirname(TEST_DIR)
 DATA_DIR, ___ = os.path.splitext(__file__)
 
 
-PACKAGE_CONFIG='xfmreadout/protocol.yaml'
+PACKAGE_CONFIG='xfmreadout/config.yaml'
 
 sys.path.append(BASE_DIR)
 

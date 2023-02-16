@@ -28,11 +28,16 @@ class DirectoryStructure:
         else:
             self.fi = os.path.join(self.spath,args.input_file)
 
+        #extract name of input file
+        self.fname = os.path.splitext(os.path.basename(self.fi))[0]
+
         #assign output:
-        #   to input if output blank
+        #   to input_fname if output blank
         #   otherwise as assigned
+        appended_dir=config['ANADIR']+"_"+self.fname
+
         if args.output_directory == "" or args.output_directory == None:
-            self.odir=os.path.join(os.path.dirname(self.fi),config['ANADIR'])
+            self.odir=os.path.join(os.path.dirname(self.fi),appended_dir)
         elif args.output_directory.startswith('/'):   #relative vs absolute
             self.odir=args.output_directory
         else:
@@ -44,9 +49,9 @@ class DirectoryStructure:
         #extract terminal directory for output
         outbase=os.path.basename(self.odir)
 
-        #if terminal directory has the correct name(s), continue
-        #   otherwise, append it
-        if outbase == config['ANADIR']:      
+        #if terminal directory has the correct format, continue
+        #   otherwise, add a subdir with that name
+        if outbase == config['ANADIR'] or outbase == appended_dir:      
             pass
         else:
             self.odir=os.path.join(self.odir,config['ANADIR'])
@@ -55,9 +60,6 @@ class DirectoryStructure:
         self.transforms=os.path.join(self.odir,config['TRANSDIR'])
         self.plots=os.path.join(self.odir,config['PLOTDIR'])
         self.exports=os.path.join(self.odir,config['EXPORTDIR'])
-
-        #extract name of input file
-        self.fname = os.path.splitext(os.path.basename(self.fi))[0]
 
         #setup submap export location and extension
         if args.write_modified:

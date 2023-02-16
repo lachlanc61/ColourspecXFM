@@ -25,6 +25,7 @@ CMAP: 'Set1' #default colourmap for clusters
 
 #names of subdirectories for output
 ANADIR: "out"
+OUTDIR: "out"
 TRANSDIR: "transformations"
 PLOTDIR: "plots"
 EXPORTDIR: "pixeldata"

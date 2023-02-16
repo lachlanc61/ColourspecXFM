@@ -34,7 +34,11 @@ PACKAGE_CONFIG='xfmreadout/config.yaml'
 #-----------------------------------
 
 def main(args_in):
-
+    """
+    parse map according to args_in
+    
+    return pixelseries, xfmap and analysis results
+    """
     #create input config from args and config files
     config =utils.initcfg(PACKAGE_CONFIG)
 
@@ -104,14 +108,19 @@ def main(args_in):
             pixelseries.rvals[i], pixelseries.bvals[i], pixelseries.gvals[i], pixelseries.totalcounts[i] = colour.spectorgb(config, xfmap.energy, counts)
 
         rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, dirs)
-
+    else:
+        rgbarray = None
     #perform clustering
     if args.classify_spectra:
         categories, classavg = clustering.complete(config, pixelseries.flattened, xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
+    else:
+        categories = None
 
     print("Processing complete")
+
+    return pixelseries, xfmap, rgbarray, categories
 
 if __name__ == "__main__":
     main(sys.argv[1:])      #NB: exclude 0 == script name
 
-sys.exit()
+    sys.exit()

@@ -1,14 +1,14 @@
 import pytest
 import sys, os
 import yaml
-import time
-import numpy as np
+
 
 TEST_DIR=os.path.realpath(os.path.dirname(__file__))
 BASE_DIR=os.path.dirname(TEST_DIR)
-DATA_DIR, ___ = os.path.splitext(__file__)  #data directory for this test module -> same name as module
+DATA_DIR_NAME="test_data"   #hardcoded for tests dependent on large datafiles
+DATA_DIR = os.path.join(TEST_DIR, DATA_DIR_NAME)  
 
-PACKAGE_CONFIG='xfmreadout/protocol.yaml'
+PACKAGE_CONFIG='xfmreadout/config.yaml'
 
 sys.path.append(BASE_DIR)
 

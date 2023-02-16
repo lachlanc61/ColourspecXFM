@@ -182,7 +182,6 @@ class PixelSeries:
             np.savetxt(os.path.join(dir, "pxstats_dtflat.txt"), self.dtflat, fmt='%d', delimiter=",")  
 
 
-
     def exportpxdata(self, config, dir):
         """
         writes the spectrum-by-pixel data to csv
@@ -191,7 +190,7 @@ class PixelSeries:
             for i in self.detarray:
                 np.savetxt(os.path.join(dir,  config['export_filename'] + f"{i}.txt"), self.data[i], fmt='%i')
         else:
-            np.save(os.path.join(dir,  config['export_filename'] + ".dat"), self.data[i])
+            np.save(os.path.join(dir,  config['export_filename']), self.data)
 
 
     def importpxdata(self, config, dir):

@@ -1,14 +1,17 @@
 import pytest
 import sys, os
 import yaml
-import time
 import numpy as np
+
+import main
+import tests.utils_tests as ut
 
 TEST_DIR=os.path.realpath(os.path.dirname(__file__))
 BASE_DIR=os.path.dirname(TEST_DIR)
-DATA_DIR, ___ = os.path.splitext(__file__)  #data directory for this test module -> same name as module
+DATA_DIR_NAME="test_data"   #hardcoded for tests dependent on large datafiles
+DATA_DIR = os.path.join(TEST_DIR, DATA_DIR_NAME)  
 
-PACKAGE_CONFIG='xfmreadout/protocol.yaml'
+PACKAGE_CONFIG='xfmreadout/config.yaml'
 
 sys.path.append(BASE_DIR)
 
@@ -33,69 +36,60 @@ def buffer(infile, chunksize):
 """
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'ts2_f_sub.GeoPIXE'),
+    os.path.join(DATA_DIR, 'ts2_01_sub.GeoPIXE'),
+    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxstats_pxlen.txt'),
+    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxstats_xidx.txt'),
+    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxstats_yidx.txt'),
+    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxstats_dt.txt'),
     )
-def test_buffer_flat_load(datafiles):
+def test_integration_index(datafiles):
     """
-    validate buffer load & retrieval
-        single-detector format
-    tests single-process and multiprocess
+        index datafile 
 
+        read pixel headers back in
+            - pixel lengths
+            - deadtimes
+            - xcoords
+            - ycoords
+
+        compare to known results
     """
-    #Future: pull first ~20 bytes of each chunk and also check those
+    #get expected
+    ef = ut.findin("pxlen.txt", datafiles)
+    expected_pxlen = np.loadtxt(ef, dtype=np.uint16, delimiter=",")
+    ef = ut.findin("xidx.txt", datafiles)
+    expected_xidx = np.loadtxt(ef, dtype=np.uint16, delimiter=",")
+    ef = ut.findin("yidx.txt", datafiles)
+    expected_yidx = np.loadtxt(ef, dtype=np.uint16, delimiter=",")
+    ef = ut.findin("dt.txt", datafiles)
+    expected_dt = np.loadtxt(ef, dtype=np.float32, delimiter=",")
 
-    chunksize=int(3*MBCONV) #DO NOT MODIFY, affects expected
-    expected = \
-        [[ 0, 3145728, 3145728 ], \
-        [ 3145728, 3145728, 3145728 ], \
-        [ 6291456, 2671773, 3145728 ], \
-        [ 8963229, 0, 3145728]] #EOF
-    #      b.fidx, b.len, b.chunksize
+    #prep
+    f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
+    fpath = os.path.join(f.dirname, f.basename)
+    fname = os.path.splitext(os.path.basename(f))[0]
+    datadir=os.path.dirname(f)
+    outdir=os.path.join(datadir, config['OUTDIR']+"_"+fname)
 
-    for multiproc in [ True, False]:
-        f = datafiles.listdir()[0]
-        with open(f, mode='rb') as fi:
-            buffer=bufferops.MapBuffer(fi, chunksize, multiproc)
+    #arguments
+    args_in = ["-f", fpath, "-o", outdir, "-i", ]
 
-            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[0]
-            buffer=buffer.retrieve()
-            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[1]
-            buffer=buffer.retrieve()
-            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[2]
-            buffer=buffer.retrieve()
-            buffer.wait()
-            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[3]
+    #run
+    pixelseries, ___, ___, ___ = main.main(args_in)
 
+    assert np.allclose(pixelseries.pxlen, expected_pxlen)
+    assert np.allclose(pixelseries.xidx, expected_xidx)
+    assert np.allclose(pixelseries.yidx, expected_yidx)
+    assert np.allclose(pixelseries.dt, expected_dt)
 
 @pytest.mark.datafiles(
     os.path.join(DATA_DIR, 'ts2_01_sub.GeoPIXE'),
     )
-def test_buffer_01_load(datafiles):
+def test_integration_write(datafiles):
     """
-    validate buffer load & retrieval via multiprocess
-        dual-detector format
-    tests single-process and multiprocess
+        read datafile and write cropped file
+
+        assert filesizes and adjusted header values
     """
-    chunksize=int(5*MBCONV) #DO NOT MODIFY, affects expected
-    expected = \
-        [[ 0, 5242880, 5242880 ], \
-        [ 5242880, 5242880, 5242880 ], \
-        [ 10485760, 2223685, 5242880 ], \
-        [ 12709445, 0, 5242880]] #EOF
-        #     b.fidx, b.len, b.chunksize
-
-    for multiproc in [ True, False]:
-        f = datafiles.listdir()[0]
-        with open(f, mode='rb') as fi:
-            buffer=bufferops.MapBuffer(fi, chunksize, multiproc)
-
-            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[0]
-            buffer=buffer.retrieve()
-            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[1]
-            buffer=buffer.retrieve()
-            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[2]
-            buffer=buffer.retrieve()
-            buffer.wait()
-            assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[3]
-
-        
+    assert True
+    #python main.py -f ./tests/test_buffer_reads/ts2_01_sub.GeoPIXE -o "./out" -w -x 20 40 -y 10 20 -ff
