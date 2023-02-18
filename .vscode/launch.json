@@ -11,10 +11,14 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["-f", "./data/ts2.GeoPIXE",  "-w", "-a", "-c", "-x", "50", "100", "-y", "10", "20", "-ff",]
+            "args": ["-f", "./data/ts2_01_sub.GeoPIXE",]
         },
     ]
 }
+
+
+//
+//"args": ["-f", "./data/ts2_01_sub.GeoPIXE",  "-w", "-i", "-x", "50", "100", "-y", "10", "20", "-ff", "-m"]
 
 
 //standard
