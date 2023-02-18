@@ -53,7 +53,7 @@ python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -w -dt
 ```
 # Data format
 
-The instrument data format is a mixed JSON/binary with sparse pixel records.
+The IXRF/CSIRO data format is a mixed JSON/binary with sparse pixel records (.GeoPIXE).
 
 - The JSON file header contains the run parameters and sample and instrument metadata
 
@@ -70,42 +70,41 @@ The instrument data format is a mixed JSON/binary with sparse pixel records.
 
 # File operations
 
-The data is read in chunks to minimise memory usage
+The data is read in chunks to minimise memory usage:
 - Each chunk is stored into a MapBuffer object together with the original starting byte index. 
-- Multiple MapBuffer objects can be loaded in parallel via MapBuffer.cache() and retrieve() methods to minimise I/O delay. 
-- The active chunk is accessed via the getstream() function, which handles loading across the end of each chunk
-- The binary data is extracted this stream via struct.unpack
+- Multiple MapBuffer objects can be loaded in parallel via MapBuffer.cache() and retrieve() methods to reduce I/O delay. 
+- The active chunk is accessed via the getstream() function, which handles loading across the end of each chunk.
+- The binary data is extracted from this stream via struct.unpack
     - see: xfmreadout/bufferops.py and xfmreadout/byteops.py
 
-The input and extracted data is handled via two custom classes:
+The source and extracted datasets are handled via two custom classes:
 - The Xfmap object wraps the input dataset together with metadata derived from the JSON header.
-- The PixelSeries object holds the extracted data as a series of NumPy arrrays containing pixel statistics and the 3D data-cube.  
+- The PixelSeries object holds the extracted data as a series of NumPy arrays.  
     - see: xfmreadout/structures.py
 
-The file is parsed in three stages
- - The file is first indexed to extract the pixel header statistics and store the location and length of each pixel record
- - These pre-identified indices are then used to step through the pixel records rapidly, unpacking the binary pairs into channel and count NumPy arrays
-    - Missing channels are reintroduced and the pixel data is loaded into a PixelSeries object
+The file is parsed in three stages:
+ - The file is first indexed to extract the pixel header statistics and store the location and length of each record.
+ - These pre-identified indices are then used to step through the pixel records rapidly, unpacking the binary pairs into channel and count arrays.
+    - Missing channels are reintroduced and the pixel data is loaded into a PixelSeries object.
  - Finally, if a modified .GeoPIXE file is to be written, the file is indexed a second time, writing modified headers and data at each record index. 
     - see: xfmreadout/parser.py
 
-# Analytics
+# Analytics and visualisations
 
-Spectra are mapped to an RGB colourspace using a HSV colourmap
+Spectra are mapped to an RGB colourspace using a HSV colourmap:
 
 <p align="left">
   <img src="./docs/IMG/hsv_spectrum2.png" alt="Spectrum" width="700">
   <br />
 </p>
 
-An X*Y map is created using these RGB values to produce an at-a-glance visualisation of the mapped regions
+An X*Y map is created using these RGB values to produce an at-a-glance visualisation of the mapped regions:
 <p align="left">
   <img src="./docs/IMG/geo_colours2.png" alt="Spectrum" width="700">
   <br />
 </p>
 
-Spectra are categorised via PCA, UMAP and K-means to produce a classified map and class-average spectra for further processing
-
+Spectra are categorised via PCA, UMAP and K-means to produce a classified map and class-average spectra for further processing:
 <p align="left">
   <img src="./docs/IMG/geo_clusters.png" alt="Spectrum" width="1024">
   <br />
