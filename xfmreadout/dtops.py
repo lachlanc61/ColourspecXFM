@@ -68,6 +68,9 @@ def export(dir:str, dtpred, flatsum):
 
 
 def dthist(dt, dir: str, ndet: int):
+    """
+    generate the deadtime histogram plot
+    """
     fig = plt.figure(figsize=(6,4))
 
     ax = fig.add_subplot(111)
@@ -84,6 +87,9 @@ def dthist(dt, dir: str, ndet: int):
     return
 
 def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
+    """
+    plot the deadtimes as a map image
+    """
     #https://stackoverflow.com/questions/52273546/matplotlib-typeerror-axessubplot-object-is-not-subscriptable
     #squeeze kwarg forces 1x1 plot to behave as a 2D array so subscripting works
     fig, ax = plt.subplots(1, ndet, figsize=(8,4), squeeze=False)
@@ -107,7 +113,9 @@ def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
     return
 
 def diffimage(sum, dir: str, xres: int, yres: int, ndet: int):
-    
+    """
+    plot the differences in deadtimes between detectors as a map image
+    """    
     if ndet != 2:
         raise ValueError("Number of detectors != 2, difference map not possible")
        
@@ -129,6 +137,9 @@ def diffimage(sum, dir: str, xres: int, yres: int, ndet: int):
     return
 
 def dtscatter(dt, sum, dir: str, ndet: int):
+    """
+    produce scatterplot of deadtime vs counts per pixel
+    """  
     fig = plt.figure(figsize=(8,4))
 
     ax = fig.add_subplot(111)
@@ -154,6 +165,9 @@ def dtscatter(dt, sum, dir: str, ndet: int):
     return
 
 def predhist(dt, dtpred, dir: str, ndet: int):
+    """
+    generate the predicted deadtime histogram plot
+    """ 
     fig = plt.figure(figsize=(6,4))
 
     ax = fig.add_subplot(111)
@@ -172,7 +186,9 @@ def predhist(dt, dtpred, dir: str, ndet: int):
     return
 
 def preddiffimage(dt, dtpred, dir: str, xres: int, yres: int, ndet: int):
-       
+    """
+    plot the differences in predicted deadtimes between detectors as a map image
+    """          
     diffmap = dtpred-dt
 
     diffimage = diffmap.reshape(yres,xres)
@@ -189,6 +205,9 @@ def preddiffimage(dt, dtpred, dir: str, xres: int, yres: int, ndet: int):
     return
 
 def predscatter(dt, dtpred, sum, dir: str, ndet: int):
+    """
+    produce scatterplot of predicted deadtime vs counts per pixel
+    """  
     fig = plt.figure(figsize=(8,4))
 
     ax = fig.add_subplot(111)
@@ -215,7 +234,10 @@ def predscatter(dt, dtpred, sum, dir: str, ndet: int):
 
 
 def dtplots(config, dir: str, dt, sum, dtpred, dtavg, mergedsum, xres: int, yres: int, ndet: int, INDEX_ONLY: bool):
-    
+    """
+    produce all deadtime-related plots
+    """
+
     dthist(dt, dir, ndet)
     dtimages(dt, dir, xres, yres, ndet)
     

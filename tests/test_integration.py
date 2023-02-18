@@ -11,6 +11,9 @@ BASE_DIR=os.path.dirname(TEST_DIR)
 DATA_DIR_NAME="test_data"   #hardcoded for tests dependent on large datafiles
 DATA_DIR = os.path.join(TEST_DIR, DATA_DIR_NAME)  
 
+CHUNK_SIZE=5
+CONTROL_ARGS=[ "-s", str(CHUNK_SIZE),]
+
 PACKAGE_CONFIG='xfmreadout/config.yaml'
 
 sys.path.append(BASE_DIR)
@@ -22,11 +25,11 @@ with open(os.path.join(BASE_DIR, PACKAGE_CONFIG), "r") as f:
     config = yaml.safe_load(f)
 
 #assign constants from config
-PXHEADERLEN=config['PXHEADERLEN']
-CHARENCODE=config['CHARENCODE']
-NCHAN=config['NCHAN']
-BYTESPERCHAN=config['BYTESPERCHAN']
-MBCONV=config['MBCONV']
+#PXHEADERLEN=config['PXHEADERLEN']
+#CHARENCODE=config['CHARENCODE']
+#NCHAN=config['NCHAN']
+#BYTESPERCHAN=config['BYTESPERCHAN']
+#MBCONV=config['MBCONV']
 
 
 @pytest.mark.datafiles(
@@ -60,7 +63,7 @@ def test_integration_index(datafiles):
     f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
 
     #arguments
-    args_in = ["-f", f.strpath, "-i", ]
+    args_in = ["-f", f.strpath, "-i", ] + CONTROL_ARGS
 
     #run
     pixelseries, ___, ___, ___ = main.main(args_in)
@@ -77,6 +80,9 @@ def test_integration_index(datafiles):
 def test_integration_parse(datafiles):
     """
         parse datafile 
+
+        NB: failing at pxidx 1492, channel 0
+        - likely first pixel after new chunk
     """
     #get expected
     ef = ut.findin("pxspec.npy", datafiles)
@@ -87,7 +93,7 @@ def test_integration_parse(datafiles):
     f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
 
     #arguments
-    args_in = [ "-f", f.strpath, ]
+    args_in = [ "-f", f.strpath, ] + CONTROL_ARGS
 
     #run
     pixelseries, ___, ___, ___ = main.main(args_in)
@@ -122,7 +128,7 @@ def test_integration_cycle(datafiles):
     f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
 
     #arguments for crop/write
-    args_in = [ "-f", f.strpath, "-i", "-w", "-x", "20", "40", "-y", "10", "20", ]
+    args_in = [ "-f", f.strpath, "-i", "-w", "-x", "20", "40", "-y", "10", "20", ] + CONTROL_ARGS
 
     #run crop/write
     ___, ___, ___, ___ = main.main(args_in)
@@ -134,7 +140,7 @@ def test_integration_cycle(datafiles):
     assert os.path.getsize(f_result) == expected_size
 
     #use output file as input for next run
-    next_args_in = [ "-f", f_result, ]
+    next_args_in = [ "-f", f_result, ] + CONTROL_ARGS
 
     #run
     pixelseries, ___, ___, ___ = main.main(next_args_in)

@@ -8,9 +8,16 @@ import xfmreadout.utils as utils
 class MapDone(Exception): pass
 
 def endpx(pxidx, idx, buffer, xfmap, pixelseries):
-    #print pixel index at end of every row
+    """
+    Cleanup operations at end of each pixel
+
+        prints status at end of each row
+
+        raises MapDone at expected end of map
+    """
     row=pixelseries.yidx[0,pxidx]+1
 
+    #print pixel index at end of every row
     if pxidx % xfmap.xres == (xfmap.xres-1): 
         print(f"\rRow {row}/{xfmap.yres} at pixel {pxidx}, byte {int(buffer.fidx+idx)} ({100*(idx)/xfmap.fullsize:.1f} %)", end='')
         pass
@@ -82,7 +89,7 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
     """
     read in the map data after indexing
 
-    NB. no longer getting sum from parser, do this in postana using pixelseries.data
+    NB, getstream is returning stream incl. pixel header > failing
     """
     print("--------------")
     print("PARSING PIXEL DATA")
@@ -99,25 +106,40 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
                 if not det == pixelseries.det[det,pxidx]:
                     raise ValueError(f"Detector mistmatch at (det,pixel) = ({det},{pxidx})")
                 
-                start=indexlist[det,pxidx]
+                absidx=indexlist[det,pxidx]
+                relidx=int(absidx-buffer.fidx)
                 pxlength=pixelseries.pxlen[det,pxidx]
 
-                try:
-                #should be able to parallelize pullstream + readpx+gapfill + assign
-                    if start+pxlength <= buffer.fidx + buffer.len:
-                        stream = bufferops.pullstream(buffer, start, pxlength, pxheaderlen)
-                    else:
-                        #join
-                        stream, ___, buffer=bufferops.getstream(buffer, int(start-buffer.fidx), pxlength)
+                if relidx < 0:
+                        raise ValueError(f"pixel start {absidx} not in current buffer beginning {buffer.fidx}") 
 
+                try:
+                    #if read exceeds buffer, get next buffer via getstream
+                    if relidx+pxlength > buffer.len:
+
+                        #FUTURE: join here to wait for processes
+                        #should be able to parallelize pullstream + readpx+gapfill + assign
+                        
+                        #if break is in header, cycle buffer via getstream
+                        if relidx+pxheaderlen > buffer.len:     #not sure about > vs >=
+                            ___, ___, buffer=bufferops.getstream(buffer, relidx, pxheaderlen)
+                        
+                        #get next stream
+                        stream, ___, buffer=bufferops.getstream(buffer, relidx+pxheaderlen, pxlength-pxheaderlen)
+                    #otherwise read it directly
+                    else:
+
+                        stream = buffer.data[relidx+pxheaderlen:relidx+pxlength]
+
+                    #continue
                     chan, counts = bufferops.readpxdata(stream, len(stream), bytesperchan)
                     chan, counts = utils.gapfill(chan,counts, xfmap.nchannels)  #<-should probably go in readpxdata
-                except ValueError:
+                except ValueError:  #not sure I need this, really just a debug log
                     print(f"{det}, {pxidx}")
                     exit()
                 finally:
                     pixelseries.data[det,pxidx,:]=counts
-            ___ = endpx(pxidx, start, buffer, xfmap, pixelseries)
+            ___ = endpx(pxidx, absidx, buffer, xfmap, pixelseries)
     except MapDone:
         if not pixelseries.npx == pxidx+1:
             raise ValueError(f"Index mistmatch ({pixelseries.npx}) vs ({pxidx})")

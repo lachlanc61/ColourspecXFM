@@ -135,8 +135,11 @@ class MapBuffer:
             pass
 
 def getstream(buffer, idx: int, length: int):
+    """
+    get the next stream, loading new buffer if current read would exceed buffer length
+    """
     #if we have enough remaining in the chunk, proceed (CHECK not sure if > or >=)
-    if not idx+length > buffer.len:    
+    if idx+length <= buffer.len:    
         stream=buffer.data[idx:idx+length]
         idx=idx+length
     else:   #if step would exceed chunk
@@ -158,15 +161,6 @@ def getstream(buffer, idx: int, length: int):
         raise ValueError("FATAL: received stream shorter than expected")
 
     return stream, idx, buffer
-
-
-def pullstream(buffer, start: int, length: int, pxheaderlen: int):
-    if start < buffer.fidx:
-        raise ValueError(f"pixel start {start} not in current buffer beginning {buffer.fidx}") 
-    else:
-        stream=buffer.data[int(start+pxheaderlen-buffer.fidx):int(start+length-buffer.fidx)]
-
-    return stream
 
 
 
@@ -274,6 +268,17 @@ def readpxheader(headstream):
 
 
 def readpxdata(stream, readlength, bytesperchan):
+    """
+    read in data from a single pixel
+
+    takes: 
+        stream containing pixel data
+        the length to read in (starting at 0)
+        the expected no. bytes per datachannel
+
+    returns: 
+        sparse output channels and counts
+    """
 
     #initialise channel index and result arrays
     chan=np.zeros(int((readlength)/bytesperchan), dtype=int)
@@ -300,6 +305,12 @@ def readpxdata(stream, readlength, bytesperchan):
 
 
 def writefileheader(xfmap, xcoords, ycoords):
+    """
+    writes the main header for the file
+
+        adjusts for cropped coordinates
+    """
+
     #modify width and height in header and re-print
 
     newxres=xcoords[1]-xcoords[0]
@@ -340,9 +351,17 @@ def writefileheader(xfmap, xcoords, ycoords):
     #   think we can ignore this, the info is not used, but header is different when rewritten
 
 
-def writepxheader(config, xfmap, pxseries, det, pxidx, xcoords, ycoords, dtfill):
+def writepxheader(config, xfmap, pxseries, det: int, pxidx: int, xcoords, ycoords, calc_dt:bool):
+    """
+    write the header for a single pixel
+    takes:
+        - the config,  XfMap and PixelSeries objects
+        - the detector and pixel index to write into header
+        - x and y coordinate arrays
+        - whether we are calculating new deadtimes
 
-    if dtfill:
+    """
+    if calc_dt:
         dt = pxseries.dtpred[det,pxidx]
     else:
         dt=pxseries.dt[det,pxidx]
@@ -365,5 +384,8 @@ def writepxheader(config, xfmap, pxseries, det, pxidx, xcoords, ycoords, dtfill)
         
 
 def writepxrecord(xfmap, stream, length):
+    """
+    write the pixel data directly from stream
+    """
     xfmap.outfile.write(stream[:length])
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       

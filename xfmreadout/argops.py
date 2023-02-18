@@ -1,11 +1,12 @@
 import os
 import argparse
 
-def checkargs(args):
+def checkargs(args, config):
     """
     sanity check on arg combinations
     - warns and adjusts args on soft conflicts
     - flags and raises on hard conflicts
+    - corrects units for eg. chunksize
     """
 
     if args.index_only and args.classify_spectra:
@@ -44,6 +45,10 @@ def checkargs(args):
         print("-------------------------------")
         print("WARNING: crop coordinates given without --write-modified")
         print("cropped .GeoPIXE file will not will be produced")        
+
+    #if chunk size is small, convert to bytes
+    if args.chunk_size < config['MBCONV']:
+        args.chunk_size=args.chunk_size*config['MBCONV']
 
     return args
 
@@ -164,11 +169,11 @@ def readargs(args_in, config):
         help="Size of memory buffer (in Mb) to load while parsing"
         "Defaults to 1000 (Mb)",
         type=int, 
-        default=int(config['CHUNKSIZE'])*int(config['MBCONV']),
+        default=int(config['CHUNKSIZE']),
     )
 
     args = argparser.parse_args(args_in)
 
-    args = checkargs(args)
+    args = checkargs(args, config)
 
     return args
