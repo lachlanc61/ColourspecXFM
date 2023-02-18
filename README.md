@@ -1,94 +1,107 @@
-# Overview
+# About the project
 
-This tool parses spectrum-by-pixel maps from X-ray Flourescence Microscopy (XFM). It is currently compatible with ATLAS-series spectrometers from IXRF Inc. 
+ReadoutXFM is a Python3 tool for parsing and analysis of X-ray Flourescence Microscopy (XFM) hyperspectral maps. It is currently compatible with ATLAS-series spectrometers from IXRF Inc., and the GeoPIXE analysis package from CSIRO.  It performs read/write operations on the binary IXRF/CSIRO dataformat, and calculates a range of statistics and visualisations.
 
-These instruments raster a high-energy X-ray beam across a specimen, detecting X-ray fluorescence from the material. The resulting dataset is a spectral cube containing an elemental fingerprint across the map. This data can be used to determine the composition of the material at each pixel. 
+# Usage
 
-Analysis is manual and time-consuming, and there is a need for rapid, automated visualisation and class-averaging to inform the user's decision-making during the experiment.
+```py
+usage: main.py -f source [-o destination] [-e] [-w] [-x X1 X2] [-y Y1 Y2] [-i] [-a] [-c] [-dt] [-m] [-s SIZE]
 
-This package performs dimensionality-reduction and clustering on XFM datasets, producing class-averages which aid in manual processing. It also produces a simple RGB visualisation weighted by spectral region, as an at-a-glance representation of these multidimensional datasets. 
+required arguments:
+-f --input-file             .GeoPIXE file to be parsed
 
-# Summary:
+optional arguments:
+-h --help                   show this help message and exit
+-o --output-directory       destination to write extracted files and analysis outputs (defaults to data location)
+-i --index-only             index pixel headers only, do not extract spectrum data
+-w --write-modified         write a .GeoPIXE file including modifications specified by eg. [-x] [-y] [-dt]
+-x --x-coords               set the START and END coordinates in X dimension for cropping
+-y --y-coords               set the START and END coordinates in Y dimension for cropping
+-e --export-data            export the full spectrum-by-pixel-by-detector 3D dataset to NumPy .npy file
+-a --analyse                perform basic analysis operations (eg. colour map, deadtime statistics)
+-c --classify-spectra       perform spectral classification (eg. PCA, UMAP, K-means)
+-dt --fill-deadtimes        predict deadtime statistics from spectra
+-m --multiprocess           pre-cache memory using multi-processing
+-s --chunk-size             set the size of memory buffer (in Mb) to load at a time (eg. 1000)
 
-- parses JSON/binary .GeoPIXE files via Xfmap class
+```
 
-- extracts pixel records and pixel parameters into PixelSeries class
+# Examples
 
-- projects spectra onto an RGB colourmap for rapid visualisation of the distribution of major phases
+Perform analysis and dimensionality reduction on example dataset:
+```py
+python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -a -c
+```
 
-- performs dimensionality-reduction
+Rapidly extract pixel header statistics and visualise deadtime data:
+```py
+python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -i -a
+```
 
-- performs class-averaging, and exports these class averages for use in later processing
+Produce a submap cropped to coodinates (20,10) to (40,30):
+```py
+python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -i -w -x 20 40 -y 10 30 
+```
+Use spectrum data to predict missing deadtime statistics and write new file for further processing:
+```py
+python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -w -dt 
+```
+# Data format
 
-# Method
+The instrument data format is a mixed JSON/binary with sparse pixel records.
 
-The instrument data format is a mixed JSON/binary with sparse pixel records:
+- The JSON file header contains the run parameters and sample and instrument metadata
+
+- The data itself is a series of highly compact, binary pixel records
+- Each record contains: 
+    - A pixel header specifying statistics related to the following pixel (eg. length of record, coordinates, deadtime).
+
+    - A block of channel/count pairs containing the spectrum data. Channels where counts are 0 are omitted.  
 
 <p align="left">
   <img src="./docs/IMG/fileformat4.png" alt="Spectrum" width="1024">
   <br />
 </p>
 
-- Config files and optional arguments are read and initialised
-    - (utils.readargs and utils.initcfg)
-- The file and spectrum objects are initialised for parsing
-    - (obj.Xfmap, obj.PixelSeries)
-- The binary file is loaded in a series of chunks 
-    - (parser.getstream and obj.Xfmap.nextchunk)
-- The JSON header is loaded as a dictionary, yielding map dimensions and other parameters
-    - parser.readfileheader
-- Pixel records are parsed and loaded into a large 2D numpy array (shape = pixels * channels) 
-    - (Xfmap.parse via parser.readpxdata)
-    - Pixel parameters are extracted from the indidual pixel headers
-        - parser.readpxheader
-    - Any missing channel records are reintroduced as zeroes
-        - (utils.gapfill)
-- If needed, a submap is extracted progressively with the necessary header updates throughtout
-    - (parser.writepxheader and parser.writepxrecord)
-- The fully extracted data is stored in a PixelSeries object for analysis
+# File operations
 
-Single-pixel spectra are mapped to RGB values using the HSV colourmap:
-- Sum of: spectrum intensity * R G B channel values, across spectrum
-    - (colour.spectorgb)
+The data is read in chunks to minimise memory usage
+- Each chunk is stored into a MapBuffer object together with the original starting byte index. 
+- Multiple MapBuffer objects can be loaded in parallel via MapBuffer.cache() and retrieve() methods to minimise I/O delay. 
+- The active chunk is accessed via the getstream() function, which handles loading across the end of each chunk
+- The binary data is extracted this stream via struct.unpack
+- see: xfmreadout/bufferops.py and xfmreadout/byteops.py
+
+Data structures:
+- The input dataset is stored and accessed via an Xfmap object, which wraps the source file with metadata derived from the JSON header.
+- The extracted dataset is loaded into a PixelSeries object, containing pixel statistics and the 3D data-cube. NumPy arrays are used to maximise performance.  
+- see: xfmreadout/structures.py
+
+Parsing:
+ - The file is first indexed to extract the pixel header statistics and store the location and length of each pixel record
+ - These pre-identified indices are then used to step through the pixel records rapidly, unpacking the binary pairs into channel and count NumPy arrays
+ - Missing channels are reintroduced and the pixel data is loaded into a PixelSeries object
+ - Finally, if a modified .GeoPIXE file is to be written, the file is indexed a second time, writing modified headers and data at each record index. 
+- see: xfmreadout/parser.py
+
+# Analytics
+
+Spectra are mapped to an RGB colourspace using a HSV colourmap
 
 <p align="left">
   <img src="./docs/IMG/hsv_spectrum2.png" alt="Spectrum" width="700">
   <br />
 </p>
 
-- An x * y map is created from RGB-values per pixel:
-    - (colour.complete) 
-
+An X*Y map is created using these RGB values to produce an at-a-glance visualisation of the mapped regions
 <p align="left">
   <img src="./docs/IMG/geo_colours2.png" alt="Spectrum" width="700">
   <br />
 </p>
 
-#
-
-Pixels are categorised, class-averaged and mapped:
-- Perform dimensionality reduction via both PCA and UMAP
-    - (clustering.reduce)
-- Categorise via K-means
-    - (clustering.dokmeans)
-- Class averages generated and stored
-    - (clustering.complete)
-- Category maps displayed for each reducer
-    - (clustering.clustplt)
+Spectra are categorised via PCA, UMAP and K-means to produce a classified map and class-average spectra for further processing
 
 <p align="left">
   <img src="./docs/IMG/geo_clusters.png" alt="Spectrum" width="1024">
   <br />
 </p>
-
-
-# Usage
-
-The package is executed via core.py
-
-Run parameters and desired behaviour are controlled by two config files:
-- User-modifiable flags (eg. input file, output dimensions) are stored in config.yaml
-    - these flags can also be passed in as command line arguments
-- Development flags and tuning parameters are read from xfmreadout/protocol.yaml
-
-An example dataset is provided in ./data/geo1.GeoPIXE
