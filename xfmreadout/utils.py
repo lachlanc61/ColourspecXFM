@@ -9,164 +9,161 @@ from copy import deepcopy
 
 from scipy.stats import norm
 
-
-def getcfgs(f1, f2):
+class DirectoryStructure:
     """
-    merges two dicts from filenames
-        NB: watch duplicates, f2 will override
-    """    
-    dict1 = readcfg(f1)
-    dict2 = readcfg(f2)
+    object holding file locations and directory structure
+    """
+    def __init__(self, args, config):
+        """
+        Assign input and output directories from the config
+            or location of script if relative
+        """
+        self.script = os.path.realpath(__file__) #_file = current script
+        self.spath=os.path.dirname(self.script) 
+        self.spath=os.path.dirname(self.spath)
+        
+        #check if paths are absolute or relative based on leading /
+        if args.input_file.startswith('/'):
+            self.fi=args.input_file
+        else:
+            self.fi = os.path.join(self.spath,args.input_file)
 
-    return {**dict1, **dict2}
+        #extract name of input file
+        self.fname = os.path.splitext(os.path.basename(self.fi))[0]
+
+        #assign output:
+        #   to input_fname if output blank
+        #   otherwise as assigned
+        appended_dir=config['ANADIR']+"_"+self.fname
+
+        if args.output_directory == "" or args.output_directory == None:
+            self.odir=os.path.join(os.path.dirname(self.fi),appended_dir)
+        elif args.output_directory.startswith('/'):   #relative vs absolute
+            self.odir=args.output_directory
+        else:
+            self.odir=os.path.join(self.spath,args.output_directory)
+    
+        if self.odir.endswith('/'):
+            self.odir = os.path.dirname(self.odir)
+
+        #extract terminal directory for output
+        outbase=os.path.basename(self.odir)
+
+        #if terminal directory has the correct format, continue
+        #   otherwise, add a subdir with that name
+        if outbase == config['ANADIR'] or outbase == appended_dir:      
+            pass
+        else:
+            self.odir=os.path.join(self.odir,config['ANADIR'])
+
+        #assign and create analysis subdirs, if needed
+        self.transforms=os.path.join(self.odir,config['TRANSDIR'])
+        self.plots=os.path.join(self.odir,config['PLOTDIR'])
+        self.exports=os.path.join(self.odir,config['EXPORTDIR'])
+
+        #setup submap export location and extension
+        if args.write_modified:
+            self.subname=self.fname+config['convext']
+            self.fsub = os.path.join(self.exports,self.subname+config['FTYPE'])
+
+            if not self.subname == os.path.splitext(os.path.basename(self.fsub))[0]:
+                raise ValueError(f"submap name not recognisable")
+
+        else:
+            self.fsub = None
+
+        return
+
+    def create(self, config):
+        """
+        create the output directory and subdirectories, if needed
+        """
+
+        if not os.path.isdir(self.odir):
+            os.mkdir(self.odir)
+        
+        for dir in [ self.transforms, self.plots, self.exports ]:
+            if not os.path.isdir(dir):
+                os.mkdir(dir)
+
+        return self
+
+    def check(self, config):
+        """
+        run some basic sanity checks
+            eg. check for correct filetype
+        """
+        #check filetype is recognised - currently hardcoded
+        if not config['FTYPE'] == ".GeoPIXE":
+            raise ValueError(f"Filetype {config['FTYPE']} not recognised")
+    
+        for dir in [ self.odir, self.transforms, self.plots, self.exports ]:
+                if not os.path.isdir(dir):
+                    raise FileNotFoundError(f"Directory {dir} expected but not found")
+        
+        if not os.path.exists(self.fi):
+            raise FileNotFoundError(f"Input file {self.fi} expected but not found")
+
+        return 
+
+    def show(self):
+        """
+        present the directory assignments to the user
+        """
+        print(
+            "---------------------------\n"
+            "PATHS\n"
+            "---------------------------\n"
+            f"local: {self.spath}\n"
+            f"data: {self.fi}\n"
+            f"output: {self.odir}"
+        )
+        if self.fsub != None:
+            print(f"submap: {self.fsub}")
+
+        print("---------------------------")
+        print("---------------------------")
+
+        return
 
 
 def readcfg(filename):
-        dir = os.path.realpath(__file__) #_file = current file (ie. utils.py)
-        dir=os.path.dirname(dir) 
-        dir=os.path.dirname(dir)        #second call to get out of src/..
+    """
+    read in the config yaml as a dict
+    """
+    dir = os.path.realpath(__file__) #_file = current file (ie. utils.py)
+    dir=os.path.dirname(dir) 
+    dir=os.path.dirname(dir)        #second call to get out of src/..
 
-        yamlfile=os.path.join(dir,filename)
+    yamlfile=os.path.join(dir,filename)
 
-        with open(yamlfile, "r") as f:
-            return yaml.safe_load(f)
-
-
-def readargs():
-    #get the arguments from command line
-    parsed = argparse.ArgumentParser()
-
-    parsed.add_argument("-c", "--usrconfig", help="User config file (.yaml)", type=os.path.abspath)
-    parsed.add_argument("-i", "--infile", help="Input file (.GeoPIXE)", type=os.path.abspath)
-    parsed.add_argument("-o", "--outdir", help="Output path", type=os.path.abspath)
-    parsed.add_argument("-s", "--submap", action='store_true', help="Export submap (.GeoPIXE)")
-    parsed.add_argument("-p", "--parse", action='store_true', help="Only export submap")
-    parsed.add_argument("-f", "--force", action='store_true', help="Force recalculation of all pixels/classes")
-    parsed.add_argument('-x', "--xcoords", nargs='+', type=int, help="X coordinates for submap as: xstart xend")
-    parsed.add_argument('-y', "--ycoords", nargs='+', type=int, help="Y coordinates for submap as: ystart yend")
-    parsed.add_argument('-ch', "--chunksize", nargs='+', type=int, help="Chunk size to load (in Mb)")
-
-    return parsed.parse_args()
+    with open(yamlfile, "r") as f:
+        return yaml.safe_load(f)
 
 
-def initcfg(args, pkgconfig, usrconfig):
-    #if the user config was given as an arg, use it
-    if args.usrconfig is not None:
-        usrconfig = args.usrconfig
-    #otherwise just use the default 
-    else:
-        usrconfig = usrconfig
-    
+def initcfg(pkgconfig):
+    """
+    initialise the config dict
+    """
     #parse the config files 
-    rawconfig=getcfgs(pkgconfig, usrconfig) 
+    config=readcfg(pkgconfig) 
 
-    #create a working copy
-    config=deepcopy(rawconfig)
-
-    #modify working config based on args
-    if args.infile is not None:
-        config['infile'] = args.infile
-
-    if args.outdir is not None:
-        config['outdir'] = args.outdir
-
-    if args.submap:
-        config['WRITESUBMAP'] = True
-
-    if args.parse:
-        config['PARSEMAP'] = True
-    else:
-        print("EXPORTING SUBMAPS ONLY")
-
-    if args.force:
-        config['FORCEPARSE'] = True
-        config['FORCERED'] = True
-        config['FORCEKMEANS'] = True
-
-    if args.chunksize is not None:
-        config['chunksize'] = args.chunksize
-
-    if args.xcoords is not None:
-        config['submap_x'][0]=args.coords[0]
-        config['submap_x'][1]=args.coords[1]
-
-        if not config['WRITESUBMAP']:
-            print("WARNING: submap coordinates set but submap flag False")
-
-    if args.ycoords is not None:
-        config['submap_y'][0]=args.coords[2]
-        config['submap_y'][1]=args.coords[3]
-
-        if not config['WRITESUBMAP']:
-            print("WARNING: submap coordinates set but submap flag False")
-
-    if not config['PARSEMAP']:
-        config['DOCOLOURS']=False
-        config['DOCLUST']=False
-        config['DOBG']=False
-
-    if config['WRITESUBMAP']:
-        if config['submap_x'][1] == 0:
-            config['submap_x'][1]=int(99999)
-        if config['submap_y'][1] == 0:
-            config['submap_y'][1]=int(99999)
-
-        if (config['submap_x'][0] >= config['submap_x'][1]):
-            raise ValueError("FATAL: x2 nonzero but smaller than x1")
-        if (config['submap_y'][0] >= config['submap_y'][1]):
-            raise ValueError("FATAL: y2 nonzero but smaller than y1")
-    return config, rawconfig
+    return config
 
 
-def initf(config):
+def initfiles(args, config):
+    """
+    initialise directory object and sanity check it
+    """
 
-    script = os.path.realpath(__file__) #_file = current script
-    spath=os.path.dirname(script) 
-    spath=os.path.dirname(spath)
-    
-    #check if paths are absolute or relative based on leading /
-    if config['infile'][0].startswith('/'):
-        fi=config['infile'][0]
-    else:
-        fi = os.path.join(spath,config['infile'][0])
+    dirs = DirectoryStructure(args, config)
+    dirs = dirs.create(config)
+    dirs.check(config)
+    dirs.show()    
 
-    if config['outdir'][0].startswith('/'):
-        odir=config['outdir'][0]
-    else:
-        odir=os.path.join(spath,config['outdir'][0])
+    return config, dirs
 
-    #extract name of input file
-    fname = os.path.splitext(os.path.basename(fi))[0]
-    print(f"input file: {fi}")
-
-    print(
-        "---------------------------\n"
-        "PATHS\n"
-        "---------------------------\n"
-        f"local: {spath}\n"
-        f"data: {fi}\n"
-        f"output: {odir}"
-    )
-
-    #check filetype is recognised - currently only accepts .GeoPIXE
-    if not config['FTYPE'] == ".GeoPIXE":
-        raise ValueError(f"FATAL: filetype {config['FTYPE']} not recognised")
-
-    if config['WRITESUBMAP']:
-        subname=fname+config['convext']
-        fsub = os.path.join(odir,subname+config['FTYPE'])
-
-        if not subname == os.path.splitext(os.path.basename(fsub))[0]:
-            raise ValueError(f"submap name not recognisable")
-
-        print(f"submap: {fsub}")
-    else:
-        fsub = None
-
-    print("---------------------------")
-    print("---------------------------")
-
-    return config, fi, fname, fsub, odir
+#    return config, fi, fname, fsub, odir
 
 def lookfor(x, val):
     difference_array = np.absolute(x-val)
@@ -248,9 +245,9 @@ def varsizes(allitems):
             print("{:>30}: {:>8}".format(name, sizeof_fmt(size)))
 
 
-def pxinsubmap(config, xcoord, ycoord):
-    if (xcoord >= config['submap_x'][0] and xcoord < config['submap_x'][1] and
-            ycoord >= config['submap_y'][0] and ycoord < config['submap_y'][1]
+def pxinsubmap(xin, yin, xread, yread):
+    if (xread >= xin[0] and xread < xin[1] and
+            yread >= yin[0] and yread < yin[1]
     ):
         return True
     else:

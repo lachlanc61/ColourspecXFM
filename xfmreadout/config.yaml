@@ -1,0 +1,78 @@
+#-----------------------------------
+#FLAGS
+#-----------------------------------
+
+SAVEPXSPEC: False         #save pixel spectra
+SAVEFMT_READABLE: False   #save as human-readable 
+
+SEPSUMSPEC: False         #sum class spectra
+
+CHUNKSIZE: 30             #size in Mb to load into memory at a time
+
+DOBG: False      #apply background fitting
+LOWBGADJUST: False    #tweak background for low signal data
+
+CMAP: 'Set1' #default colourmap for clusters
+
+#-------
+#from user config
+
+
+
+#-----------------------------------
+#VARIABLES
+#-----------------------------------
+
+#names of subdirectories for output
+ANADIR: "out"
+OUTDIR: "out"
+TRANSDIR: "transformations"
+PLOTDIR: "plots"
+EXPORTDIR: "pixeldata"
+
+export_filename: "pxspec"   #name of spectrum-by-pixel csv
+convext: "_export"  #converted file extension
+
+#instrument config
+nclust: 6       #no of clusters
+use_detector: 0
+time_constant: 0.5
+
+#figure params (currently not used)
+figx: 20         #cm width of figure
+figy: 10         #cm height of figure
+smallfont: 8   #default small font
+medfont: 10    #default medium font
+lgfont: 12     #default large font
+lwidth: 1      #default linewidth
+bwidth: 1      #default border width
+
+#colour flags:
+MIN_E: 1.04      #minimum energy of interest
+MIN_XE: -5       #extended minimum x for ir
+ELASTIC: 17.44   #energy of tube Ka
+EOFFSET: 3.0
+MAX_E: 30        #maximum energy of interest
+SDS: 9           #standard deviations
+RGBLOG: False     #map RGB as log of intensity
+NCOLS: 5         #no. colours
+
+#deadtime prediction:
+dtcalc_a: 0.8333  #deadtime prediction scalar
+dtcalc_c: 0       #deadtime prediction constant
+dtcalc_cutoff: 95 #deadtime prediction cutoff
+assign_dt: 15     #manual dt to assign to all pixels
+
+#-----------------------------------
+#HARDCODED CONSTANTS (eg. filetype properties)
+#-----------------------------------
+FTYPE: ".GeoPIXE"    #valid: ".GeoPIXE"
+
+PXHEADERLEN: 16  #pixel header size
+PXHEADERMIN: 6
+BYTESPERCHAN: 4
+PXFLAG: 'DP'
+NCHAN: 4096
+ESTEP: 0.01
+CHARENCODE: 'utf-8'
+MBCONV: 1048576 #bytes per Mb
