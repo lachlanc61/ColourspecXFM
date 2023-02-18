@@ -38,7 +38,7 @@ Rapidly extract pixel header statistics and visualise deadtime data:
 python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -i -a
 ```
 
-Produce a submap cropped to coodinates (20,10) to (40,30):
+Produce a submap cropped to coordinates (20,10) to (40,30):
 ```py
 python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -i -w -x 20 40 -y 10 30 
 ```
@@ -70,19 +70,19 @@ The data is read in chunks to minimise memory usage
 - Multiple MapBuffer objects can be loaded in parallel via MapBuffer.cache() and retrieve() methods to minimise I/O delay. 
 - The active chunk is accessed via the getstream() function, which handles loading across the end of each chunk
 - The binary data is extracted this stream via struct.unpack
-- see: xfmreadout/bufferops.py and xfmreadout/byteops.py
+    - see: xfmreadout/bufferops.py and xfmreadout/byteops.py
 
-Data structures:
-- The input dataset is stored and accessed via an Xfmap object, which wraps the source file with metadata derived from the JSON header.
-- The extracted dataset is loaded into a PixelSeries object, containing pixel statistics and the 3D data-cube. NumPy arrays are used to maximise performance.  
-- see: xfmreadout/structures.py
+The input and extracted data is handled via two custom classes:
+- The Xfmap object wraps the input dataset together with metadata derived from the JSON header.
+- The PixelSeries object holds the extracted data as a series of NumPy arrrays containing pixel statistics and the 3D data-cube.  
+    - see: xfmreadout/structures.py
 
-Parsing:
+The file is parsed in three stages
  - The file is first indexed to extract the pixel header statistics and store the location and length of each pixel record
  - These pre-identified indices are then used to step through the pixel records rapidly, unpacking the binary pairs into channel and count NumPy arrays
- - Missing channels are reintroduced and the pixel data is loaded into a PixelSeries object
+    - Missing channels are reintroduced and the pixel data is loaded into a PixelSeries object
  - Finally, if a modified .GeoPIXE file is to be written, the file is indexed a second time, writing modified headers and data at each record index. 
-- see: xfmreadout/parser.py
+    - see: xfmreadout/parser.py
 
 # Analytics
 
