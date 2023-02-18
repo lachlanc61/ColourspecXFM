@@ -4,20 +4,12 @@
 
 SAVEPXSPEC: False         #save pixel spectra
 SAVEFMT_READABLE: False   #save as human-readable 
-
 SEPSUMSPEC: False         #sum class spectra
-
-CHUNKSIZE: 30             #size in Mb to load into memory at a time
-
 DOBG: False      #apply background fitting
 LOWBGADJUST: False    #tweak background for low signal data
-
 CMAP: 'Set1' #default colourmap for clusters
 
-#-------
-#from user config
-
-
+CHUNKSIZE: 1000             #(Mb) default chunk to load into memory 
 
 #-----------------------------------
 #VARIABLES
