@@ -91,11 +91,13 @@ class PixelSeries:
     def __init__(self, config, xfmap, npx, detarray, INDEX_ONLY):
 
         self.source=xfmap
-
+        self.energy=xfmap.energy
 
         #assign number of detectors
         self.detarray = detarray
+        self.npx = npx
         self.ndet=max(self.detarray)+1
+        self.nchan=config['NCHAN']
 
         #initialise pixel value arrays
         self.pxlen=np.zeros((self.ndet,npx),dtype=np.uint16)
@@ -113,19 +115,25 @@ class PixelSeries:
         self.sum=np.zeros((self.ndet,npx),dtype=np.uint32)  
         self.dtpred=np.zeros((self.ndet,npx),dtype=np.float32)  
 
-        #create colour-associated attrs even if not doing colours
+        #create analysis outputs
         self.rvals=np.zeros(npx)
         self.gvals=np.zeros(npx)
         self.bvals=np.zeros(npx)
         self.totalcounts=np.zeros(npx)
 
+        #dummy arrays for outputs
+        self.categories=np.zeros(10)
+        self.classavg=np.zeros(10)
+        self.rgbarray=np.zeros(10)      
+        self.corrected=np.zeros(10)
+
         #initialise whole data containers (WARNING: large)
         if not INDEX_ONLY:
-            self.data=np.zeros((self.ndet,npx,config['NCHAN']),dtype=np.uint16)
+            self.data=np.zeros((self.ndet,npx,self.nchan),dtype=np.uint16)
 #            if config['DOBG']: self.corrected=np.zeros((xfmap.npx,config['NCHAN']),dtype=np.uint16)
         else:
         #create a small dummy array just in case
-            self.data=np.zeros((1024,config['NCHAN']),dtype=np.uint16)
+            self.data=np.zeros((1024,self.nchan),dtype=np.uint16)
 
         self.parsing = INDEX_ONLY
 

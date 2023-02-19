@@ -11,6 +11,7 @@ import xfmreadout.structures as structures
 import xfmreadout.dtops as dtops
 import xfmreadout.bufferops as bufferops
 import xfmreadout.parser as parser
+import xfmreadout.fitting as fitting
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -96,29 +97,27 @@ def main(args_in):
     #perform post-analysis:
     #   create and show colourmap, deadtime/sum reports
     if args.analyse:
+        pixelseries.corrected=fitting.calc_corrected(pixelseries)
+
         #dtops.export(dirs.exports, pixelseries.dtpred, pixelseries.flatsum)
 
         dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtpred[0], pixelseries.dtflat, \
             pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
 
-        colour.initialise(config, xfmap.energy)
-        
-        for i in np.arange(pixelseries.npx):
-            counts=pixelseries.flattened[i,:]
-            pixelseries.rvals[i], pixelseries.bvals[i], pixelseries.gvals[i], pixelseries.totalcounts[i] = colour.spectorgb(config, xfmap.energy, counts)
-
-        rgbarray=colour.complete(pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, xfmap.xres, pixelseries.nrows, dirs)
+        pixelseries.rgbarray, pixelseries.rvals, pixelseries.gvals, pixelseries.bvals \
+            = colour.calccolours(config, pixelseries, xfmap, pixelseries.corrected, dirs)       #flattened
     else:
         rgbarray = None
     #perform clustering
     if args.classify_spectra:
-        categories, classavg = clustering.complete(config, pixelseries.flattened, xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
+        pixelseries.categories, pixelseries.classavg = clustering.complete(config, pixelseries.flattened, xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
     else:
         categories = None
+        classavg = None
 
     print("Processing complete")
 
-    return pixelseries, xfmap, rgbarray, categories
+    return pixelseries, xfmap
 
 if __name__ == "__main__":
     main(sys.argv[1:])      #NB: exclude 0 == script name

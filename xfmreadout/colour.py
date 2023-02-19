@@ -88,7 +88,7 @@ def spectorgb(config, e, y):
 
     return(rsum,gsum,bsum,ysum)
 
-def complete(rvals, gvals, bvals, mapx, mapy, dirs):
+def compile(rvals, gvals, bvals, mapx, mapy):
     """
     creates final colour-mapped image
 
@@ -97,16 +97,14 @@ def complete(rvals, gvals, bvals, mapx, mapy, dirs):
     displays plot
     """
     print(f'rgb maxima: r {np.max(rvals)} g {np.max(gvals)} b {np.max(bvals)}')
+
     chmax=np.max([np.max(rvals),np.max(gvals),np.max(bvals)])
+    
     rvals=rvals/chmax
     gvals=gvals/chmax
     bvals=bvals/chmax
 
     print(f'scaled maxima: r {np.max(rvals)} g {np.max(gvals)} b {np.max(bvals)}')
-
-    np.savetxt(os.path.join(dirs.transforms, "colourmap_red.txt"), rvals)
-    np.savetxt(os.path.join(dirs.transforms, "colourmap_green.txt"), gvals)
-    np.savetxt(os.path.join(dirs.transforms, "colourmap_blue.txt"), bvals)
 
     rimg=np.reshape(rvals, (-1, mapx))
     gimg=np.reshape(gvals, (-1, mapx))
@@ -117,10 +115,32 @@ def complete(rvals, gvals, bvals, mapx, mapy, dirs):
     rgbarray[..., 1] = gimg*256
     rgbarray[..., 2] = bimg*256
     
-    show(rgbarray, dirs.plots)
-    return(rgbarray)
+    return(rgbarray, rvals, gvals, bvals)
 
+def export_show(rgbarray, rvals, gvals, bvals, dirs):
 
-def show(rgbarray, out_path):
+    np.savetxt(os.path.join(dirs.transforms, "colourmap_red.txt"), rvals)
+    np.savetxt(os.path.join(dirs.transforms, "colourmap_green.txt"), gvals)
+    np.savetxt(os.path.join(dirs.transforms, "colourmap_blue.txt"), bvals)
+
     plt.imshow(rgbarray)
-    plt.savefig(os.path.join(out_path, 'colours.png'), dpi=150)
+    plt.savefig(os.path.join(dirs.plots, 'colours.png'), dpi=150)
+
+
+def calccolours(config, pixelseries, xfmap, dataset, dirs):
+        initialise(config, xfmap.energy)
+        
+        rvals=np.zeros(pixelseries.npx)
+        gvals=np.zeros(pixelseries.npx)
+        bvals=np.zeros(pixelseries.npx)
+        totalcounts=np.zeros(pixelseries.npx)
+
+        for i in np.arange(pixelseries.npx):
+            counts=dataset[i,:]
+            rvals[i], bvals[i], gvals[i], totalcounts[i] = spectorgb(config, xfmap.energy, counts)
+
+        rgbarray, rvals, gvals, bvals = compile(rvals, gvals, bvals, xfmap.xres, pixelseries.nrows)
+
+        export_show(rgbarray, rvals, gvals, bvals, dirs)
+
+        return rgbarray, rvals, gvals, bvals
