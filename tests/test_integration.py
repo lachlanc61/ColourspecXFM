@@ -66,7 +66,7 @@ def test_integration_index(datafiles):
     args_in = ["-f", f.strpath, "-i", ] + CONTROL_ARGS
 
     #run
-    pixelseries, ___, ___, ___ = main.main(args_in)
+    pixelseries, ___ = main.main(args_in)
 
     assert np.allclose(pixelseries.pxlen, expected_pxlen)
     assert np.allclose(pixelseries.xidx, expected_xidx)
@@ -96,7 +96,7 @@ def test_integration_parse(datafiles):
     args_in = [ "-f", f.strpath, ] + CONTROL_ARGS
 
     #run
-    pixelseries, ___, ___, ___ = main.main(args_in)
+    pixelseries, ___ = main.main(args_in)
 
     assert np.allclose(pixelseries.data, expected_pxdata)
 
@@ -131,7 +131,7 @@ def test_integration_cycle(datafiles):
     args_in = [ "-f", f.strpath, "-i", "-w", "-x", "20", "40", "-y", "10", "20", ] + CONTROL_ARGS
 
     #run crop/write
-    ___, ___, ___, ___ = main.main(args_in)
+    ___, ___ = main.main(args_in)
 
     #use output from crop/write as next input
     f_result = os.path.join(f.dirname, "out_ts2_01_sub/pixeldata/ts2_01_sub_export.GeoPIXE")
@@ -143,7 +143,7 @@ def test_integration_cycle(datafiles):
     next_args_in = [ "-f", f_result, ] + CONTROL_ARGS
 
     #run
-    pixelseries, ___, ___, ___ = main.main(next_args_in)
+    pixelseries, ___ = main.main(next_args_in)
 
     #check results
     assert np.allclose(pixelseries.data, expected_pxdata)
