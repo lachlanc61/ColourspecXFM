@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 
+from matplotlib import cm
 from sklearn import decomposition
 from sklearn.cluster import KMeans
 import umap.umap_ as umap
@@ -12,7 +13,8 @@ import xfmreadout.utils as utils
 #-----------------------------------
 #CONSTANTS
 #-----------------------------------
-KCMAPS=["Accent","Set1"]    #colourmaps for kmeans
+#KCMAPS=["Accent","Set1"]    #colourmaps for kmeans
+KCMAPS=["tab10","tab10"]    #colourmaps for kmeans
 
 #-----------------------------------
 #LISTS
@@ -152,6 +154,8 @@ def clustplt(config, embedding, categories, mapx, clusttimes, output_path):
     #    left=0.02, right=0.98, bottom=0.001, top=0.96, wspace=0.05, hspace=0.01
     #)
 
+    labels = {0: "0", 1: "1", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6"}
+
     #for each reducer
     for i in np.arange(0,nred):
         #get the reducer's name
@@ -167,11 +171,11 @@ def clustplt(config, embedding, categories, mapx, clusttimes, output_path):
         ax[plotid].set_xlabel(redname, size=16)
         ax[plotid].xaxis.set_label_position("top")
 
+        
+
         #create the scatterplot for this reducer
         # .T = transpose, rotates x and y
-        ax[plotid].scatter(*embed.T, s=10, c=categories[i], cmap=KCMAPS[i], alpha=0.5)
-#        for j in np.arange(config['nclust']):
-#            print(j,len(np.where(categories[i]==j)[0]))
+        ax[plotid].scatter(*embed.T, s=10, c=categories[i], cmap=KCMAPS[i], alpha=0.25)
 
         #add the runtime as text
         ax[plotid].text(
@@ -182,6 +186,22 @@ def clustplt(config, embedding, categories, mapx, clusttimes, output_path):
             size=14,
             horizontalalignment="right",
         )
+
+        ncats=np.max(categories)+1
+        axcm=cm.get_cmap(KCMAPS[i], ncats)
+
+        cmap=axcm(range(ncats))
+
+        for j in range(ncats):
+            ax[plotid].text(
+                0.2+0.067*j,
+                -0.1,
+                f"{j}",
+                transform=ax[plotid].transAxes,
+                size=14,
+                horizontalalignment="right",
+                color=cmap[j]
+            )
         
         #assign index for category map for this reducer
         plotid=(i,1)
@@ -192,12 +212,15 @@ def clustplt(config, embedding, categories, mapx, clusttimes, output_path):
         #show this category image
         ax[plotid].imshow(catmap, cmap=KCMAPS[i])
 
+
     #initalise the final plot, clear the axes
     plt.setp(ax, xticks=[], yticks=[])
+    plt.show()
+ 
 
     #save and show
     plt.savefig(os.path.join(output_path, 'clusters.png'), dpi=150)
-    plt.show()
+
     return
 
 

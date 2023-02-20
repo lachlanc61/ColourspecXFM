@@ -111,6 +111,7 @@ def main(args_in):
     #perform clustering
     if args.classify_spectra:
         pixelseries.categories, pixelseries.classavg = clustering.complete(config, pixelseries.flattened, xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
+        colour.plot_colourmap_explainer(pixelseries.energy, pixelseries.classavg[1:1], pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, dirs)
     else:
         categories = None
         classavg = None
