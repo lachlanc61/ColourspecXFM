@@ -72,31 +72,37 @@ def plotcorrection(spectrum, energy, bg, sub, adj):
 
 
 
-def initialise(pixelseries):
+def initialise(energy):
 
     yield_inverted=1/YIELD_FACTORS
 
     spline = sp.interpolate.UnivariateSpline(YIELD_LINES, yield_inverted, k=1)
 
-    CORRECTION_FACTORS = spline(pixelseries.energy)
+    CORRECTION_FACTORS = spline(energy)
 
     if False:
-        plotspline(CORRECTION_FACTORS, pixelseries.energy, yield_lines, yield_inverted)
+        plotspline(CORRECTION_FACTORS, energy, yield_lines, yield_inverted)
 
     return CORRECTION_FACTORS
 
 
-def correct_spec(spectrum, CORRECTION_FACTORS):
-    spectrum=spectrum
+def correct_spec(data, CORRECTION_FACTORS):
+    spectrum=data
+    spectrum[spectrum<1]=1
 
     bg = pybaselines.smooth.snip(spectrum, 30, decreasing=True, smooth_half_window=1)[0]
-
+    bg = bg.astype(np.uint32)
+    #WARNING: bug here, some 1.0s become 0s
+    #   not sure if issue with pybaselines or something else
+    #   bg is initially a np array but does not report a dtype - issue?
+    bg[bg < 1] = 1
     sub = spectrum-bg
 
     #set all values <1 to 0 so they don't get scaled by the multiplier
     #sub[sub < 1] = 0
 
     adj=sub*CORRECTION_FACTORS
+    adj=adj.astype(np.uint32)
 
     if False:
         plotcorrection(spectrum, energy, bg, sub, adj)      #energy not in local namespace otherwise
@@ -104,15 +110,15 @@ def correct_spec(spectrum, CORRECTION_FACTORS):
     return adj    
 
 
-def calc_corrected(pixelseries):
+def calc_corrected(dataset, energy, npx, nchan):
 
     print("fitting baselines")
 
-    CORRECTION_FACTORS = initialise(pixelseries)
+    CORRECTION_FACTORS = initialise(energy)
 
-    corrected=np.zeros((pixelseries.npx,pixelseries.nchan),dtype=np.uint16)
+    corrected=np.zeros((npx,nchan),dtype=np.uint32)
 
-    for i in np.arange(pixelseries.npx):
-        corrected[i]=correct_spec(pixelseries.flattened[i], CORRECTION_FACTORS)
+    for i in np.arange(npx):
+        corrected[i]=correct_spec(dataset[i], CORRECTION_FACTORS)
 
     return corrected

@@ -97,7 +97,7 @@ def main(args_in):
     #perform post-analysis:
     #   create and show colourmap, deadtime/sum reports
     if args.analyse:
-        pixelseries.corrected=fitting.calc_corrected(pixelseries)
+        pixelseries.corrected=fitting.calc_corrected(pixelseries.flattened, pixelseries.energy, pixelseries.npx, pixelseries.nchan)
 
         #dtops.export(dirs.exports, pixelseries.dtpred, pixelseries.flatsum)
 
@@ -110,7 +110,7 @@ def main(args_in):
         rgbarray = None
     #perform clustering
     if args.classify_spectra:
-        pixelseries.categories, pixelseries.classavg = clustering.complete(config, pixelseries.flattened, xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
+        pixelseries.categories, pixelseries.classavg = clustering.complete(config, pixelseries.corrected, xfmap.energy, xfmap.npx, xfmap.xres, xfmap.yres, dirs)
         #colour.plot_colourmap_explainer(pixelseries.energy, pixelseries.classavg[1:1], pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, dirs)
     else:
         categories = None
