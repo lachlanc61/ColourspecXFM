@@ -64,7 +64,7 @@ class DirectoryStructure:
         #setup submap export location and extension
         if args.write_modified:
             self.subname=self.fname+config['convext']
-            self.fsub = os.path.join(self.exports,self.subname+config['FTYPE'])
+            self.fsub = os.path.join(self.odir,self.subname+config['FTYPE'])
 
             if not self.subname == os.path.splitext(os.path.basename(self.fsub))[0]:
                 raise ValueError(f"submap name not recognisable")
