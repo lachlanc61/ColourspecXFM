@@ -12,6 +12,7 @@ import xfmreadout.dtops as dtops
 import xfmreadout.bufferops as bufferops
 import xfmreadout.parser as parser
 import xfmreadout.fitting as fitting
+import xfmreadout.diagops as diagops
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -101,6 +102,10 @@ def main(args_in):
 
         #dtops.export(dirs.exports, pixelseries.dtpred, pixelseries.flatsum)
 
+        if args.log_file is not None:
+            realtime, livetime, triggers, events, icr, ocr, dt_log = diagops.dtfromdiag(dirs.logf, dirs.fname)
+            print(dt_log)
+
         dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtpred[0], pixelseries.dtflat, \
             pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
 
@@ -118,7 +123,7 @@ def main(args_in):
 
     print("Processing complete")
 
-    return pixelseries, xfmap
+    return pixelseries, xfmap, dt_log
 
 if __name__ == "__main__":
     main(sys.argv[1:])      #NB: exclude 0 == script name

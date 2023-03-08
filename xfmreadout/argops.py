@@ -81,6 +81,11 @@ def readargs(args_in, config):
         "Defaults to the directory containing the input file",
         type=os.path.abspath,
     )
+    argparser.add_argument(
+        "-l", "--log-file", 
+        help="Specify a log file to be read in",
+        type=os.path.abspath,
+    )
     #--------------------------
     #write control
     argparser.add_argument(

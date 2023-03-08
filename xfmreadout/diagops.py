@@ -4,7 +4,7 @@ import re
 import numpy as np
 
 testpath="/home/lachlan/CODEBASE/ReadoutXFM/data/diagnostics_map1_evts.log"
-testname="diagnostics_map1_evts"
+testname="map1"
 
 NDET=2
 
@@ -27,9 +27,10 @@ def dtfromdiag(filepath: str, fname: str):
         lt=np.zeros((NDET, nlines_init), dtype=float)
         tr=np.zeros((NDET, nlines_init), dtype=int)
         ev=np.zeros((NDET, nlines_init), dtype=int)
-        icr=np.zeros((NDET, nlines_init), dtype=float)
         ocr=np.zeros((NDET, nlines_init), dtype=float)
+        icr=np.zeros((NDET, nlines_init), dtype=float)
         dt=np.zeros((NDET, nlines_init), dtype=float)
+
         print(rt.shape, rt[1], nlines_init)
 
         nlines=0
@@ -47,37 +48,37 @@ def dtfromdiag(filepath: str, fname: str):
                 lt[cdet, npx] = float(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[1])[0])
                 tr[cdet, npx ]= int(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[2])[0])
                 ev[cdet, npx] = int(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[3])[0])
-                icr[cdet, npx ]= float(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[4])[0])
-                ocr[cdet, npx] = float(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[5])[0])
-                print(cdet, rt[cdet, npx], lt[cdet, npx], tr[cdet, npx], ev[cdet, npx], icr[cdet, npx], ocr[cdet, npx])
+                ocr[cdet, npx ]= float(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[4])[0])
+                icr[cdet, npx] = float(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[5])[0])
+                print(cdet, rt[cdet, npx], lt[cdet, npx], tr[cdet, npx], ev[cdet, npx], ocr[cdet, npx], icr[cdet, npx] )
             
             if "deadtime[0]" in line[0]:
                 #print("DEADTIME0")
                 if not cdet == 0: 
                     raise ValueError(f"Detector: expected 0, found {cdet} at line {nlines}, pixel {npx} ")
-                dt[cdet, npx] = float(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[0][8:])[0])
+                dt[cdet, npx] = float(re.findall("[\d]+[\.]\d+", line[0])[0])
                 cdet=1  #next detector
 
             if "deadtime[1]" in line[0]:
                 #print("DEADTIME1")
                 if not cdet == 1: 
                     raise ValueError(f"Detector: expected 0, found {cdet} at line {nlines}, pixel {npx} ")
-                dt[cdet, npx] = float(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[0][8:])[0])
+                dt[cdet, npx] = float(re.findall("[\d]+[\.]\d+", line[0])[0])
                 cdet=0  #first detector
                 npx+=1  #next pixel
 
-            if "Saving geoPIXE map file as" in line[0][35:]:    #35 = character count for end of prestring
+            if "Saving geoPIXE map file as" in line[0]:    #35 = character count for end of prestring
                 if fname in line[0]:
                     nlines+=1
                     break
-                else:
+                elif nmaps > 1:
                     print("WRONG MAP: resetting")
                     rt=np.zeros((NDET, nlines_init), dtype=float)
                     lt=np.zeros((NDET, nlines_init), dtype=float)
                     tr=np.zeros((NDET, nlines_init), dtype=int)
                     ev=np.zeros((NDET, nlines_init), dtype=int)
-                    icr=np.zeros((NDET, nlines_init), dtype=float)
                     ocr=np.zeros((NDET, nlines_init), dtype=float)
+                    icr=np.zeros((NDET, nlines_init), dtype=float)
                     dt=np.zeros((NDET, nlines_init), dtype=float)
                     npx=0
             nlines+=1    
@@ -86,14 +87,35 @@ def dtfromdiag(filepath: str, fname: str):
         lt=lt[:, :npx]
         tr=tr[:, :npx]
         ev=ev[:, :npx]
-        icr=icr[:, :npx]
         ocr=ocr[:, :npx]
+        icr=icr[:, :npx]
+        dt=dt[:, :npx]
+        calc_dt_io=np.zeros((NDET, len(dt)), dtype=float)
+        #calc_dt_evts=np.zeros((NDET, len(dt)), dtype=float)
+        #calc_dt_realtime=np.zeros((NDET, len(dt)), dtype=float)
+        calc_dt_io=100*(1-ocr/icr)
+        calc_dt_rt=100*(rt-lt)/rt
 
-    print(f"last values: {rt[1, -1]} {lt[1, -1]} {tr[1, -1]} {ev[1, -1]} {icr[1, -1]} {ocr[1, -1]}")
+    print(f"last values: {rt[1, -1]} {lt[1, -1]} {tr[1, -1]} {ev[1, -1]} {icr[1, -1]} {ocr[1, -1]} {dt[1, -1]}")
 
     print(f"lines found: {nlines_init}, lines read: {nlines}, pixels: {npx}, stored: {len(rt[0])}")
 
-    return rt, lt, tr, ev, icr, ocr, dt
+#    print("ICR")
+#    print(icr)
+#    print("OCR")
+#    print(ocr)
+#    print("calc ICR")
+#    print(calc_dt_io)
+#    print("calc RT")
+#    print(calc_dt_rt)
+#    print("dt")
+#    print(dt)
+    print(f"IXRF  -- max: {round(np.max(dt),2)}, avg: {round(np.average(dt),2)}")
+    print(f"rt/lt -- max: {round(np.max(calc_dt_rt),2)}, avg: {round(np.average(calc_dt_rt),2)}")
+#    print(np.max(dt))
+#    print(np.max(calc_dt_rt))
+
+    return rt, lt, tr, ev, icr, ocr, calc_dt_rt
 
 
 if __name__ == "__main__":

@@ -22,7 +22,8 @@ class DirectoryStructure:
         self.spath=os.path.dirname(self.script) 
         self.spath=os.path.dirname(self.spath)
         
-        #check if paths are absolute or relative based on leading /
+        #INPUT FILE
+        #check if filepath is absolute based on leading /
         if args.input_file.startswith('/'):
             self.fi=args.input_file
         else:
@@ -30,6 +31,15 @@ class DirectoryStructure:
 
         #extract name of input file
         self.fname = os.path.splitext(os.path.basename(self.fi))[0]
+
+        #LOGFILE
+        if args.log_file is not None:
+            if args.log_file.startswith('/'):
+                self.logf=args.log_file
+            else:
+                self.logf = os.path.join(self.spath,args.log_file)
+        else:
+            self.logf = None
 
         #assign output:
         #   to input_fname if output blank
