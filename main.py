@@ -123,7 +123,7 @@ def main(args_in):
 
     print("Processing complete")
 
-    return pixelseries, xfmap, dt_log
+    return pixelseries, xfmap, #dt_log
 
 if __name__ == "__main__":
     main(sys.argv[1:])      #NB: exclude 0 == script name
