@@ -98,19 +98,20 @@ def main(args_in):
     #perform post-analysis:
     #   create and show colourmap, deadtime/sum reports
     if args.analyse:
-        pixelseries.corrected=fitting.calc_corrected(pixelseries.flattened, pixelseries.energy, pixelseries.npx, pixelseries.nchan)
+        #uncomment to fit baselines
+        #pixelseries.corrected=fitting.calc_corrected(pixelseries.flattened, pixelseries.energy, pixelseries.npx, pixelseries.nchan)
 
         #dtops.export(dirs.exports, pixelseries.dtpred, pixelseries.flatsum)
 
         if args.log_file is not None:
-            realtime, livetime, triggers, events, icr, ocr, dt_log = diagops.dtfromdiag(dirs.logf, dirs.fname)
+            realtime, livetime, triggers, events, icr, ocr, dt_log = diagops.dtfromdiag(dirs.logf)
             print(dt_log)
 
         dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtpred[0], pixelseries.dtflat, \
             pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
 
         pixelseries.rgbarray, pixelseries.rvals, pixelseries.gvals, pixelseries.bvals \
-            = colour.calccolours(config, pixelseries, xfmap, pixelseries.corrected, dirs)       #flattened
+            = colour.calccolours(config, pixelseries, xfmap, pixelseries.flattened, dirs)       #flattened / corrected
     else:
         rgbarray = None
     #perform clustering

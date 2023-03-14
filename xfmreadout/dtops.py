@@ -240,7 +240,9 @@ def dtplots(config, dir: str, dt, sum, dtpred, dtavg, mergedsum, xres: int, yres
 
     dthist(dt, dir, ndet)
     dtimages(dt, dir, xres, yres, ndet)
-    
+    diffimage(sum, dir, xres, yres, ndet)    
+    dtscatter(dt, sum, dir, ndet)    
+
     if not INDEX_ONLY and (np.amax(sum) > 0):
         
         if ndet == 2:
@@ -251,9 +253,9 @@ def dtplots(config, dir: str, dt, sum, dtpred, dtavg, mergedsum, xres: int, yres
     elif (np.amax(sum) <= 0):
         raise ValueError("Sum array is empty or zero - cannot generate sum plots")
 
-    predhist(dtavg, dtpred, dir, ndet)
-    preddiffimage(dtavg, dtpred, dir, xres, yres, ndet)
-    predscatter(dtavg, dtpred, mergedsum, dir, ndet)
+    #predhist(dtavg, dtpred, dir, ndet)
+    #preddiffimage(dtavg, dtpred, dir, xres, yres, ndet)
+    #predscatter(dtavg, dtpred, mergedsum, dir, ndet)
 
     plt.close()
 

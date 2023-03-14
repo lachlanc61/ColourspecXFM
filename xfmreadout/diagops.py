@@ -1,14 +1,59 @@
 
 import csv
 import re
+import os
+import sys
+import re
+import argparse
 import numpy as np
 
+
+OUT_NAME="diag.tmp"
+
 testpath="/home/lachlan/CODEBASE/ReadoutXFM/data/diagnostics_map1_evts.log"
-testname="map1"
+testpath="/mnt/d/DATA/XFMDATA/2023/Lachlan/REFERENCE/uMatter/Mo_vac_230313/50-200_TC1p0/diagnostics.log"
+testname="um"
 
 NDET=2
 
-def dtfromdiag(filepath: str, fname: str):
+def checkargs(args):
+    if args.input_file == None:   
+        raise ValueError("No input file specified")
+
+    return args 
+
+def getargs(args_in):
+    """
+    parse command line arguments
+    """
+
+    argparser = argparse.ArgumentParser(
+        description="Utility to parse IXRF log file for raw deadtime statistics"
+    )
+
+    #--------------------------
+    #set up the expected args
+    #--------------------------
+    #inputs and outputs locations
+    argparser.add_argument(
+        "-f", "--input-file", 
+        help="Specify a .log file to be read in", 
+        type=os.path.abspath,
+    )
+    argparser.add_argument(
+        "-s", "--split", 
+        help="Split file into separate logs based on filenames in log",
+        action='store_true',
+    )
+
+    args = argparser.parse_args(args_in)
+
+    args = checkargs(args)
+
+    return args
+
+
+def dtfromdiag(filepath: str):
     """
     extracts per-pixel deadtime values from IXRF diagnostic file
 
@@ -43,7 +88,6 @@ def dtfromdiag(filepath: str, fname: str):
                 print(f"Map started at line: {nlines}")
                 nmaps += 1
             if "Deadtime realtime" in line[0]:
-                print(line)
                 rt[cdet, npx] = float(re.findall("[\d]+[\.]\d+", line[0])[0])      
                 lt[cdet, npx] = float(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[1])[0])
                 tr[cdet, npx ]= int(re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", line[2])[0])
@@ -68,11 +112,8 @@ def dtfromdiag(filepath: str, fname: str):
                 npx+=1  #next pixel
 
             if "Saving geoPIXE map file as" in line[0]:    #35 = character count for end of prestring
-                if fname in line[0]:
-                    nlines+=1
-                    break
-                elif nmaps > 1:
-                    print("WRONG MAP: resetting")
+                if nmaps > 1:
+                    print("WARNING: MULTIPLE MAPS present, resetting")
                     rt=np.zeros((NDET, nlines_init), dtype=float)
                     lt=np.zeros((NDET, nlines_init), dtype=float)
                     tr=np.zeros((NDET, nlines_init), dtype=int)
@@ -90,33 +131,100 @@ def dtfromdiag(filepath: str, fname: str):
         ocr=ocr[:, :npx]
         icr=icr[:, :npx]
         dt=dt[:, :npx]
-        calc_dt_io=np.zeros((NDET, len(dt)), dtype=float)
-        #calc_dt_evts=np.zeros((NDET, len(dt)), dtype=float)
-        #calc_dt_realtime=np.zeros((NDET, len(dt)), dtype=float)
-        calc_dt_io=100*(1-ocr/icr)
-        calc_dt_rt=100*(rt-lt)/rt
+        calc_dt=100*(1-ocr/icr)     #ICR/OCR
+        #calc_dt=100*(rt-lt)/rt      #real/live
 
-    print(f"last values: {rt[1, -1]} {lt[1, -1]} {tr[1, -1]} {ev[1, -1]} {icr[1, -1]} {ocr[1, -1]} {dt[1, -1]}")
+    print(f"last values: {rt[1, -1]} {lt[1, -1]} {tr[1, -1]} {ev[1, -1]} {ocr[1, -1]} {icr[1, -1]}")
 
     print(f"lines found: {nlines_init}, lines read: {nlines}, pixels: {npx}, stored: {len(rt[0])}")
 
-#    print("ICR")
-#    print(icr)
-#    print("OCR")
-#    print(ocr)
-#    print("calc ICR")
-#    print(calc_dt_io)
-#    print("calc RT")
-#    print(calc_dt_rt)
-#    print("dt")
-#    print(dt)
-    print(f"IXRF  -- max: {round(np.max(dt),2)}, avg: {round(np.average(dt),2)}")
-    print(f"rt/lt -- max: {round(np.max(calc_dt_rt),2)}, avg: {round(np.average(calc_dt_rt),2)}")
-#    print(np.max(dt))
-#    print(np.max(calc_dt_rt))
+    print(f"IXRF DT -- max: {round(np.max(dt),2)}, avg: {round(np.average(dt),2)}")
+    print(f"calc DT -- max: {round(np.max(calc_dt),2)}, avg: {round(np.average(calc_dt),2)}")
 
-    return rt, lt, tr, ev, icr, ocr, calc_dt_rt
+    return rt, lt, tr, ev, icr, ocr, calc_dt
+
+def splitlog(filepath: str):
+    """
+    Takes a diagnostic log and splits it into separate files per map
+
+    outputs are named "diagnostics_[map_name].log"
+        [map_name] is read from .GeoPIXE file in log
+
+    if multiple maps in the log share the same name, only the most recent is split
+    """
+
+    out_path=os.path.dirname(os.path.abspath(filepath))
+    tempf=os.path.join(out_path, OUT_NAME)
+
+    with open(filepath) as f:
+       
+        line_idx = 0
+        do_export=False
+
+        if os.path.isfile(tempf):
+            os.remove(tempf)
+        
+        tempfile=open(tempf, 'a')
+
+        for line in csv.reader(f):
+            if "FastMap::Init()" in line[0]:
+                do_export=True
+                start_idx=line_idx
+                
+            if do_export:
+                line_as_str=','.join(line)
+                line_as_str+='\n'
+                tempfile.write(line_as_str)
+
+            if "Saving geoPIXE map file as" in line[0]:
+                
+                name=re.findall(r"[a-zA-Z0-9\-\_]+.GeoPIXE",line[0])[0]
+                name=os.path.splitext(name)[0]
+                timestamp=re.findall(r"[0-9]+\:[0-9]+\:[0-9]+",line[0])[0]
+
+                tempfile.close()
+                newf=os.path.join(out_path, f"diagnostics_{name}.log")
+                print(f"time: {timestamp}, lines: {start_idx} to {line_idx}, file: {name}.GeoPIXE")
+                print(f"saving to: {newf}")
+
+                if os.path.isfile(newf):
+                    print(f"WARNING: previous file overwritten for name {name}")
+
+                os.rename(tempf, newf)
+
+                tempfile=open(tempf, 'a')
+                do_export=False
+
+            line_idx += 1
+
+        tempfile.close()
+
+        if os.path.isfile(tempf):
+            os.remove(tempf)
+    return
+
+
+def main(args_in):
+    #get command line arguments
+    args = getargs(args_in)
+
+    #check if filepath is absolute based on leading /
+    if args.input_file.startswith('/'):
+        fi=args.input_file
+    else:
+        fi = os.path.join(os.getcwd(),args.input_file)
+
+    if args.split:
+        splitlog(fi)
+        return None, None, None, None, None, None, None
+    else:
+        rt, lt, tr, ev, icr, ocr, calc_dt = dtfromdiag(fi)
+
+    return rt, lt, tr, ev, icr, ocr, calc_dt
 
 
 if __name__ == "__main__":
-    dtfromdiag(testpath, testname)
+    main(sys.argv[1:])      #NB: exclude 0 == script name
+
+    sys.exit()
+
