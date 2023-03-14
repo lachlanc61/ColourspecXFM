@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["-f", "./data/ts2_01_sub.GeoPIXE",]
+            "args": ["-f", "data/example_datafile.GeoPIXE", "-a",]
         },
     ]
 }
@@ -19,10 +19,13 @@
 
 //
 //"args": ["-f", "./data/ts2_01_sub.GeoPIXE",  "-w", "-i", "-x", "50", "100", "-y", "10", "20", "-ff", "-m"]
-
+//"args": ["-f", "./data/ts2_01_sub.GeoPIXE",  "-w", "-i", "-x", "50", "225", "-y", "30", "100", ]
 
 //standard
 //python main.py -f "./data/ts2.GeoPIXE" -o "./out" -w -x 50 100 -y 10 20 -ff
 
 //output-as-input
 //python main.py -f ./out/pixeldata/ts2_export.GeoPIXE -o ./out/ -a -c
+
+
+//["-f", "./data/ts2_01_sub.GeoPIXE",  "-w", "-i", "-x", "50", "225", "-y", "30", "100", ]
