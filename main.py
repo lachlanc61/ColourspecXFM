@@ -104,8 +104,8 @@ def main(args_in):
         #dtops.export(dirs.exports, pixelseries.dtpred, pixelseries.flatsum)
 
         if args.log_file is not None:
-            realtime, livetime, triggers, events, icr, ocr, dt_log = diagops.dtfromdiag(dirs.logf)
-            print(dt_log)
+            realtime, livetime, triggers, events, icr, ocr, dt_evt, dt_rt = diagops.dtfromdiag(dirs.logf)
+            print(dt_evt)
 
         dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtpred[0], pixelseries.dtflat, \
             pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)

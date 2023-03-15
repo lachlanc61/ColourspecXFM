@@ -61,7 +61,7 @@ def dtfromdiag(filepath: str):
     
     IMPORTANT: requires diagnostic files to be converted via sed:
     """
-        #   sed -i 's/\x0//g' diagnostics_map1_evts.log
+        #   sed -i 's/\x0//g' diagnostics.log
 
     with open(filepath) as f:
         nlines_init=sum(1 for line in f)
@@ -131,17 +131,17 @@ def dtfromdiag(filepath: str):
         ocr=ocr[:, :npx]
         icr=icr[:, :npx]
         dt=dt[:, :npx]
-        calc_dt=100*(1-ocr/icr)     #ICR/OCR
-        #calc_dt=100*(rt-lt)/rt      #real/live
+        dt_evt=100*(1-ocr/icr)     #ICR/OCR
+        dt_rt=100*(rt-lt)/rt      #real/live
 
     print(f"last values: {rt[1, -1]} {lt[1, -1]} {tr[1, -1]} {ev[1, -1]} {ocr[1, -1]} {icr[1, -1]}")
 
     print(f"lines found: {nlines_init}, lines read: {nlines}, pixels: {npx}, stored: {len(rt[0])}")
 
     print(f"IXRF DT -- max: {round(np.max(dt),2)}, avg: {round(np.average(dt),2)}")
-    print(f"calc DT -- max: {round(np.max(calc_dt),2)}, avg: {round(np.average(calc_dt),2)}")
+    print(f"DT from EVT -- max: {round(np.max(dt_evt),2)}, avg: {round(np.average(dt_evt),2)}")
 
-    return rt, lt, tr, ev, icr, ocr, calc_dt
+    return rt, lt, tr, ev, icr, ocr, dt_evt, dt_rt
 
 def splitlog(filepath: str):
     """
@@ -168,6 +168,13 @@ def splitlog(filepath: str):
 
         for line in csv.reader(f):
             if "FastMap::Init()" in line[0]:
+                
+                if do_export==True:
+                    tempfile.close()
+                    if os.path.isfile(tempf):
+                        os.remove(tempf)
+                    tempfile=open(tempf, 'a')                    
+
                 do_export=True
                 start_idx=line_idx
                 
@@ -216,11 +223,11 @@ def main(args_in):
 
     if args.split:
         splitlog(fi)
-        return None, None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None
     else:
-        rt, lt, tr, ev, icr, ocr, calc_dt = dtfromdiag(fi)
+        rt, lt, tr, ev, icr, ocr, dt_evt, dt_rt = dtfromdiag(fi)
 
-    return rt, lt, tr, ev, icr, ocr, calc_dt
+    return rt, lt, tr, ev, icr, ocr, dt_evt, dt_rt
 
 
 if __name__ == "__main__":
