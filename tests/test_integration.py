@@ -134,7 +134,7 @@ def test_integration_cycle(datafiles):
     ___, ___ = main.main(args_in)
 
     #use output from crop/write as next input
-    f_result = os.path.join(f.dirname, "out_ts2_01_sub/pixeldata/ts2_01_sub_export.GeoPIXE")
+    f_result = os.path.join(f.dirname, "out_ts2_01_sub/ts2_01_sub_export.GeoPIXE")
 
     #check filesize is correct
     assert os.path.getsize(f_result) == expected_size
