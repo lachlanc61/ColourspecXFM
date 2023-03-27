@@ -100,46 +100,72 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
         pxheaderlen = xfmap.PXHEADERLEN
         bytesperchan = xfmap.BYTESPERCHAN
 
-        for pxidx in range(pixelseries.npx):
-            for det in range(pixelseries.ndet):
+        if not multiproc:
+            for pxidx in range(pixelseries.npx):
+                for det in range(pixelseries.ndet):
 
-                if not det == pixelseries.det[det,pxidx]:
-                    raise ValueError(f"Detector mistmatch at (det,pixel) = ({det},{pxidx})")
-                
-                absidx=indexlist[det,pxidx]
-                relidx=int(absidx-buffer.fidx)
-                pxlength=pixelseries.pxlen[det,pxidx]
+                    if not det == pixelseries.det[det,pxidx]:
+                        raise ValueError(f"Detector mistmatch at (det,pixel) = ({det},{pxidx})")
+                    
+                    absidx=indexlist[det,pxidx]
+                    relidx=int(absidx-buffer.fidx)
+                    pxlength=pixelseries.pxlen[det,pxidx]
 
-                if relidx < 0:
-                        raise ValueError(f"pixel start {absidx} not in current buffer beginning {buffer.fidx}") 
+                    if relidx < 0:
+                            raise ValueError(f"pixel start {absidx} not in current buffer beginning {buffer.fidx}") 
 
-                try:
-                    #if read exceeds buffer, get next buffer via getstream
-                    if relidx+pxlength > buffer.len:
+                    try:
+                        #if read exceeds buffer, get next buffer via getstream
+                        if relidx+pxlength > buffer.len:
 
-                        #FUTURE: join here to wait for processes
-                        #should be able to parallelize pullstream + readpx+gapfill + assign
-                        
-                        #if break is in header, cycle buffer via getstream
-                        if relidx+pxheaderlen > buffer.len:     #not sure about > vs >=
-                            ___, ___, buffer=bufferops.getstream(buffer, relidx, pxheaderlen)
-                        
-                        #get next stream
-                        stream, ___, buffer=bufferops.getstream(buffer, relidx+pxheaderlen, pxlength-pxheaderlen)
-                    #otherwise read it directly
-                    else:
+                            #FUTURE: join here to wait for processes
+                            #should be able to parallelize pullstream + readpx+gapfill + assign
+                            
+                            #if break is in header, cycle buffer via getstream
+                            if relidx+pxheaderlen > buffer.len:     #not sure about > vs >=
+                                ___, ___, buffer=bufferops.getstream(buffer, relidx, pxheaderlen)
+                            
+                            #get next stream
+                            stream, ___, buffer=bufferops.getstream(buffer, relidx+pxheaderlen, pxlength-pxheaderlen)
+                        #otherwise read it directly
+                        else:
 
-                        stream = buffer.data[relidx+pxheaderlen:relidx+pxlength]
+                            stream = buffer.data[relidx+pxheaderlen:relidx+pxlength]
 
-                    #continue
-                    chan, counts = bufferops.readpxdata(stream, len(stream), bytesperchan)
-                    chan, counts = utils.gapfill(chan,counts, xfmap.nchannels)  #<-should probably go in readpxdata
-                except ValueError:  #not sure I need this, really just a debug log
-                    print(f"{det}, {pxidx}")
-                    exit()
-                finally:
-                    pixelseries.data[det,pxidx,:]=counts
-            ___ = endpx(pxidx, absidx, buffer, xfmap, pixelseries)
+                        #continue
+                        chan, counts = bufferops.readpxdata(stream, len(stream), bytesperchan)
+                        chan, counts = utils.gapfill(chan,counts, xfmap.nchannels)  #<-should probably go in readpxdata
+                    except ValueError:  #not sure I need this, really just a debug log
+                        print(f"{det}, {pxidx}")
+                        exit()
+                    finally:
+                        pixelseries.data[det,pxidx,:]=counts
+                ___ = endpx(pxidx, absidx, buffer, xfmap, pixelseries)
+
+            #PARALLELIZED
+            else: 
+
+                #https://stackoverflow.com/questions/7632963/numpy-find-first-index-of-value-fast
+                #possibly np.searchsorted?
+                # need to find the index of indexlist where value >= start, then < end
+                #   ideally without searching whole array every time
+                #   conveniently, indexlist is sorted which should help
+
+                start=buffer.fidx
+                end=buffer.fidx+buffer.len
+
+                indexlist_current = np.where(indexlist >= start and indexlist < end)[:,-1] #-1 to remove last one due to overflow, will likely fail if buffer ends cleanly
+
+                pixelseries.data[:,start_idx, end_idx] = parseparallel(buffer, indexlist_current)
+
+
+
+
+
+
+
+
+
     except MapDone:
         if not pixelseries.npx == pxidx+1:
             raise ValueError(f"Index mistmatch ({pixelseries.npx}) vs ({pxidx})")
