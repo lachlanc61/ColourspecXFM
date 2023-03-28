@@ -99,8 +99,10 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
 
         pxheaderlen = xfmap.PXHEADERLEN
         bytesperchan = xfmap.BYTESPERCHAN
+        nchannels = xfmap.nchannels
 
         indices_ravel = np.ravel(indexlist, order='F')
+        pxlens_ravel = np.ravel(pixelseries.pxlen, order='F')
 
         if not multiproc:
             for pxidx in range(pixelseries.npx):
@@ -135,8 +137,8 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
                             stream = buffer.data[relidx+pxheaderlen:relidx+pxlength]
 
                         #continue
-                        chan, counts = bufferops.readpxdata(stream, len(stream), bytesperchan)
-                        chan, counts = utils.gapfill(chan,counts, xfmap.nchannels)  #<-should probably go in readpxdata
+                        chan, counts = bufferops.readpxdata(stream, len(stream), bytesperchan, nchannels)
+
                     except ValueError:  #not sure I need this, really just a debug log
                         print(f"{det}, {pxidx}")
                         exit()
@@ -163,8 +165,9 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
 #            end_coords=unravel(indexlist, buffer_end, False)
 
             indices_sliced = indices_ravel[start_idx_flat:end_idx_flat] 
+            pxlens_sliced = pxlens_ravel[start_idx_flat:end_idx_flat] 
 
-            worker_array = parallel.worker(buffer, indices_sliced)
+            worker_array = parallel.worker(buffer.data, indices_sliced, pxlens_sliced, pxheaderlen, bytesperchan, nchannels)
 
 
     except MapDone:
