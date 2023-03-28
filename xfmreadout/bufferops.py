@@ -10,6 +10,7 @@ import multiprocessing as mp
 import xfmreadout.byteops as byteops
 import xfmreadout.dtops as dtops
 import xfmreadout.parser as parser
+import xfmreadout.utils as utils
 
 #assign an identifier to the local namespace
 #   used to create persistent preloaded buffer
@@ -267,7 +268,7 @@ def readpxheader(headstream):
     return pxlen, xidx, yidx, det, dt
 
 
-def readpxdata(stream, readlength, bytesperchan):
+def readpxdata(stream, readlength, bytesperchan: int, nchannels: int):
     """
     read in data from a single pixel
 
@@ -299,6 +300,8 @@ def readpxdata(stream, readlength, bytesperchan):
     
     #take odd indexes for counts
     counts=chandata[1::2]
+
+    chan, counts = utils.gapfill(chan, counts, nchannels)
 
     #return as lists
     return(list(chan), list(counts))
