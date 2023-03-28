@@ -96,8 +96,11 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
         xfmap.resetfile()
         buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
         idx = xfmap.datastart
+
         pxheaderlen = xfmap.PXHEADERLEN
         bytesperchan = xfmap.BYTESPERCHAN
+
+        indices_ravel = np.ravel(indexlist, order='F')
 
         if not multiproc:
             for pxidx in range(pixelseries.npx):
@@ -145,35 +148,23 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
         else: 
 
             index_final = indexlist + pixelseries.pxlen
-            #--->
-            #https://stackoverflow.com/questions/22565023/numpy-searchsorted-with-2d-array
-
-            #https://stackoverflow.com/questions/7632963/numpy-find-first-index-of-value-fast
-            #possibly np.searchsorted?
-            # need to find the index of indexlist where value >= start, then < end
-            #   ideally without searching whole array every time
-            #   conveniently, indexlist is sorted which should help
-
+            
             buffer_start=buffer.fidx
             buffer_end=buffer.fidx+buffer.len
 
-            """
-            start_ravel=np.ravel(indexlist, order='F')
-            start_idx_flat=np.searchsorted(start_ravel, buffer_start)-2     #-2 to get last idx fully within buffer
+            start_idx_flat=np.searchsorted(indices_ravel, buffer_start)
             start_idx=divmod(start_idx_flat, indexlist.shape[0])
 
-            end_ravel=np.ravel(indexlist, order='F')
-            end_idx_flat=np.searchsorted(end_ravel, buffer_end)-2
+
+            end_idx_flat=np.searchsorted(indices_ravel, buffer_end)-1   #-1 to get last idx fully within buffer
             end_idx=divmod(end_idx_flat, indexlist.shape[0])
-            """
 
-            start_coords=unravel(indexlist, buffer_start, True)
-            end_coords=unravel(indexlist, buffer_end, False)
+#            start_coords=unravel(indexlist, buffer_start, True)
+#            end_coords=unravel(indexlist, buffer_end, False)
 
-            indexlist_current = indexlist[:,start_idx:end_idx] #-1 to remove last one due to overflow, will likely fail if buffer ends cleanly
+            indices_sliced = indices_ravel[start_idx_flat:end_idx_flat] 
 
-            pixelseries.data[:,start_idx:end_idx,:] = parallel.worker(buffer, indexlist_current)
-
+            worker_array = parallel.worker(buffer, indices_sliced)
 
 
     except MapDone:
@@ -189,6 +180,8 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
 
 def unravel(indexlist, max_value: int, is_start: bool):
     """
+    UNUSED
+    
     extracts 2D index of indexlist where pixel is fully within buffer
 
     https://stackoverflow.com/questions/22565023/numpy-searchsorted-with-2d-array
@@ -197,12 +190,14 @@ def unravel(indexlist, max_value: int, is_start: bool):
         divmod shape0 converts back to original coords
                         
     """
+    NDET=2
+
     ravel=np.ravel(indexlist, order='F')
     
     if is_start == True:
         shift=0     #0 to start
     else:
-        shift=-2    #-2 to get last idx fully within buffer
+        shift=-1    #-1 to get last idx fully within buffer
 
     idx_flat=np.searchsorted(ravel, max_value)
     idx_flat+=shift    
