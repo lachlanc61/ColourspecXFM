@@ -143,20 +143,36 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
                 ___ = endpx(pxidx, absidx, buffer, xfmap, pixelseries)
 
             #PARALLELIZED
-            else: 
+        else: 
 
-                #https://stackoverflow.com/questions/7632963/numpy-find-first-index-of-value-fast
-                #possibly np.searchsorted?
-                # need to find the index of indexlist where value >= start, then < end
-                #   ideally without searching whole array every time
-                #   conveniently, indexlist is sorted which should help
+            index_final = indexlist + pixelseries.pxlen
+            #--->
+            #https://stackoverflow.com/questions/22565023/numpy-searchsorted-with-2d-array
 
-                start=buffer.fidx
-                end=buffer.fidx+buffer.len
+            #https://stackoverflow.com/questions/7632963/numpy-find-first-index-of-value-fast
+            #possibly np.searchsorted?
+            # need to find the index of indexlist where value >= start, then < end
+            #   ideally without searching whole array every time
+            #   conveniently, indexlist is sorted which should help
 
-                indexlist_current = np.where(indexlist >= start and indexlist < end)[:,-1] #-1 to remove last one due to overflow, will likely fail if buffer ends cleanly
+            buffer_start=buffer.fidx
+            buffer_end=buffer.fidx+buffer.len
 
-                pixelseries.data[:,start_idx, end_idx] = parseparallel(buffer, indexlist_current)
+            #https://stackoverflow.com/questions/22565023/numpy-searchsorted-with-2d-array
+            #ravel order F interleaves arrays eg. ( 1 3 5 ),(2 4 6) => (1 2 3 4 5 6)
+            #searchsorted finds index where buffer_end would be inserted
+            #divmod shape0 converts back to original coords
+
+            startidx=divmod(np.searchsorted(np.ravel(indexlist, order='F'), buffer_start), indexlist.shape[0])
+            endidx=divmod(np.searchsorted(np.ravel(indexlist, order='F'), buffer_end), indexlist.shape[0])
+
+#            startidx=max(np.searchsorted(indexlist[0],buffer_start),np.searchsorted(indexlist[1],buffer_start))
+#            endidx=min(np.searchsorted(indexlist[0],buffer_end),np.searchsorted(indexlist[1],buffer_end))
+
+            indexlist_current = indexlist[:,startidx:endidx] #-1 to remove last one due to overflow, will likely fail if buffer ends cleanly
+
+            a=2+1
+        #    pixelseries.data[:,start_idx, end_idx] = parseparallel(buffer, indexlist_current)
 
 
 
