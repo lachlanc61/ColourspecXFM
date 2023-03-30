@@ -118,7 +118,7 @@ def sumclusters(dataset, catlist, n_clusters, n_channels):
     
     aware: nclust, number of clusters
     """
-    specsum=np.zeros(n_clusters,n_channels)
+    specsum=np.zeros((n_clusters,n_channels))
 
     for i in range(n_clusters):
         datcat=dataset[catlist==i]
