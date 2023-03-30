@@ -52,7 +52,7 @@ def getredname(i):
     """
     return repr(reducers[i][0]()).split("(")[0]
 
-def reduce(config, data, output_path):
+def reduce(data):
     """
     performs dimensionality reduction on data using reducers
     args:       data
@@ -66,16 +66,11 @@ def reduce(config, data, output_path):
     for reducer, args in reducers:
         redname=getredname(i)
         start_time = time.time()
+
         print(f'REDUCER {i+1} of {nred}: {redname} across {npx} elements')
 
-        if True:
-        #if config['FORCERED']:
-            #utils.varsizes(locals().items())
-            embed = reducer(n_components=2, **args).fit_transform(data)
-            np.savetxt(os.path.join(output_path, redname + ".dat"), embed)
-        else:
-            print("loading from file", redname)
-            embed = np.loadtxt(os.path.join(output_path, redname + ".dat"))
+        #do it
+        embed = reducer(n_components=2, **args).fit_transform(data)
         
         clusttimes[i] = time.time() - start_time
         embedding[i,:,:]=embed
@@ -83,7 +78,7 @@ def reduce(config, data, output_path):
     return embedding, clusttimes
 
 
-def dokmeans(config, embedding, npx, output_path):
+def dokmeans(embedding, npx, n_clusters):
     """
     performs kmeans on embedding matrices to cluster 2D matrices from reducers 
 
@@ -93,8 +88,8 @@ def dokmeans(config, embedding, npx, output_path):
     #initialise kwargs
     kmeans = KMeans(
         init="random",
-        n_clusters=config['nclust'],
-        n_init=config['nclust'],
+        n_clusters=n_clusters,
+        n_init=n_clusters,
         max_iter=300,
         random_state=42
     )
@@ -106,17 +101,13 @@ def dokmeans(config, embedding, npx, output_path):
 
         print(f'KMEANS clustering {i+1} of {nred}, reducer {redname} across {npx} elements')
 
-        if True:
-        #if config['FORCEKMEANS']:
-            kmeans.fit(embed)
-            categories[i]=kmeans.labels_
-            np.savetxt(os.path.join(output_path, redname + "_kmeans.txt"), categories[i])
-        else:
-            print("loading from file", redname)
-            categories[i]=np.loadtxt(os.path.join(output_path, redname + "_kmeans.txt"))
+        #DO:
+        kmeans.fit(embed)
+        categories[i]=kmeans.labels_
+
     return categories
 
-def sumclusters(config, dataset, catlist):
+def sumclusters(dataset, catlist, n_clusters, n_channels):
     """
     calculate summed spectrum for each cluster
     args: 
@@ -127,15 +118,15 @@ def sumclusters(config, dataset, catlist):
     
     aware: nclust, number of clusters
     """
-    specsum=np.zeros([config['nclust'],config['NCHAN']])
+    specsum=np.zeros(n_clusters,n_channels)
 
-    for i in range(config['nclust']):
+    for i in range(n_clusters):
         datcat=dataset[catlist==i]
         pxincat = datcat.shape[0]   #no. pixels in category i
         specsum[i,:]=(np.sum(datcat,axis=0))/pxincat
     return specsum
 
-def clustplt(config, embedding, categories, mapx, clusttimes, output_path):
+def clustplt(embedding, categories, mapx, clusttimes):
     """
     receives arrays from reducers and kmeans
     + time to cluster
@@ -217,47 +208,59 @@ def clustplt(config, embedding, categories, mapx, clusttimes, output_path):
     plt.setp(ax, xticks=[], yticks=[])
     plt.show()
  
+    return fig
 
-    #save and show
-    plt.savefig(os.path.join(output_path, 'clusters.png'), dpi=150)
-
-    return
-
-
-def complete(config, data, energy, totalpx, mapx, mapy, dirs):
+def calculate(data, totalpx, n_clusters, n_channels):
 
     #   produce reduced-dim embedding per reducer
-    embedding, clusttimes = reduce(config, data, dirs.transforms)
+    embedding, clusttimes = reduce(data)
 
     #   cluster via kmeans on embedding
-    categories = dokmeans(config, embedding, totalpx, dirs.transforms)
+    categories = dokmeans(embedding, totalpx, n_clusters)
 
     #produce and save cluster averages
 
     #   initialise averages
-    classavg=np.zeros([len(reducers),config['nclust'],config['NCHAN']])
+    classavg=np.zeros([len(reducers),n_clusters, n_channels])
+
+    #   cycle through reducers
+    for i in range(len(reducers)):
+        classavg[i]=sumclusters(data, categories[i], n_clusters, n_channels)    
+
+    return categories, classavg, embedding, clusttimes
+
+
+def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_clusters, dirs ):
 
     #   cycle through reducers
     for i in range(len(reducers)):
         redname=getredname(i)
-        classavg[i]=sumclusters(config, data, categories[i])
-        
-        for j in range(config['nclust']):
+
+        #saving embeddings
+        np.savetxt(os.path.join(dirs.transforms, redname + ".dat"), embedding[i,:,:])
+
+        #saving kmeans categories
+        np.savetxt(os.path.join(dirs.transforms, redname + "_kmeans.txt"), categories[i])
+
+        #saving individual cluster averages
+        for j in range(n_clusters):
             print(f'saving reducer {redname} cluster {j} with shape {classavg[i,j,:].shape}', end='\r')
             np.savetxt(os.path.join(dirs.transforms, "sum_" + redname + "_" + str(j) + ".txt"), np.c_[energy, classavg[i,j,:]], fmt=['%1.3e','%1.6e'])
-        
+       
         print(f'saving combined file for {redname}')
         np.savetxt(os.path.join(dirs.transforms, "sum_" + redname + ".txt"), np.c_[energy, classavg[i,:,:].transpose(1,0)], fmt='%1.5e')             
         #plt.plot(energy, clustaverages[i,j,:])
     
-    clustplt(config, embedding, categories, mapx, clusttimes, dirs.plots)
+    fig = clustplt(embedding, categories, mapx, clusttimes)
 
-    return categories, classavg
+    #save and show
+    fig.savefig(os.path.join(dirs.plots, 'clusters.png'), dpi=150)
+
+    return 
 
 #-----------------------------------
 #INITIALISE
 #-----------------------------------
 
 nred = len(reducers)
-#elements=np.arange(0,config.MAPX*config.MAPY)
 
