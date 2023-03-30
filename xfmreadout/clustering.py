@@ -138,7 +138,7 @@ def clustplt(embedding, categories, mapx, clusttimes):
         
     #create figure and ax matrix
     #   gridspec adjusts widths of subplots in each row
-    fig, (ax) = plt.subplots(nred, 2, figsize=(9, 6), gridspec_kw={'width_ratios': [1, 2]})
+    fig, (ax) = plt.subplots(nred, 2, figsize=(16, 6), gridspec_kw={'width_ratios': [1, 2]})
     fig.tight_layout(pad=2)
  
     #fig.subplots_adjust(
@@ -161,8 +161,6 @@ def clustplt(embedding, categories, mapx, clusttimes):
         #adjust plotting options
         ax[plotid].set_xlabel(redname, size=16)
         ax[plotid].xaxis.set_label_position("top")
-
-        
 
         #create the scatterplot for this reducer
         # .T = transpose, rotates x and y
@@ -198,8 +196,9 @@ def clustplt(embedding, categories, mapx, clusttimes):
         plotid=(i,1)
 
         #reshape the category list back to the map dimensions using xdim
-        #WARNING: fails using SHORTRUN unless ends at end of row - fix this later
+
         catmap=np.reshape(categories[i], [-1, mapx])
+        
         #show this category image
         ax[plotid].imshow(catmap, cmap=KCMAPS[i])
 
