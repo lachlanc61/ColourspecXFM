@@ -62,10 +62,53 @@ def get_elements(files):
 
 
 
+def modify_maps()
+    BASEFACTOR=100000
+    MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si']
+    MODIFY_FACTORS = [ 100, 1, 1, 1 ]
+
+
 
 
 def main(image_directory):
-    pass
+
+    files = [f for f in os.listdir(wdir) if f.endswith('.tiff')]
+
+    elements, files = get_elements(files)
+
+    filepaths = [os.path.join(wdir, file) for file in files ] 
+
+    #get file dimensions:
+
+    im = Image.open(os.path.join(wdir, filepaths[0]))
+    img = np.array(im)
+
+    dims = img.shape
+
+    maps=np.zeros((len(elements), dims[0], dims[1]), dtype=np.float32)
+
+
+    i=0
+    for f in filepaths:
+        im = Image.open(f)
+        img = np.array(im)
+        #replace all negative values with 0
+        img = np.where(img<0, 0, img)
+
+        factor=BASEFACTOR
+        for idx, snames in enumerate(MODIFY_LIST):
+            if elements[i] in snames:
+                factor=BASEFACTOR*MODIFY_FACTORS[idx]
+
+        maps[i,:,:]=img/factor
+        i+=1
+        
+
+    data=maps.reshape(maps.shape[0],-1)
+
+    data=np.swapaxes(data,0,1)
+
+    print(maps.shape, data.shape)
     
 
 
