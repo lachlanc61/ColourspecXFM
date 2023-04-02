@@ -6,9 +6,22 @@ import seaborn as sns
 
 REDUCER=1
 
-def show_map(maps, elements, idx):
 
-    img = maps[idx,:,:]
+def remap(indata, dims):
+    """
+    restores map from linear data + map dimensions
+    """
+    print(indata.shape)
+    if np.shape(indata.shape)[0] == 2:
+        return indata.reshape(dims[0], dims[1], -1)
+    else:
+        return indata.reshape(dims[0], -1)
+
+def show_map(data, elements, dims, idx):
+
+    maps=remap(data, dims)
+
+    img = maps[:,:,idx]
 
     print(elements[idx])
     print(np.quantile(img, 0.1), np.quantile(img, 0.5), np.quantile(img, 0.9))
@@ -23,33 +36,35 @@ def show_map(maps, elements, idx):
 
     return
 
-def category_map ( categories, maps ):
+def category_map ( categories, data, dims ):
     """
     image of categories
     """
 
     from matplotlib import cm
 
-    KCMAPS=["tab10","tab10"]    #colourmaps for kmeans
-
-    categories.shape
+    KCMAPS=["tab10"]    #colourmaps for kmeans
 
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
 
-    ncats=np.max(categories)+1
+    ncats=np.max(categories)+2
+    print(ncats)
 
-    axcm=cm.get_cmap(KCMAPS[REDUCER], ncats)
+    axcm=cm.get_cmap(KCMAPS[0], ncats)
 
     cmap=axcm(range(ncats))
 
     #reshape the category list back to the map dimensions using xdim
     #WARNING: fails using SHORTRUN unless ends at end of row - fix this later
 
-    catmap=np.reshape(categories[REDUCER], [maps.shape[1],-1])
+    catmap=remap(categories+1,dims)
+
+    print(np.min(categories))
+    print(np.min(catmap))
 
     #show this category image
-    ax.imshow(catmap, cmap=KCMAPS[REDUCER])
+    ax.imshow(catmap, cmap=KCMAPS[0])
 
     return
 
@@ -59,14 +74,14 @@ def category_avgs(categories, elements, classavg):
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
 
-    ncats=np.max(categories)+1
+    ncats=np.max(categories)
 
     elids=range(len(elements))
 
     #ax.set_yscale('log')
 
     for i in range(ncats-1):
-        ax.plot(elements, classavg[0,i,:], linewidth=1)
+        ax.plot(elements, classavg[i,:], linewidth=1)
 
 
     fig.show()
@@ -94,7 +109,7 @@ def category_boxplots(data, categories, elements):
     #ax = fig.add_subplot(111)
 
     for cat_idx in catlist:
-        assigned=np.where(categories[REDUCER] == cat_idx, True, False)
+        assigned=np.where(categories == cat_idx, True, False)
 
         selected=[]
 
@@ -110,11 +125,14 @@ def category_boxplots(data, categories, elements):
 
     fig.show()
 
-def seaborn_embedplot(df):
+def seaborn_embedplot(embedding, categories):
+    x=embedding.T[0]
+    y=embedding.T[1]
+
     ### scatter plot with marginal axes
     sns.set_style('white')
-    sns.jointplot(x=df.x, y=df.y,
-                hue=df.cat, palette=sns.color_palette(),
+    sns.jointplot(x=x, y=y,
+                hue=categories, palette=sns.color_palette(),
                 lw=0,
                 height=10, ratio=6
                 )
@@ -127,14 +145,17 @@ def seaborn_embedplot(df):
 
     return
 
-def seaborn_kdeplot(df):
+def seaborn_kdeplot(embedding, categories):
     """
     kde plot filled with colors with transparent background
 
     """
+    x=embedding.T[0]
+    y=embedding.T[1]
+
     sns.set_style('white')
-    ax = sns.jointplot(x=df.x, y=df.y,
-                cut = 0, hue=df.cat,
+    ax = sns.jointplot(x=x, y=y,
+                cut = 0, hue=categories,
                 palette=sns.color_palette("dark"),
                 kind='kde', fill=True,
                 height=15, ratio=6,

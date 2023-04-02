@@ -86,12 +86,12 @@ def reduce(data):
     umapper = umap.UMAP(
         n_components=n_components,
         n_neighbors=30, 
-        min_dist=0.3, 
+        min_dist=0.1, 
         low_memory=True, 
         verbose=True
     )
 
-    reducer = pca
+    reducer = umapper
 
     npx=data.shape[0]
     embedding=np.zeros((npx,n_components))
@@ -120,6 +120,10 @@ def doclustering(embedding, npx):
     args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
+
+    DBSCAN_E=0.1    #many small clusters
+    DBSCAN_E=0.01   #larger clusters
+
 
     #initialise clustering options
     kmeans = KMeans(
@@ -281,12 +285,15 @@ def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_
 
     return 
 
-def get(data, dirs, force=False, overwrite=True):
+def get(data, output_dir: str, force=False, overwrite=True):
 
-    file_cats=os.path.join(dirs.transforms,"categories.npy")
-    file_classes=os.path.join(dirs.transforms,"classavg.npy")
-    file_embed=os.path.join(dirs.transforms,"embedding.npy")
-    file_ctime=os.path.join(dirs.transforms,"clusttimes.npy")
+    file_cats=os.path.join(output_dir,"categories.npy")
+    file_classes=os.path.join(output_dir,"classavg.npy")
+    file_embed=os.path.join(output_dir,"embedding.npy")
+    file_ctime=os.path.join(output_dir,"clusttimes.npy")
+
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
 
     filesexist = os.path.isfile(file_cats) and os.path.isfile(file_classes) \
             and  os.path.isfile(file_embed) and os.path.isfile(file_ctime)

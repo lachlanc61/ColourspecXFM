@@ -9,7 +9,7 @@ import xfmreadout.clustering as clustering
 import xfmreadout.processed_plots as processed_plots
 
 
-FORCE = False
+FORCE = True
 AUTOSAVE = True
 
 EMBED_DIRNAME = "embedding"
@@ -63,25 +63,6 @@ def get_elements(files):
     return elements, files
 
 
-def modify_maps(maps, elements):
-    BASEFACTOR=100000
-    MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si']
-    MODIFY_FACTORS = [ 100, 1, 1, 1 ]
-
-    i=0
-    for i in range(maps.shape[0]):
-        factor=BASEFACTOR
-
-        for idx, snames in enumerate(MODIFY_LIST):
-            if elements[i] in snames:
-                factor=BASEFACTOR*MODIFY_FACTORS[idx]
-
-        maps[i,:,:]=maps[i,:,:]/factor
-        i+=1
-
-    return maps
-
-
 def load_maps(filepaths):
 
     #load an image and check dimensions
@@ -103,70 +84,31 @@ def load_maps(filepaths):
             maps[i,:,:]=img
             i+=1
     
-    return maps
+    data=maps.reshape(maps.shape[0],-1)
 
+    data=np.swapaxes(data,0,1)
 
-def get_embedding(data, mapshape, image_directory):
-    """
-    calculate embedding
-    """
+    return data, dims
 
-    N_CLUSTERS=6
+def modify_maps(data, elements):
+    BASEFACTOR=100000
+    MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si']
+    MODIFY_FACTORS = [ 100, 1, 1, 1 ]
 
-    EMBED_DIR=os.path.join(image_directory,EMBED_DIRNAME)
+    i=0
+    for i in range(data.shape[1]):
+        factor=BASEFACTOR
 
-    if not os.path.exists(EMBED_DIR):
-        os.mkdir(EMBED_DIR)
+        for idx, snames in enumerate(MODIFY_LIST):
+            if elements[i] in snames:
+                factor=BASEFACTOR*MODIFY_FACTORS[idx]
 
-    NPX=mapshape[1]*mapshape[2]
+        data[:,i]=data[:,i]/factor
+        i+=1
 
-    NCHAN=mapshape[0]
+    return data
 
-    file_cats=os.path.join(EMBED_DIR,"categories.npy")
-    file_classes=os.path.join(EMBED_DIR,"classavg.npy")
-    file_embed=os.path.join(EMBED_DIR,"embedding.npy")
-    file_ctime=os.path.join(EMBED_DIR,"clusttimes.npy")
-
-    filesexist = os.path.isfile(file_cats) and os.path.isfile(file_classes) \
-        and  os.path.isfile(file_embed) and os.path.isfile(file_ctime)
-
-    if FORCE or not filesexist:
-        categories, classavg, embedding, clusttimes = clustering.calculate(data, NPX, N_CLUSTERS, NCHAN )
-        #embedding, clusttimes = clustering.reduce(data)
-        if AUTOSAVE:
-            np.save(file_cats,categories)
-            np.save(file_classes,classavg)
-            np.save(file_embed,embedding)
-            np.save(file_ctime,clusttimes)
-    else:
-        categories = np.load(file_cats)
-        classavg = np.load(file_classes)
-        embedding = np.load(file_embed)
-        clusttimes = np.load(file_ctime)
-
-    return categories, classavg, embedding, clusttimes
-
-def plot_all(categories, classavg, embedding, maps, elements):
-
-    IDX=5       #element index
-    REDUCER=1   #reducer to use
-
-    processed_plots.show_map(maps, elements, IDX)
-
-    processed_plots.category_map(categories, maps)
-    
-    processed_plots.category_avgs(categories, elements, classavg)
-
-
-    df= pd.DataFrame(embedding[REDUCER,:], columns=["x","y"])
-
-    df["cat"]=categories[REDUCER,:]
-
-    processed_plots.seaborn_embedplot(df)
-    processed_plots.seaborn_kdeplot(df)
-
-
-def main(image_directory):
+def get_data(image_directory):
 
     files = [f for f in os.listdir(image_directory) if f.endswith('.tiff')]
 
@@ -174,18 +116,36 @@ def main(image_directory):
 
     filepaths = [os.path.join(image_directory, file) for file in files ] 
 
-    maps = load_maps(filepaths)
+    data, dims = load_maps(filepaths)
 
-    maps = modify_maps(maps, elements)
+    print(elements)
+    print(data.shape)
 
-    data=maps.reshape(maps.shape[0],-1)
-
-    data=np.swapaxes(data,0,1)
+    data = modify_maps(data, elements)
 
     #print(maps.shape, data.shape)
 
-    categories, classavg, embedding, clusttimes = get_embedding(data, maps.shape, image_directory)
+    return data, elements, dims
+
+def process(data, dims, image_directory, force=False):
+
+    print(force)
+
+    categories, classavg, embedding, clusttimes = clustering.get(data, image_directory, force=force)
+
+    return categories, classavg, embedding, clusttimes, data, dims
 
 
-    return categories, classavg, embedding, clusttimes, maps, elements
+def plot_all(categories, classavg, embedding, data, elements, dims):
 
+    IDX=5       #element index
+
+    processed_plots.show_map(data, elements, dims, IDX)
+
+    processed_plots.category_map(categories, data, dims)
+    
+    processed_plots.category_avgs(categories, elements, classavg)
+
+    processed_plots.seaborn_embedplot(embedding, categories)
+
+#    processed_plots.seaborn_kdeplot(embedding, categories)
