@@ -116,8 +116,8 @@ def main(args_in):
         rgbarray = None
     #perform clustering
     if args.classify_spectra:
-        pixelseries.categories, pixelseries.classavg, embedding, clusttimes = clustering.calculate(pixelseries.flattened, xfmap.npx, config['nclust'], config['NCHAN'] )
-        clustering.complete(pixelseries.categories, pixelseries.classavg, embedding, clusttimes, xfmap.energy, xfmap.xres, xfmap.yres, config['nclust'], dirs)
+        pixelseries.categories, pixelseries.classavg, embedding, clusttimes = clustering.get( pixelseries.flattened, dirs )
+    #    clustering.complete(pixelseries.categories, pixelseries.classavg, embedding, clusttimes, xfmap.energy, xfmap.xres, xfmap.yres, config['nclust'], dirs)
         #colour.plot_colourmap_explainer(pixelseries.energy, pixelseries.classavg[1:1], pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, dirs)
     else:
         categories = None

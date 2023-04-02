@@ -5,8 +5,11 @@ import os
 
 from matplotlib import cm
 from sklearn import decomposition
+
 from sklearn.cluster import KMeans
+
 import umap.umap_ as umap
+import hdbscan
 
 import xfmreadout.utils as utils
 
@@ -15,6 +18,7 @@ import xfmreadout.utils as utils
 #-----------------------------------
 #KCMAPS=["Accent","Set1"]    #colourmaps for kmeans
 KCMAPS=["tab10","tab10"]    #colourmaps for kmeans
+N_CLUSTERS=10
 
 #-----------------------------------
 #LISTS
@@ -32,25 +36,40 @@ reducers = [
     (umap.UMAP, {"n_neighbors": 30, "min_dist": 0.3}),
 ]
 """
-reducers = [
+REDUCERS = [
     (decomposition.PCA, {}),
 #    (decomposition.IncrementalPCA, {"batch_size": 10000}),
 #    (umap.UMAP, {"n_neighbors": 30, "min_dist": 0.3, "low_memory": True, "verbose": True}),
-    (umap.UMAP, {"n_neighbors": 30, "min_dist": 0.3, "low_memory": True}),
+    (umap.UMAP, {"n_neighbors": 30, "min_dist": 0.3, "low_memory": True, "verbose": True}),
 ]
+
+
+CLUSTERERS = [
+    (KMeans, {"init":"random", "n_clusters": N_CLUSTERS, "n_init": N_CLUSTERS, \
+              "max_iter": 300, "random_state": 42 }),
+
+    (hdbscan.HDBSCAN, {"min_cluster_size": 200,
+        "min_samples": 100,
+        "cluster_selection_epsilon": 0.01,
+        "gen_min_span_tree": True }),
+]
+
 
 
 #-----------------------------------
 #FUNCTIONS
 #-----------------------------------
 
-def getredname(i):
+def getobjname(obj):
     """
     get name of reducer from specified index
     args:       index of reducer
     returns:    reducer name
     """
-    return repr(reducers[i][0]()).split("(")[0]
+    if type(obj) == type:
+        return repr(obj()).split("(")[0]
+    else:
+        return repr(obj).split("(")[0]
 
 def reduce(data):
     """
@@ -58,54 +77,75 @@ def reduce(data):
     args:       data
     returns:    embedding matrix, time per cluster
     """
+
+    n_components = 2
+
+    #initialise reducer options
+    pca= decomposition.PCA(n_components=n_components)
+
+    umapper = umap.UMAP(
+        n_components=n_components,
+        n_neighbors=30, 
+        min_dist=0.3, 
+        low_memory=True, 
+        verbose=True
+    )
+
+    reducer = pca
+
     npx=data.shape[0]
-    embedding=np.zeros((nred,npx,2))
-    clusttimes=np.zeros(nred)
+    embedding=np.zeros((npx,n_components))
 
-    i = 0
-    for reducer, args in reducers:
-        redname=getredname(i)
-        start_time = time.time()
+    redname=getobjname(reducer)
+    start_time = time.time()
 
-        print(f'REDUCER {i+1} of {nred}: {redname} across {npx} elements')
+    print(f'Dimensionality reduction via {redname} across {npx} elements')
 
-        #do it
-        embed = reducer(n_components=2, **args).fit_transform(data)
-        
-        clusttimes[i] = time.time() - start_time
-        embedding[i,:,:]=embed
-        i += 1
-    return embedding, clusttimes
+    #do it
+    reducer.fit(data)
+    
+    embedding = reducer.transform(data)
+
+    #_transform(data)
+    
+    clusttimes = time.time() - start_time
+
+    return reducer, embedding, clusttimes
 
 
-def dokmeans(embedding, npx, n_clusters):
+def doclustering(embedding, npx):
     """
-    performs kmeans on embedding matrices to cluster 2D matrices from reducers 
+    performs clustering on embedding to produce final clusters
 
     args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
-    #initialise kwargs
+
+    #initialise clustering options
     kmeans = KMeans(
         init="random",
-        n_clusters=n_clusters,
-        n_init=n_clusters,
+        n_clusters=N_CLUSTERS,
+        n_init=N_CLUSTERS,
         max_iter=300,
         random_state=42
     )
 
-    categories=np.zeros((nred,npx),dtype=np.uint16)
-    for i in np.arange(0,nred):
-        redname=repr(reducers[i][0]()).split("(")[0]
-        embed = embedding[i,:,:]
+    dbscan = hdbscan.HDBSCAN(
+        min_cluster_size=200,
+        min_samples=100,
+        cluster_selection_epsilon=0.01,
+        gen_min_span_tree=True
+    )
 
-        print(f'KMEANS clustering {i+1} of {nred}, reducer {redname} across {npx} elements')
+    clusterer = dbscan
 
-        #DO:
-        kmeans.fit(embed)
-        categories[i]=kmeans.labels_
+    categories=np.zeros((npx),dtype=np.uint16)
 
-    return categories
+    clusterer.fit(embedding)
+
+    categories=clusterer.labels_
+
+    return clusterer, categories
 
 def sumclusters(dataset, catlist, n_clusters, n_channels):
     """
@@ -138,7 +178,7 @@ def clustplt(embedding, categories, mapx, clusttimes):
         
     #create figure and ax matrix
     #   gridspec adjusts widths of subplots in each row
-    fig, (ax) = plt.subplots(nred, 2, figsize=(16, 6), gridspec_kw={'width_ratios': [1, 2]})
+    fig, (ax) = plt.subplots(1, 2, figsize=(16, 6), gridspec_kw={'width_ratios': [1, 2]})
     fig.tight_layout(pad=2)
  
     #fig.subplots_adjust(
@@ -148,9 +188,9 @@ def clustplt(embedding, categories, mapx, clusttimes):
     labels = {0: "0", 1: "1", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6"}
 
     #for each reducer
-    for i in np.arange(0,nred):
+    for i in np.arange(0,1):
         #get the reducer's name
-        redname=repr(reducers[i][0]()).split("(")[0]
+        redname=repr(REDUCERS[i][0]()).split("(")[0]
         #read in the embedding xy array and time
         embed = embedding[i,:]
         elapsed_time = clusttimes[i]
@@ -209,47 +249,31 @@ def clustplt(embedding, categories, mapx, clusttimes):
  
     return fig
 
-def calculate(data, totalpx, n_clusters, n_channels):
+def calculate(data):
+
+    totalpx = data.shape[0]
+    n_channels = data.shape[1]
 
     #   produce reduced-dim embedding per reducer
-    embedding, clusttimes = reduce(data)
+    reducer, embedding, clusttimes = reduce(data)
 
     #   cluster via kmeans on embedding
-    categories = dokmeans(embedding, totalpx, n_clusters)
+    clusterer, categories = doclustering(embedding, totalpx)
 
     #produce and save cluster averages
 
-    #   initialise averages
-    classavg=np.zeros([len(reducers),n_clusters, n_channels])
+    n_clusters = np.max(categories)+1
 
-    #   cycle through reducers
-    for i in range(len(reducers)):
-        classavg[i]=sumclusters(data, categories[i], n_clusters, n_channels)    
+    #   initialise averages
+    classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
+
+    classavg=sumclusters(data, categories, n_clusters, n_channels)    
 
     return categories, classavg, embedding, clusttimes
 
 
 def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_clusters, dirs ):
-
-    #   cycle through reducers
-    for i in range(len(reducers)):
-        redname=getredname(i)
-
-        #saving embeddings
-        np.savetxt(os.path.join(dirs.transforms, redname + ".dat"), embedding[i,:,:])
-
-        #saving kmeans categories
-        np.savetxt(os.path.join(dirs.transforms, redname + "_kmeans.txt"), categories[i])
-
-        #saving individual cluster averages
-        for j in range(n_clusters):
-            print(f'saving reducer {redname} cluster {j} with shape {classavg[i,j,:].shape}', end='\r')
-            np.savetxt(os.path.join(dirs.transforms, "sum_" + redname + "_" + str(j) + ".txt"), np.c_[energy, classavg[i,j,:]], fmt=['%1.3e','%1.6e'])
        
-        print(f'saving combined file for {redname}')
-        np.savetxt(os.path.join(dirs.transforms, "sum_" + redname + ".txt"), np.c_[energy, classavg[i,:,:].transpose(1,0)], fmt='%1.5e')             
-        #plt.plot(energy, clustaverages[i,j,:])
-    
     fig = clustplt(embedding, categories, mapx, clusttimes)
 
     #save and show
@@ -257,9 +281,34 @@ def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_
 
     return 
 
+def get(data, dirs, force=False, overwrite=True):
+
+    file_cats=os.path.join(dirs.transforms,"categories.npy")
+    file_classes=os.path.join(dirs.transforms,"classavg.npy")
+    file_embed=os.path.join(dirs.transforms,"embedding.npy")
+    file_ctime=os.path.join(dirs.transforms,"clusttimes.npy")
+
+    filesexist = os.path.isfile(file_cats) and os.path.isfile(file_classes) \
+            and  os.path.isfile(file_embed) and os.path.isfile(file_ctime)
+    
+    if force or not filesexist:
+        categories, classavg, embedding, clusttimes = calculate(data)
+        #embedding, clusttimes = clustering.reduce(data)
+
+        if overwrite:
+            np.save(file_cats,categories)
+            np.save(file_classes,classavg)
+            np.save(file_embed,embedding)
+            np.save(file_ctime,clusttimes)
+    else:
+        categories = np.load(file_cats)
+        classavg = np.load(file_classes)
+        embedding = np.load(file_embed)
+        clusttimes = np.load(file_ctime)
+
+    return categories, classavg, embedding, clusttimes
+
 #-----------------------------------
 #INITIALISE
 #-----------------------------------
-
-nred = len(reducers)
 

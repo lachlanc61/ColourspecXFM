@@ -186,7 +186,6 @@ def main(image_directory):
 
     categories, classavg, embedding, clusttimes = get_embedding(data, maps.shape, image_directory)
 
-    plot_all(categories, classavg, embedding, maps, elements)
 
     return categories, classavg, embedding, clusttimes, maps, elements
 
