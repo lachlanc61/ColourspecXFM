@@ -137,15 +137,15 @@ def doclustering(embedding, npx):
         gen_min_span_tree=True
     )
 
-    clusterer = dbscan
+    classifier = dbscan
 
     categories=np.zeros((npx),dtype=np.uint16)
 
-    clusterer.fit(embedding)
+    classifier.fit(embedding)
 
-    categories=clusterer.labels_
+    categories=classifier.labels_
 
-    return clusterer, categories
+    return classifier, categories
 
 def sumclusters(dataset, catlist, n_clusters, n_channels):
     """
@@ -258,7 +258,7 @@ def calculate(data):
     reducer, embedding, clusttimes = reduce(data)
 
     #   cluster via kmeans on embedding
-    clusterer, categories = doclustering(embedding, totalpx)
+    classifier, categories = doclustering(embedding, totalpx)
 
     #produce and save cluster averages
 
