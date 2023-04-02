@@ -137,7 +137,7 @@ def doclustering(embedding, npx):
     dbscan = hdbscan.HDBSCAN(
         min_cluster_size=200,
         min_samples=100,
-        cluster_selection_epsilon=0.01,
+        cluster_selection_epsilon=0.1,
         gen_min_span_tree=True
     )
 
