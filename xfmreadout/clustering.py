@@ -121,7 +121,7 @@ def doclustering(embedding, npx):
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
 
-    DBSCAN_E=0.1    #many small clusters
+    #DBSCAN_E=0.1    #many small clusters
     DBSCAN_E=0.01   #larger clusters
 
 
@@ -137,7 +137,7 @@ def doclustering(embedding, npx):
     dbscan = hdbscan.HDBSCAN(
         min_cluster_size=200,
         min_samples=100,
-        cluster_selection_epsilon=0.1,
+        cluster_selection_epsilon=DBSCAN_E,
         gen_min_span_tree=True
     )
 

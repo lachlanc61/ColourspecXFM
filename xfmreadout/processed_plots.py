@@ -134,6 +134,7 @@ def seaborn_embedplot(embedding, categories):
     sns.jointplot(x=x, y=y,
                 hue=categories, palette=sns.color_palette(),
                 lw=0,
+                joint_kws = dict(alpha=0.01),
                 height=10, ratio=6
                 )
 
@@ -152,7 +153,7 @@ def seaborn_kdeplot(embedding, categories):
     """
     x=embedding.T[0]
     y=embedding.T[1]
-
+    """
     sns.set_style('white')
     ax = sns.jointplot(x=x, y=y,
                 cut = 0, hue=categories,
@@ -166,5 +167,42 @@ def seaborn_kdeplot(embedding, categories):
     ax.ax_marg_y.remove()
     ax = sns.despine(ax=None, left=True, bottom=True)
     #plt.savefig('kde_tr_fill.png', transparent=True)
+    """
+    sns.set_style('white')
+    ax = sns.kdeplot(x=x, y=y,
+                hue=categories,
+                fill=True,
+                legend=False)
+#    ax.ax_marg_x.remove()
+#    ax.ax_marg_y.remove()
+    
+    #ax = sns.despine(ax=None, left=True, bottom=True)
+
+
+
     plt.show()
 
+#
+
+def seaborn_kdecontours(embedding, categories):
+    """
+    kde plot filled with colors with transparent background
+
+    """
+    x=embedding.T[0]
+    y=embedding.T[1]
+
+    sns.set_style('white')
+    ax = sns.jointplot(x=x, y=y,
+                cut = 0, hue=categories,
+                palette=sns.color_palette("dark"),
+                kind='kde', fill=False,
+                height=15, ratio=6,
+                joint_kws = dict(alpha=0.4),
+                marginal_kws=dict(fill=True),
+                legend=False)
+    ax.ax_marg_x.remove()
+    ax.ax_marg_y.remove()
+    ax = sns.despine(ax=None, left=True, bottom=True)
+    #plt.savefig('kde_tr_fill.png', transparent=True)
+    plt.show()

@@ -93,7 +93,8 @@ def load_maps(filepaths):
 def modify_maps(data, elements):
     BASEFACTOR=100000
     MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si']
-    MODIFY_FACTORS = [ 100, 1, 1, 1 ]
+    MODIFY_FACTORS = [ 100, 5, 2, 3 ]
+    #MODIFY_FACTORS = [ 100, 5, 1, 1.5 ]
 
     i=0
     for i in range(data.shape[1]):
@@ -102,6 +103,7 @@ def modify_maps(data, elements):
         for idx, snames in enumerate(MODIFY_LIST):
             if elements[i] in snames:
                 factor=BASEFACTOR*MODIFY_FACTORS[idx]
+                print(i, elements[i], idx, snames, factor)
 
         data[:,i]=data[:,i]/factor
         i+=1
@@ -138,7 +140,7 @@ def process(data, dims, image_directory, force=False):
 
 def plot_all(categories, classavg, embedding, data, elements, dims):
 
-    IDX=5       #element index
+    IDX=8       #element index
 
     processed_plots.show_map(data, elements, dims, IDX)
 
@@ -149,3 +151,5 @@ def plot_all(categories, classavg, embedding, data, elements, dims):
     processed_plots.seaborn_embedplot(embedding, categories)
 
 #    processed_plots.seaborn_kdeplot(embedding, categories)
+
+#   processed_plots.seaborn_kdecontours(embedding, categories)
