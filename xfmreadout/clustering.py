@@ -121,8 +121,8 @@ def doclustering(embedding, npx):
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
 
-    #DBSCAN_E=0.1    #many small clusters
-    DBSCAN_E=0.01   #larger clusters
+    DBSCAN_E=0.1    #many small clusters
+    #DBSCAN_E=0.01   #larger clusters
 
 
     #initialise clustering options

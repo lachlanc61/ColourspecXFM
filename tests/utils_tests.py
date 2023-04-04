@@ -11,15 +11,15 @@ def findin(fname, datafiles):
     raises error if multiple matches in LocalPath
     """
 
-    flist = datafiles.listdir()
+    #flist = datafiles.listdir()
 
     nmatched = 0
 
     matched = None
 
-    for i in flist:
-        if fnmatch.fnmatch(i, "*"+fname):
-            matched = i
+    for child in datafiles.iterdir():
+        if fnmatch.fnmatch(child, "*"+fname):
+            matched = child
             nmatched += 1
 
     if nmatched > 1:

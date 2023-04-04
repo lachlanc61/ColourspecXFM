@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 import seaborn as sns
+import colorcet as cc
 
 REDUCER=1
 
@@ -129,10 +130,18 @@ def seaborn_embedplot(embedding, categories):
     x=embedding.T[0]
     y=embedding.T[1]
 
+    ncat=np.max(categories)
+    print(ncat)
+    #ncat=15
+
+
+
     ### scatter plot with marginal axes
     sns.set_style('white')
+    #palette=sns.color_palette(cc.glasbey,ncat)
+    palette=sns.color_palette("Spectral",ncat)
     sns.jointplot(x=x, y=y,
-                hue=categories, palette=sns.color_palette(),
+                hue=categories, palette=palette,
                 lw=0,
                 joint_kws = dict(alpha=0.01),
                 height=10, ratio=6

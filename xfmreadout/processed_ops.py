@@ -64,6 +64,7 @@ def get_elements(files):
 
 
 def load_maps(filepaths):
+    print(filepaths)
 
     #load an image and check dimensions
     im = Image.open(filepaths[0])
@@ -111,6 +112,8 @@ def modify_maps(data, elements):
     return data
 
 def get_data(image_directory):
+
+    print(image_directory)
 
     files = [f for f in os.listdir(image_directory) if f.endswith('.tiff')]
 

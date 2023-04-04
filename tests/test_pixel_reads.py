@@ -12,6 +12,7 @@ PACKAGE_CONFIG='xfmreadout/config.yaml'
 
 sys.path.append(BASE_DIR)
 
+import tests.utils_tests as ut
 import xfmreadout.bufferops as bufferops
 
 #get config
@@ -42,7 +43,7 @@ def test_readpxheader_standard_flat(datafiles):
     """
     regular pixel header from single-detector, no-deadtime format
     """
-    f = datafiles.listdir()[0]
+    f = ut.findin("header.bin", datafiles)
     with open(f, mode='rb') as fi:
         stream = fi.read(PXHEADERLEN)
 
@@ -67,7 +68,7 @@ def test_readpxheader_standard_det01(datafiles):
     expected =  [[ 3868, 51, 56, 0, 15.940695762634277 ], \
                 [ 4040, 51, 56, 1, 12.854915618896484 ] ]
     i=0
-    for f in datafiles.listdir():
+    for f in datafiles.iterdir():
         with open(f, mode='rb') as fi:
             stream = fi.read(PXHEADERLEN)
 
@@ -102,7 +103,7 @@ def test_readpxdata_standard_det01(datafiles):
     """
     regular pixel data from two-detector format
     """
-    for f in datafiles.listdir():
+    for f in datafiles.iterdir():
         #miserable hack here 
         # - pytest.mark.datafiles not loading files in consistent order
         #   have to search array for addendum (ie. after last underscore)

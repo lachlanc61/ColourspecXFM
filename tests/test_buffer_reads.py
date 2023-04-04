@@ -13,6 +13,7 @@ PACKAGE_CONFIG='xfmreadout/config.yaml'
 sys.path.append(BASE_DIR)
 
 import xfmreadout.bufferops as bufferops
+import tests.utils_tests as ut
 
 #get config
 with open(os.path.join(BASE_DIR, PACKAGE_CONFIG), "r") as f:
@@ -53,7 +54,7 @@ def test_buffer_flat_load(datafiles):
     #      b.fidx, b.len, b.chunksize
 
     for multiproc in [ True, False]:
-        f = datafiles.listdir()[0]
+        f = ut.findin("sub.GeoPIXE", datafiles)
         with open(f, mode='rb') as fi:
             buffer=bufferops.MapBuffer(fi, chunksize, multiproc)
 
@@ -85,7 +86,7 @@ def test_buffer_01_load(datafiles):
         #     b.fidx, b.len, b.chunksize
 
     for multiproc in [ True, False]:
-        f = datafiles.listdir()[0]
+        f = ut.findin("sub.GeoPIXE", datafiles)
         with open(f, mode='rb') as fi:
             buffer=bufferops.MapBuffer(fi, chunksize, multiproc)
 

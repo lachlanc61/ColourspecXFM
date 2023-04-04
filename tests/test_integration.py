@@ -3,9 +3,6 @@ import sys, os
 import yaml
 import numpy as np
 
-import main
-import tests.utils_tests as ut
-
 TEST_DIR=os.path.realpath(os.path.dirname(__file__))
 BASE_DIR=os.path.dirname(TEST_DIR)
 DATA_DIR_NAME="test_data"   #hardcoded for tests dependent on large datafiles
@@ -19,6 +16,9 @@ PACKAGE_CONFIG='xfmreadout/config.yaml'
 sys.path.append(BASE_DIR)
 
 import xfmreadout.bufferops as bufferops
+import tests.utils_tests as ut
+import main
+
 
 #get config
 with open(os.path.join(BASE_DIR, PACKAGE_CONFIG), "r") as f:
@@ -63,7 +63,7 @@ def test_integration_index(datafiles):
     f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
 
     #arguments
-    args_in = ["-f", f.strpath, "-i", ] + CONTROL_ARGS
+    args_in = ["-f", str(f), "-i", ] + CONTROL_ARGS
 
     #run
     pixelseries, ___ = main.main(args_in)
@@ -86,14 +86,14 @@ def test_integration_parse(datafiles):
     """
     #get expected
     ef = ut.findin("pxspec.npy", datafiles)
-    expected_pxdata = np.load(ef.strpath)       
+    expected_pxdata = np.load(str(ef))       
     #   np.load seems to need str path while np.loadtxt doesn't
 
     #prep
     f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
 
     #arguments
-    args_in = [ "-f", f.strpath, ] + CONTROL_ARGS
+    args_in = [ "-f", str(f), ] + CONTROL_ARGS
 
     #run
     pixelseries, ___ = main.main(args_in)
@@ -121,20 +121,20 @@ def test_integration_cycle(datafiles):
 
     #get expected
     ef = ut.findin("pxspec.npy", datafiles)
-    expected_pxdata = np.load(ef.strpath)   
+    expected_pxdata = np.load(str(ef))   
     #   np.load seems to need str path while np.loadtxt doesn't
 
     #prep
     f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
 
     #arguments for crop/write
-    args_in = [ "-f", f.strpath, "-i", "-w", "-x", "20", "40", "-y", "10", "20", ] + CONTROL_ARGS
+    args_in = [ "-f", str(f), "-i", "-w", "-x", "20", "40", "-y", "10", "20", ] + CONTROL_ARGS
 
     #run crop/write
     ___, ___ = main.main(args_in)
 
     #use output from crop/write as next input
-    f_result = os.path.join(f.dirname, "out_ts2_01_sub/ts2_01_sub_export.GeoPIXE")
+    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_export.GeoPIXE")
 
     #check filesize is correct
     assert os.path.getsize(f_result) == expected_size
