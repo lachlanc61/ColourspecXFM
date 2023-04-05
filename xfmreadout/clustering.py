@@ -73,7 +73,7 @@ def getobjname(obj):
 
 def reduce(data):
     """
-    performs dimensionality reduction on data using reducers
+    perform dimensionality reduction
     args:       data
     returns:    embedding matrix, time per cluster
     """
@@ -121,9 +121,8 @@ def doclustering(embedding, npx):
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
 
-    DBSCAN_E=0.1    #many small clusters
-    #DBSCAN_E=0.01   #larger clusters
-
+    #DBSCAN_E=0.1    #many small clusters
+    DBSCAN_E=0.01   #larger clusters
 
     #initialise clustering options
     kmeans = KMeans(
@@ -141,6 +140,8 @@ def doclustering(embedding, npx):
         gen_min_span_tree=True
     )
 
+    print(f"SCAN PARAM {DBSCAN_E}")
+
     classifier = dbscan
 
     categories=np.zeros((npx),dtype=np.uint16)
@@ -151,7 +152,7 @@ def doclustering(embedding, npx):
 
     return classifier, categories
 
-def sumclusters(dataset, catlist, n_clusters, n_channels):
+def sumclusters(dataset, categories, n_clusters, n_channels):
     """
     calculate summed spectrum for each cluster
     args: 
@@ -164,8 +165,12 @@ def sumclusters(dataset, catlist, n_clusters, n_channels):
     """
     specsum=np.zeros((n_clusters,n_channels))
 
-    for i in range(n_clusters):
-        datcat=dataset[catlist==i]
+    if n_clusters != count_categories(categories):
+        raise ValueError("cluster count mismatch")
+
+    for i in range(np.min(categories), np.max(categories)):
+        datcat=dataset[categories==i]
+        print(f"cluster {i}, count: {datcat.shape[0]}") #DEBUG
         pxincat = datcat.shape[0]   #no. pixels in category i
         specsum[i,:]=(np.sum(datcat,axis=0))/pxincat
     return specsum
@@ -179,79 +184,17 @@ def clustplt(embedding, categories, mapx, clusttimes):
 
     https://towardsdatascience.com/clearing-the-confusion-once-and-for-all-fig-ax-plt-subplots-b122bb7783ca
     """    
-        
-    #create figure and ax matrix
-    #   gridspec adjusts widths of subplots in each row
-    fig, (ax) = plt.subplots(1, 2, figsize=(16, 6), gridspec_kw={'width_ratios': [1, 2]})
-    fig.tight_layout(pad=2)
- 
-    #fig.subplots_adjust(
-    #    left=0.02, right=0.98, bottom=0.001, top=0.96, wspace=0.05, hspace=0.01
-    #)
+    pass
 
-    labels = {0: "0", 1: "1", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6"}
+def count_categories(categories):
+    """
+    return the total number of categories, including negative values
+    """
+    min_cat = np.min(categories)
+    max_cat = np.max(categories)
+    num_cats = max_cat - min_cat + 1
 
-    #for each reducer
-    for i in np.arange(0,1):
-        #get the reducer's name
-        redname=repr(REDUCERS[i][0]()).split("(")[0]
-        #read in the embedding xy array and time
-        embed = embedding[i,:]
-        elapsed_time = clusttimes[i]
-        
-        #assign index in plot matrix
-        plotid=(i,0)
-
-        #adjust plotting options
-        ax[plotid].set_xlabel(redname, size=16)
-        ax[plotid].xaxis.set_label_position("top")
-
-        #create the scatterplot for this reducer
-        # .T = transpose, rotates x and y
-        ax[plotid].scatter(*embed.T, s=10, c=categories[i], cmap=KCMAPS[i], alpha=0.25)
-
-        #add the runtime as text
-        ax[plotid].text(
-            0.99,
-            0.01,
-            "{:.2f} s".format(elapsed_time),
-            transform=ax[plotid].transAxes,
-            size=14,
-            horizontalalignment="right",
-        )
-
-        ncats=np.max(categories)+1
-        axcm=cm.get_cmap(KCMAPS[i], ncats)
-
-        cmap=axcm(range(ncats))
-
-        for j in range(ncats):
-            ax[plotid].text(
-                0.2+0.067*j,
-                -0.1,
-                f"{j}",
-                transform=ax[plotid].transAxes,
-                size=14,
-                horizontalalignment="right",
-                color=cmap[j]
-            )
-        
-        #assign index for category map for this reducer
-        plotid=(i,1)
-
-        #reshape the category list back to the map dimensions using xdim
-
-        catmap=np.reshape(categories[i], [-1, mapx])
-        
-        #show this category image
-        ax[plotid].imshow(catmap, cmap=KCMAPS[i])
-
-
-    #initalise the final plot, clear the axes
-    plt.setp(ax, xticks=[], yticks=[])
-    plt.show()
- 
-    return fig
+    return num_cats
 
 def calculate(data):
 
@@ -266,7 +209,7 @@ def calculate(data):
 
     #produce and save cluster averages
 
-    n_clusters = np.max(categories)+1
+    n_clusters = count_categories(categories)
 
     #   initialise averages
     classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
@@ -285,7 +228,7 @@ def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_
 
     return 
 
-def get(data, output_dir: str, force=False, overwrite=True):
+def get(data, output_dir: str, force=False, overwrite=False):
 
     file_cats=os.path.join(output_dir,"categories.npy")
     file_classes=os.path.join(output_dir,"classavg.npy")

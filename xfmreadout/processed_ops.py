@@ -9,6 +9,7 @@ import xfmreadout.clustering as clustering
 import xfmreadout.processed_plots as processed_plots
 
 
+
 FORCE = True
 AUTOSAVE = True
 
@@ -47,7 +48,8 @@ def get_elements(files):
                 elements.append(found)
                 keepfiles.append(fname)
             else:
-                print(f"WARNING: Unexpected element {found} not used")
+                pass
+               # print(f"WARNING: Unexpected element {found} not used")
 
     files = keepfiles
     if len(elements) == len(files):
@@ -92,22 +94,37 @@ def load_maps(filepaths):
     return data, dims
 
 def modify_maps(data, elements):
-    BASEFACTOR=100000
+    BASEFACTOR=100000   #ppm to wt%
     MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si']
+    #MODIFY_FACTORS = [ 1000, 50, 20, 30 ]
     MODIFY_FACTORS = [ 100, 5, 2, 3 ]
     #MODIFY_FACTORS = [ 100, 5, 1, 1.5 ]
 
-    i=0
+    """
+    FUTURE: normalise MODIFY_LIST to MODIFY_SET eg. 1.0, 2.0, 3.0
+    instead of using tuneable factor
+    """
+
+
+    #i=0
+    print(data.shape)
+    print(len(elements))
+    print(data.shape[1])
+
     for i in range(data.shape[1]):
         factor=BASEFACTOR
+
+        print(f"{elements[i]}, 1: {np.max(data[:,i])}")
 
         for idx, snames in enumerate(MODIFY_LIST):
             if elements[i] in snames:
                 factor=BASEFACTOR*MODIFY_FACTORS[idx]
                 print(i, elements[i], idx, snames, factor)
 
-        data[:,i]=data[:,i]/factor
-        i+=1
+        data[:,i]=(data[:,i]/factor)
+        print(f"{elements[i]}, 2: {np.max(data[:,i])}, factor: {factor}")
+
+    #    i+=1
 
     return data
 
@@ -124,9 +141,12 @@ def get_data(image_directory):
     data, dims = load_maps(filepaths)
 
     print(elements)
-    print(data.shape)
+    print(f"data shape: {data.shape}")
+    print(f"----{elements[8]} tracker: {np.max(data[:,8])}")    #DEBUG
 
     data = modify_maps(data, elements)
+
+    print(f"-----{elements[8]} tracker: {np.max(data[:,8])}")   #DEBUG
 
     #print(maps.shape, data.shape)
 
@@ -145,13 +165,15 @@ def plot_all(categories, classavg, embedding, data, elements, dims):
 
     IDX=8       #element index
 
+    palette=processed_plots.build_palette(categories)
+
     processed_plots.show_map(data, elements, dims, IDX)
 
-    processed_plots.category_map(categories, data, dims)
+    processed_plots.category_map(categories, data, dims, palette=palette)
     
-    processed_plots.category_avgs(categories, elements, classavg)
+    processed_plots.category_avgs(categories, elements, classavg, palette=palette)
 
-    processed_plots.seaborn_embedplot(embedding, categories)
+    processed_plots.seaborn_embedplot(embedding, categories, palette=palette)
 
 #    processed_plots.seaborn_kdeplot(embedding, categories)
 

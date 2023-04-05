@@ -1,11 +1,19 @@
+import copy
+import logging
 import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
-
 import seaborn as sns
 import colorcet as cc
+import matplotlib.pyplot as plt
+
+from matplotlib import colors
+from PIL import Image
+
+
 
 REDUCER=1
+
+logging.basicConfig(format='%(message)s')
+log = logging.getLogger(__name__)
 
 
 def remap(indata, dims):
@@ -17,6 +25,68 @@ def remap(indata, dims):
         return indata.reshape(dims[0], dims[1], -1)
     else:
         return indata.reshape(dims[0], -1)
+
+
+
+def shuffle_palette(palette):
+    """
+    shuffles palette into N blocks of spaced sequential colours
+        breaks up a sequential colour sequence
+    """
+
+    NREPEATS=3
+
+    mod = int(np.floor(len(palette)/(len(palette)/NREPEATS)))
+
+    newpalette=copy.deepcopy(palette)
+
+    for j in range(mod):
+        for i in range(len(palette)):
+            if i%mod == j:
+                newpalette.append(palette[i])
+
+    del newpalette[0:len(palette)]
+
+    return newpalette
+
+def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):
+    """
+    generates a categorical palette based on size
+        includes sequential shuffling for large category nos. 
+        applies grey to unassigned/negative
+    """
+
+    GREY=( 0.5, 0.5, 0.5 )
+
+    cat_min=np.min(categories)
+    cat_max=np.max(categories)
+    num_cats=cat_max-cat_min+1
+
+    if num_cats <= 10:
+        cmapname="deep"
+        shuffle=False
+    elif num_cats <=12:
+        cmapname="Set3"
+        shuffle=False
+
+    if cat_min < 0:
+        palette=sns.color_palette(cmapname,num_cats-1)
+
+        if shuffle == True:
+            palette=shuffle_palette(palette)
+
+        palette.insert( 0, GREY )
+
+    elif cat_min == 0:
+        palette=sns.color_palette(cmapname,num_cats)
+
+        if shuffle == True:
+            palette=shuffle_palette(palette)
+    else:
+        raise ValueError(f"minimum category {cat_min} > 0")
+
+    return palette
+
 
 def show_map(data, elements, dims, idx):
 
@@ -37,14 +107,12 @@ def show_map(data, elements, dims, idx):
 
     return
 
-def category_map ( categories, data, dims ):
+def category_map ( categories, data, dims, palette=None ):
     """
     image of categories
     """
 
-    from matplotlib import cm
-
-    KCMAPS=["tab10"]    #colourmaps for kmeans
+    #KCMAPS=["tab10"]    #colourmaps for kmeans
 
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
@@ -52,10 +120,14 @@ def category_map ( categories, data, dims ):
     ncats=np.max(categories)+2
     print(ncats)
 
-    axcm=cm.get_cmap(KCMAPS[0], ncats)
+    #axcm=cm.get_cmap(KCMAPS[0], ncats)
 
-    cmap=axcm(range(ncats))
+    #cmap=axcm(range(ncats))
+    if palette is None:
+        log.warning(f"palette not given, building from categories")
+        palette=build_palette(categories)
 
+    cmap = colors.ListedColormap(palette)
     #reshape the category list back to the map dimensions using xdim
     #WARNING: fails using SHORTRUN unless ends at end of row - fix this later
 
@@ -65,15 +137,21 @@ def category_map ( categories, data, dims ):
     print(np.min(catmap))
 
     #show this category image
-    ax.imshow(catmap, cmap=KCMAPS[0])
+    ax.imshow(catmap, cmap=cmap)
 
     return
 
     #fig.savefig(os.path.join(EMBED_DIR,"cluster_map.png"), dpi=200)
 
-def category_avgs(categories, elements, classavg):
+def category_avgs(categories, elements, classavg, palette=None ):
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
+
+    if palette is None:
+        log.warning(f"palette not given, building from categories")
+        palette=build_palette(categories)
+
+    cmap = colors.ListedColormap(palette)
 
     ncats=np.max(categories)
 
@@ -126,20 +204,19 @@ def category_boxplots(data, categories, elements):
 
     fig.show()
 
-def seaborn_embedplot(embedding, categories):
+def seaborn_embedplot(embedding, categories, palette=None):
+
+
+    if palette is None:
+        log.warning(f"palette not given, building from categories")
+        palette=build_palette(categories)
+
     x=embedding.T[0]
     y=embedding.T[1]
 
-    ncat=np.max(categories)
-    print(ncat)
-    #ncat=15
-
-
-
     ### scatter plot with marginal axes
     sns.set_style('white')
-    #palette=sns.color_palette(cc.glasbey,ncat)
-    palette=sns.color_palette("Spectral",ncat)
+
     sns.jointplot(x=x, y=y,
                 hue=categories, palette=palette,
                 lw=0,
