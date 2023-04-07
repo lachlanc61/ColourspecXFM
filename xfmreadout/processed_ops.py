@@ -97,8 +97,9 @@ def modify_maps(data, elements):
     BASEFACTOR=100000   #ppm to wt%
     MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si']
     #MODIFY_FACTORS = [ 1000, 50, 20, 30 ]
-    MODIFY_FACTORS = [ 100, 5, 2, 3 ]
+    #MODIFY_FACTORS = [ 100, 5, 2, 3 ] <--best manual
     #MODIFY_FACTORS = [ 100, 5, 1, 1.5 ]
+    MODIFY_FACTORS = [ 1, 1, 5, 10 ]
 
     """
     FUTURE: normalise MODIFY_LIST to MODIFY_SET eg. 1.0, 2.0, 3.0
@@ -114,15 +115,16 @@ def modify_maps(data, elements):
     for i in range(data.shape[1]):
         factor=BASEFACTOR
 
-        print(f"{elements[i]}, 1: {np.max(data[:,i])}")
+        print(f"{elements[i]}, pre, max: {np.max(data[:,i])}")
 
         for idx, snames in enumerate(MODIFY_LIST):
             if elements[i] in snames:
-                factor=BASEFACTOR*MODIFY_FACTORS[idx]
+                #factor=BASEFACTOR*MODIFY_FACTORS[idx]
+                factor=MODIFY_FACTORS[idx]/np.max(data[:,i])
                 print(i, elements[i], idx, snames, factor)
 
-        data[:,i]=(data[:,i]/factor)
-        print(f"{elements[i]}, 2: {np.max(data[:,i])}, factor: {factor}")
+        data[:,i]=(data[:,i]*factor)
+        print(f"{elements[i]}, post, max: {np.max(data[:,i])}, factor: {factor}")
 
     #    i+=1
 
