@@ -365,19 +365,19 @@ def writepxheader(config, xfmap, pxseries, det: int, pxidx: int, xcoords, ycoord
 
     """
     if calc_dt:
-        dt = pxseries.dtpred[det,pxidx]
+        dt = pxseries.dtpred[pxidx,det]
     else:
-        dt=pxseries.dt[det,pxidx]
+        dt=pxseries.dt[pxidx,det]
 
     pxflag=config['PXFLAG']
     pxflag0=pxflag[0].encode(config['CHARENCODE'])
     pxflag1=pxflag[1].encode(config['CHARENCODE'])
 
-    pxlen=pxseries.pxlen[det,pxidx]
-    xidx=pxseries.xidx[det,pxidx]
-    yidx=pxseries.yidx[det,pxidx]
+    pxlen=pxseries.pxlen[pxidx,det]
+    xidx=pxseries.xidx[pxidx,det]
+    yidx=pxseries.yidx[pxidx,det]
     
-    if pxseries.det[det,pxidx] != det:
+    if pxseries.det[pxidx,det] != det:
         raise ValueError("WARNING: Detector value mismatch")
 
     #write the header with x/y coords adjusted
