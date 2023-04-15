@@ -107,7 +107,7 @@ def main(args_in):
             realtime, livetime, triggers, events, icr, ocr, dt_evt, dt_rt = diagops.dtfromdiag(dirs.logf)
             print(dt_evt)
 
-        dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtpred[0], pixelseries.dtflat, \
+        dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtpred[:,0], pixelseries.dtflat, \
             pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
 
         pixelseries.rgbarray, pixelseries.rvals, pixelseries.gvals, pixelseries.bvals \

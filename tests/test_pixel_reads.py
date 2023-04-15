@@ -25,15 +25,12 @@ CHARENCODE=config['CHARENCODE']
 NCHAN=config['NCHAN']
 BYTESPERCHAN=config['BYTESPERCHAN']
 
-
-# https://pypi.org/project/pytest-datafiles/#description
-# pytest datafiles
-# multiple files:
 """
-    for file in datafiles.listdir():
-        print(file)
-        print(os.path.isfile(file))
-        assert os.path.isfile(file)
+to export binary
+    outfile = open("FILENAME.bin", mode='wb')
+    outfile.write(stream)
+    
+    then mv as appropriate
 """
 
 @pytest.mark.datafiles(

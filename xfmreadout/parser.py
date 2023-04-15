@@ -103,8 +103,9 @@ def parse(xfmap, pixelseries, multiproc):
 
         #CHECK might not work
         indexlist = xfmap.indexlist
-        indices_ravel = np.ravel(indexlist, order='F')
-        pxlens_ravel = np.ravel(pixelseries.pxlen, order='F')
+        
+#        indices_ravel = np.ravel(indexlist, order='F')
+#        pxlens_ravel = np.ravel(pixelseries.pxlen, order='F')
 
         if not multiproc:
             for pxidx in range(pixelseries.npx):

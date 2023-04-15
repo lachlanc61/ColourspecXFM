@@ -36,13 +36,13 @@ def predict_dt(config, pixelseries, xfmap):
     if len(pixelseries.flatsum) != len(pixelseries.dtflat):
         raise ValueError("sum and dt array sizes differ")
 
-    dtpred=np.zeros((ndet,len(pixelseries.dtflat)),dtype=np.float32) 
+    dtpred=np.zeros((len(pixelseries.dtflat),ndet),dtype=np.float32) 
 
     if timeconst == 0.5:    #hardcoded for now
 
-        for i in range(ndet):
-            for j in range(len(pixelseries.flatsum)):
-                dtpred[i,j]=predictdt(config, pixelseries.flatsum[j], dwell, timeconst)
+        for i in range(len(pixelseries.flatsum)):
+            for j in range(ndet):
+                dtpred[i,j]=predictdt(config, pixelseries.flatsum[i], dwell, timeconst)
     
     else:
         raise ValueError(f"Deadtime prediction not yet calibrated for TC={timeconst}")        
@@ -79,7 +79,7 @@ def dthist(dt, dir: str, ndet: int):
     ax.set_ylabel("No. pixels")
 
     for i in np.arange(ndet):
-        ax.hist(dt[i], 100, fc=cset[i], alpha=0.5, label=f"{i}")
+        ax.hist(dt[:,i], 100, fc=cset[i], alpha=0.5, label=f"{i}")
 
     ax.legend(loc=1, title="Detector:")
 
@@ -105,7 +105,7 @@ def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
             spine.set_linewidth(2)
             spine.set_color(cset[i])
 
-        dtimage = dt[i].reshape(yres,xres)
+        dtimage = dt[:,i].reshape(yres,xres)
 
         ax[0,i].imshow(dtimage, cmap="magma")
 
@@ -121,7 +121,7 @@ def diffimage(sum, dir: str, xres: int, yres: int, ndet: int):
        
     sum=sum.astype(float)
          
-    diffmap = sum[0]-sum[1]
+    diffmap = sum[:,0]-sum[:,1]
 
     diffimage = diffmap.reshape(yres,xres)
 
@@ -147,7 +147,7 @@ def dtscatter(dt, sum, dir: str, ndet: int):
     ax.set_ylabel("Counts")
 
     for i in np.arange(ndet):
-        ax.scatter(dt[i],sum[i], color=cset[i], marker='o', s=50, alpha=0.1, linewidths=None, label=f"{i}")
+        ax.scatter(dt[:,i],sum[:,i], color=cset[i], marker='o', s=50, alpha=0.1, linewidths=None, label=f"{i}")
 
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
