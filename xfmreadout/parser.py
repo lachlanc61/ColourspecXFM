@@ -50,7 +50,7 @@ def indexmap(xfmap, pixelseries, multiproc):
     print("--------------")
     print("INDEXING")
     try:
-        indexlist=np.zeros((xfmap.npx, pixelseries.ndet),dtype=np.uint64)
+        indexlist=np.empty((xfmap.npx, xfmap.ndet),dtype=np.uint64) #must match xfmap.indexlist declaration
 
         xfmap.resetfile()
         buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
@@ -64,14 +64,14 @@ def indexmap(xfmap, pixelseries, multiproc):
             
             pxlen, xidx, yidx, det, dt = bufferops.readpxheader(headstream)
 
-            indexlist[det, pxidx] = buffer.fidx+idx-pxheaderlen
+            indexlist[pxidx, det] = buffer.fidx+idx-pxheaderlen
 
             pixelseries = pixelseries.receiveheader(pxidx, pxlen, xidx, yidx, det, dt)
             
             #use getstream to step to the next pixel and handle end-of-buffer events
             __, idx, buffer = bufferops.getstream(buffer, idx, pxlen-pxheaderlen)
 
-            if det == xfmap.maxdet:
+            if det == xfmap.ndet-1:
                 pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)
 
     except MapDone:
@@ -84,7 +84,7 @@ def indexmap(xfmap, pixelseries, multiproc):
         return pixelseries, indexlist
 
 
-def parse(xfmap, pixelseries, indexlist, multiproc):
+def parse(xfmap, pixelseries, multiproc):
     """
     read in the map data after indexing
 
@@ -102,6 +102,7 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
         nchannels = xfmap.nchannels
 
         #CHECK might not work
+        indexlist = xfmap.indexlist
         indices_ravel = np.ravel(indexlist, order='F')
         pxlens_ravel = np.ravel(pixelseries.pxlen, order='F')
 
@@ -249,7 +250,7 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, dtfill, multiproc):
             if utils.pxinsubmap(xcoords, ycoords, pixelseries.xidx[pxidx,det], pixelseries.yidx[pxidx,det]):            
                 bufferops.writepxrecord(xfmap, stream, pixelseries.pxlen[pxidx,det]-pxheaderlen)
 
-            if det == xfmap.maxdet:
+            if det == xfmap.ndet-1:
                 pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)
 
     except MapDone:

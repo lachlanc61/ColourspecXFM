@@ -79,7 +79,7 @@ def test_integration_index(datafiles):
 
 @pytest.mark.datafiles(
     os.path.join(BIGDATA_DIR, 'ts2_01_sub.GeoPIXE'),
-    os.path.join(BIGDATA_DIR, 'out_ts2_01_sub/pixeldata/pxspec.npy'),
+    os.path.join(BIGDATA_DIR, 'ts2_01_sub_data.npy'),
     )
 def test_integration_parse(datafiles):
     """
@@ -89,7 +89,7 @@ def test_integration_parse(datafiles):
         - likely first pixel after new chunk
     """
     #get expected
-    ef = ut.findin("pxspec.npy", datafiles)
+    ef = ut.findin("ts2_01_sub_data.npy", datafiles)
     expected_pxdata = np.load(str(ef))       
     #   np.load seems to need str path while np.loadtxt doesn't
 
@@ -107,7 +107,7 @@ def test_integration_parse(datafiles):
 
 @pytest.mark.datafiles(
     os.path.join(BIGDATA_DIR, 'ts2_01_sub.GeoPIXE'),
-    os.path.join(DATA_DIR, 'out_ts2_01_sub_export/pixeldata/pxspec.npy')
+    os.path.join(BIGDATA_DIR, 'ts2_01_sub_export_data.npy')
     )
 def test_integration_cycle(datafiles):
     """
@@ -124,7 +124,7 @@ def test_integration_cycle(datafiles):
     expected_size = int(1407157)    #size for written, cropped .GeoPIXE file
 
     #get expected
-    ef = ut.findin("pxspec.npy", datafiles)
+    ef = ut.findin("ts2_01_sub_export_data.npy", datafiles)
     expected_pxdata = np.load(str(ef))   
     #   np.load seems to need str path while np.loadtxt doesn't
 

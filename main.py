@@ -60,10 +60,10 @@ def main(args_in):
         #initialise the spectrum-by-pixel object
         pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray, args.index_only)
 
-        pixelseries, indexlist = parser.indexmap(xfmap, pixelseries, args.multiprocess)
+        pixelseries, xfmap.indexlist = parser.indexmap(xfmap, pixelseries, args.multiprocess)
 
         if not args.index_only:
-            pixelseries = parser.parse(xfmap, pixelseries, indexlist, args.multiprocess)
+            pixelseries = parser.parse(xfmap, pixelseries, args.multiprocess)
             pixelseries = pixelseries.get_derived(config, xfmap)    #calculate additional derived properties after parse
 
         if args.write_modified:

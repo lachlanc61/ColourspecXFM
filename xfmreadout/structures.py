@@ -71,7 +71,9 @@ class Xfmap:
         self.BYTESPERCHAN=config['BYTESPERCHAN'] 
 
         self.detarray = bufferops.getdetectors(buffer, self.datastart, self.PXHEADERLEN)
-        self.maxdet = max(self.detarray)
+        self.ndet = max(self.detarray)+1
+
+        self.indexlist=np.empty((self.npx, self.ndet),dtype=np.uint64)
 
         buffer.wait()
         self.resetfile()
