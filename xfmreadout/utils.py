@@ -228,8 +228,8 @@ def gapfill(x, y, nchannels):
     for k in x:
                 d[k] = (y[j],0)
                 j+=1
-    xout=np.zeros(nchannels,dtype=int)
-    yout=np.zeros(nchannels, dtype=int)
+    xout=np.zeros(nchannels,dtype=np.uint16)
+    yout=np.zeros(nchannels, dtype=np.uint16)
 
     for i in range(nchannels):
         xout[i]=i

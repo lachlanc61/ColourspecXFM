@@ -301,10 +301,10 @@ def readpxdata(stream, readlength, bytesperchan: int, nchannels: int):
     #take odd indexes for counts
     counts=chandata[1::2]
 
-    chan, counts = utils.gapfill(chan, counts, nchannels)
+    chan, counts = utils.gapfill(list(chan), list(counts), nchannels)
 
     #return as lists
-    return(list(chan), list(counts))
+    return chan, counts
 
 
 def writefileheader(xfmap, xcoords, ycoords):

@@ -134,7 +134,7 @@ def test_readpxdata_standard_det01(datafiles):
     stream = fi.read()
     """
 
-    chan, counts = bufferops.readpxdata(stream, len(stream), BYTESPERCHAN)
+    chan, counts = bufferops.readpxdata(stream, len(stream), BYTESPERCHAN, NCHAN)
 
     assert np.array_equal(chan, expected_chan)
     assert np.array_equal(counts, expected_counts)
@@ -149,13 +149,15 @@ def test_readpxdata_empty():
     pixel_length=0
 
     stream = data.encode(CHARENCODE)
-    expected_chan = []
-    expected_counts = []
+    #expected_chan = []
+    expected_chan = np.arange(NCHAN,dtype=np.uint16)
+    #expected_counts = []
+    expected_counts = np.zeros(NCHAN,dtype=np.uint16)
 
-    chan, counts = bufferops.readpxdata(stream, pixel_length, BYTESPERCHAN)
+    chan, counts = bufferops.readpxdata(stream, pixel_length, BYTESPERCHAN, NCHAN)
 
-    assert ( chan == expected_chan )
-    assert ( counts == expected_counts )
+    assert np.array_equal(chan, expected_chan)
+    assert np.array_equal(counts, expected_counts)
 
 
 
