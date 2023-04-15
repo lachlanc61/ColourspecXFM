@@ -14,7 +14,7 @@ def endpx(pxidx, idx, buffer, xfmap, pixelseries):
 
         raises MapDone at expected end of map
     """
-    row=pixelseries.yidx[0,pxidx]+1
+    row=pixelseries.yidx[pxidx,0]+1
 
     #print pixel index at end of every row
     if pxidx % xfmap.xres == (xfmap.xres-1): 
@@ -76,8 +76,8 @@ def indexmap(xfmap, pixelseries, multiproc):
 
     except MapDone:
         pixelseries.npx=pxidx+1
-        pixelseries.nrows=pixelseries.yidx[0,pxidx]+1 
-        pixelseries.dtflat = np.sum(pixelseries.dt, axis=0)/pixelseries.ndet
+        pixelseries.nrows=pixelseries.yidx[pxidx,0]+1 
+        pixelseries.dtflat = np.sum(pixelseries.dt, axis=1)/pixelseries.ndet
 
         buffer.wait()
         xfmap.resetfile()
@@ -101,6 +101,7 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
         bytesperchan = xfmap.BYTESPERCHAN
         nchannels = xfmap.nchannels
 
+        #CHECK might not work
         indices_ravel = np.ravel(indexlist, order='F')
         pxlens_ravel = np.ravel(pixelseries.pxlen, order='F')
 
@@ -108,12 +109,12 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
             for pxidx in range(pixelseries.npx):
                 for det in range(pixelseries.ndet):
 
-                    if not det == pixelseries.det[det,pxidx]:
-                        raise ValueError(f"Detector mistmatch at (det,pixel) = ({det},{pxidx})")
+                    if not det == pixelseries.det[pxidx,det]:
+                        raise ValueError(f"Detector mistmatch at (pixel,det) = ({pxidx},{det})")
                     
-                    absidx=indexlist[det,pxidx]
+                    absidx=indexlist[pxidx,det]
                     relidx=int(absidx-buffer.fidx)
-                    pxlength=pixelseries.pxlen[det,pxidx]
+                    pxlength=pixelseries.pxlen[pxidx,det]
 
                     if relidx < 0:
                             raise ValueError(f"pixel start {absidx} not in current buffer beginning {buffer.fidx}") 
@@ -140,10 +141,10 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
                         chan, counts = bufferops.readpxdata(stream, len(stream), bytesperchan, nchannels)
 
                     except ValueError:  #not sure I need this, really just a debug log
-                        print(f"{det}, {pxidx}")
+                        print(f"{pxidx}, {det}")
                         exit()
                     finally:
-                        pixelseries.data[det,pxidx,:]=counts
+                        pixelseries.data[pxidx,det,:]=counts
                 ___ = endpx(pxidx, absidx, buffer, xfmap, pixelseries)
 
             #PARALLELIZED
@@ -173,8 +174,8 @@ def parse(xfmap, pixelseries, indexlist, multiproc):
     except MapDone:
         if not pixelseries.npx == pxidx+1:
             raise ValueError(f"Index mistmatch ({pixelseries.npx}) vs ({pxidx})")
-        if not pixelseries.nrows == pixelseries.yidx[0,pxidx]+1:
-            raise ValueError(f"Index mistmatch ({pixelseries.nrows}) vs ({pixelseries.yidx[0,pxidx]+1})")
+        if not pixelseries.nrows == pixelseries.yidx[pxidx,0]+1:
+            raise ValueError(f"Index mistmatch ({pixelseries.nrows}) vs ({pixelseries.yidx[pxidx,0]+1})")
         buffer.wait()
         xfmap.resetfile()
         
@@ -237,16 +238,16 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, dtfill, multiproc):
 
             ___, xidx, yidx, det, ___ = bufferops.readpxheader(headstream)
 
-            if not [ xidx, yidx, det ] == [ pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx], pixelseries.det[det,pxidx] ]:
+            if not [ xidx, yidx, det ] == [ pixelseries.xidx[pxidx,det], pixelseries.yidx[pxidx,det], pixelseries.det[pxidx,det] ]:
                 raise ValueError(f"values read from pixel header do not match result from indexing")
 
-            if utils.pxinsubmap(xcoords, ycoords, pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx]):            
+            if utils.pxinsubmap(xcoords, ycoords, pixelseries.xidx[pxidx,det], pixelseries.yidx[pxidx,det]):            
                 bufferops.writepxheader(config, xfmap, pixelseries, det, pxidx, xcoords, ycoords, dtfill)
            
-            stream, idx, buffer = bufferops.getstream(buffer, idx, pixelseries.pxlen[det,pxidx]-pxheaderlen)
+            stream, idx, buffer = bufferops.getstream(buffer, idx, pixelseries.pxlen[pxidx,det]-pxheaderlen)
             
-            if utils.pxinsubmap(xcoords, ycoords, pixelseries.xidx[det,pxidx], pixelseries.yidx[det,pxidx]):            
-                bufferops.writepxrecord(xfmap, stream, pixelseries.pxlen[det,pxidx]-pxheaderlen)
+            if utils.pxinsubmap(xcoords, ycoords, pixelseries.xidx[pxidx,det], pixelseries.yidx[pxidx,det]):            
+                bufferops.writepxrecord(xfmap, stream, pixelseries.pxlen[pxidx,det]-pxheaderlen)
 
             if det == xfmap.maxdet:
                 pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)

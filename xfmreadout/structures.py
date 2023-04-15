@@ -100,11 +100,11 @@ class PixelSeries:
         self.nchan=config['NCHAN']
 
         #initialise pixel value arrays
-        self.pxlen=np.zeros((self.ndet,npx),dtype=np.uint16)
-        self.xidx=np.zeros((self.ndet,npx),dtype=np.uint16)
-        self.yidx=np.zeros((self.ndet,npx),dtype=np.uint16)
-        self.det=np.zeros((self.ndet,npx),dtype=np.uint16)
-        self.dt=np.zeros((self.ndet,npx),dtype=np.float32)
+        self.pxlen=np.zeros((npx,self.ndet),dtype=np.uint16)
+        self.xidx=np.zeros((npx,self.ndet),dtype=np.uint16)
+        self.yidx=np.zeros((npx,self.ndet),dtype=np.uint16)
+        self.det=np.zeros((npx,self.ndet),dtype=np.uint16)
+        self.dt=np.zeros((npx,self.ndet),dtype=np.float32)
 
         #initalise derived arrays
         #flat
@@ -112,8 +112,8 @@ class PixelSeries:
         self.flatsum=np.zeros((npx),dtype=np.uint32) 
         self.dtflat=np.zeros((npx),dtype=np.float32)  
         #per-detector
-        self.sum=np.zeros((self.ndet,npx),dtype=np.uint32)  
-        self.dtpred=np.zeros((self.ndet,npx),dtype=np.float32)  
+        self.sum=np.zeros((npx,self.ndet),dtype=np.uint32)  
+        self.dtpred=np.zeros((npx,self.ndet),dtype=np.float32)  
 
         #create analysis outputs
         self.rvals=np.zeros(npx)
@@ -129,7 +129,7 @@ class PixelSeries:
 
         #initialise whole data containers (WARNING: large)
         if not INDEX_ONLY:
-            self.data=np.zeros((self.ndet,npx,self.nchan),dtype=np.uint16)
+            self.data=np.zeros((npx,self.ndet,self.nchan),dtype=np.uint16)
 #            if config['DOBG']: self.corrected=np.zeros((xfmap.npx,config['NCHAN']),dtype=np.uint16)
         else:
         #create a small dummy array just in case
@@ -141,11 +141,11 @@ class PixelSeries:
         self.nrows=0
 
     def receiveheader(self, pxidx, pxlen, xcoord, ycoord, det, dt):
-        self.pxlen[det,pxidx]=pxlen
-        self.xidx[det,pxidx]=xcoord
-        self.yidx[det,pxidx]=ycoord
-        self.det[det,pxidx]=det
-        self.dt[det,pxidx]=dt
+        self.pxlen[pxidx,det]=pxlen
+        self.xidx[pxidx,det]=xcoord
+        self.yidx[pxidx,det]=ycoord
+        self.det[pxidx,det]=det
+        self.dt[pxidx,det]=dt
         
         return self
 
@@ -153,18 +153,20 @@ class PixelSeries:
         """
         calculate derived arrays from values extracted from map
         """
-        self.flattened = np.sum(self.data, axis=0, dtype=np.uint32)
+        self.flattened = np.sum(self.data, axis=1, dtype=np.uint32)
         self.sum = np.sum(self.data, axis=2, dtype=np.uint32)
-        self.flatsum = np.sum(self.sum, axis=0, dtype=np.uint32)
+        self.flatsum = np.sum(self.sum, axis=1, dtype=np.uint32)
 
         self.dtpred = dtops.predict_dt(config, self, xfmap)
 
         return self
 
-    def flatten(self, data, detarray):
+
+    def flatten_REMOVE(self, data, detarray):
         """
         sum all detectors into single data array
         NB: i think this creates another dataset in memory while running
+        PRETTY SURE NOT USED - confirm
         """
         flattened = data[0]
         if len(detarray) > 1:
