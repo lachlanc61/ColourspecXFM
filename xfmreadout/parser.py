@@ -50,7 +50,7 @@ def indexmap(xfmap, pixelseries, multiproc):
     print("--------------")
     print("INDEXING")
     try:
-        indexlist=np.zeros((pixelseries.ndet,xfmap.npx),dtype=np.uint64)
+        indexlist=np.zeros((xfmap.npx, pixelseries.ndet),dtype=np.uint64)
 
         xfmap.resetfile()
         buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)

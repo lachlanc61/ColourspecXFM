@@ -118,22 +118,6 @@ def test_readpxdata_standard_det01(datafiles):
             with open(f, mode='rb') as fi:
                 stream = fi.read() 
 
-    """
-    should be this:
-    
-    #get expected results
-    f_chan = str(datafiles.listdir()[0])
-    expected_chan = np.load(f_chan)
-
-    f_counts = str(datafiles.listdir()[1])
-    expected_counts = np.load(f_counts)
-
-    #get input data
-    f = datafiles.listdir()[2]
-    fi = open(f, mode='rb')
-    stream = fi.read()
-    """
-
     chan, counts = bufferops.readpxdata(stream, len(stream), BYTESPERCHAN, NCHAN)
 
     assert np.array_equal(chan, expected_chan)

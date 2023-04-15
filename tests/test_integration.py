@@ -5,8 +5,10 @@ import numpy as np
 
 TEST_DIR=os.path.realpath(os.path.dirname(__file__))
 BASE_DIR=os.path.dirname(TEST_DIR)
-DATA_DIR_NAME="test_data"   #hardcoded for tests dependent on large datafiles
-DATA_DIR = os.path.join(TEST_DIR, DATA_DIR_NAME)  
+
+BIGDATA_DIR_NAME="test_data"   #hardcoded for tests dependent on large datafiles
+BIGDATA_DIR = os.path.join(TEST_DIR, BIGDATA_DIR_NAME)  
+DATA_DIR, ___ = os.path.splitext(__file__)
 
 CHUNK_SIZE=5
 CONTROL_ARGS=[ "-s", str(CHUNK_SIZE),]
@@ -33,11 +35,11 @@ with open(os.path.join(BASE_DIR, PACKAGE_CONFIG), "r") as f:
 
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'ts2_01_sub.GeoPIXE'),
-    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxstats_pxlen.txt'),
-    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxstats_xidx.txt'),
-    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxstats_yidx.txt'),
-    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxstats_dt.txt'),
+    os.path.join(BIGDATA_DIR, 'ts2_01_sub.GeoPIXE'),
+    os.path.join(DATA_DIR, 'ts2_01_sub_pxlen.npy'),
+    os.path.join(DATA_DIR, 'ts2_01_sub_xidx.npy'),
+    os.path.join(DATA_DIR, 'ts2_01_sub_yidx.npy'),
+    os.path.join(DATA_DIR, 'ts2_01_sub_dt.npy'),
     )
 def test_integration_index(datafiles):
     """
@@ -50,14 +52,15 @@ def test_integration_index(datafiles):
             - ycoords
     """
     #get expected
-    ef = ut.findin("pxlen.txt", datafiles)
-    expected_pxlen = np.loadtxt(ef, dtype=np.uint16, delimiter=",")
-    ef = ut.findin("xidx.txt", datafiles)
-    expected_xidx = np.loadtxt(ef, dtype=np.uint16, delimiter=",")
-    ef = ut.findin("yidx.txt", datafiles)
-    expected_yidx = np.loadtxt(ef, dtype=np.uint16, delimiter=",")
-    ef = ut.findin("dt.txt", datafiles)
-    expected_dt = np.loadtxt(ef, dtype=np.float32, delimiter=",")
+    ef = ut.findin("pxlen.npy", datafiles)
+    expected_pxlen = np.load(ef)
+    ef = ut.findin("xidx.npy", datafiles)
+    #expected_xidx = np.loadtxt(ef, dtype=np.uint16, delimiter=",")
+    expected_xidx = np.load(ef)
+    ef = ut.findin("yidx.npy", datafiles)
+    expected_yidx = np.load(ef)
+    ef = ut.findin("dt.npy", datafiles)
+    expected_dt = np.load(ef)
 
     #prep
     f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
@@ -68,14 +71,15 @@ def test_integration_index(datafiles):
     #run
     pixelseries, ___ = main.main(args_in)
 
+    #assert 0
     assert np.allclose(pixelseries.pxlen, expected_pxlen)
     assert np.allclose(pixelseries.xidx, expected_xidx)
     assert np.allclose(pixelseries.yidx, expected_yidx)
     assert np.allclose(pixelseries.dt, expected_dt)
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'ts2_01_sub.GeoPIXE'),
-    os.path.join(DATA_DIR, 'out_ts2_01_sub/pixeldata/pxspec.npy'),
+    os.path.join(BIGDATA_DIR, 'ts2_01_sub.GeoPIXE'),
+    os.path.join(BIGDATA_DIR, 'out_ts2_01_sub/pixeldata/pxspec.npy'),
     )
 def test_integration_parse(datafiles):
     """
@@ -102,7 +106,7 @@ def test_integration_parse(datafiles):
 
 
 @pytest.mark.datafiles(
-    os.path.join(DATA_DIR, 'ts2_01_sub.GeoPIXE'),
+    os.path.join(BIGDATA_DIR, 'ts2_01_sub.GeoPIXE'),
     os.path.join(DATA_DIR, 'out_ts2_01_sub_export/pixeldata/pxspec.npy')
     )
 def test_integration_cycle(datafiles):
