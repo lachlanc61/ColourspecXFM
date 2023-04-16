@@ -179,19 +179,33 @@ class PixelSeries:
 
     def exportpxstats(self, config, dir):
         """
-        write the pixel header statistics to csv
+        write the pixel header statistics
         """
-        np.savetxt(os.path.join(dir, "pxstats_pxlen.txt"), self.pxlen, fmt='%i', delimiter=",")
-        np.savetxt(os.path.join(dir, "pxstats_xidx.txt"), self.xidx, fmt='%i', delimiter=",")
-        np.savetxt(os.path.join(dir, "pxstats_yidx.txt"), self.yidx, fmt='%i', delimiter=",")
-        np.savetxt(os.path.join(dir, "pxstats_detector.txt"), self.det, fmt='%i', delimiter=",")
-        np.savetxt(os.path.join(dir, "pxstats_dt.txt"), self.dt, fmt='%f', delimiter=",")    
-        
-        #include derived stats if data was fully parsed
-        if self.parsing:
-            np.savetxt(os.path.join(dir, "pxstats_sum.txt"), self.sum, fmt='%d', delimiter=",")  
-            np.savetxt(os.path.join(dir, "pxstats_dtpred.txt"), self.dtpred, fmt='%d', delimiter=",")    
-            np.savetxt(os.path.join(dir, "pxstats_dtflat.txt"), self.dtflat, fmt='%d', delimiter=",")  
+        if config['SAVEFMT_READABLE']:
+            for i in self.detarray:
+                np.savetxt(os.path.join(dir, "pxstats_pxlen.txt"), self.pxlen, fmt='%i', delimiter=",")
+                np.savetxt(os.path.join(dir, "pxstats_xidx.txt"), self.xidx, fmt='%i', delimiter=",")
+                np.savetxt(os.path.join(dir, "pxstats_yidx.txt"), self.yidx, fmt='%i', delimiter=",")
+                np.savetxt(os.path.join(dir, "pxstats_detector.txt"), self.det, fmt='%i', delimiter=",")
+                np.savetxt(os.path.join(dir, "pxstats_dt.txt"), self.dt, fmt='%f', delimiter=",")    
+                
+                #include derived stats if data was fully parsed
+                if self.parsing:
+                    np.savetxt(os.path.join(dir, "pxstats_sum.txt"), self.sum, fmt='%d', delimiter=",")  
+                    np.savetxt(os.path.join(dir, "pxstats_dtpred.txt"), self.dtpred, fmt='%d', delimiter=",")    
+                    np.savetxt(os.path.join(dir, "pxstats_dtflat.txt"), self.dtflat, fmt='%d', delimiter=",")  
+        else:
+            np.save(os.path.join(dir, "pxstats_pxlen"), self.pxlen)            
+            np.save(os.path.join(dir, "pxstats_xidx"), self.xidx)    
+            np.save(os.path.join(dir, "pxstats_yidx"), self.yidx)     
+            np.save(os.path.join(dir, "pxstats_det"), self.det)     
+            np.save(os.path.join(dir, "pxstats_dt"), self.dt)
+
+            if self.parsing:
+                np.save(os.path.join(dir, "pxstats_sum"), self.sum)  
+                np.save(os.path.join(dir, "pxstats_dtpred"), self.dtpred)    
+                np.save(os.path.join(dir, "pxstats_dtflat"), self.dtflat) 
+
 
 
     def exportpxdata(self, config, dir):
