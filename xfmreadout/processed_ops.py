@@ -74,7 +74,7 @@ def load_maps(filepaths):
 
     dims = img.shape
 
-    maps=np.zeros((len(filepaths), dims[0], dims[1]), dtype=np.float32)
+    maps=np.zeros((dims[0], dims[1], len(filepaths)), dtype=np.float32)
 
     i=0
     for f in filepaths:
@@ -84,10 +84,18 @@ def load_maps(filepaths):
             img = np.where(img<0, 0, img)
             if not (img.shape == dims):
                 raise ValueError(f"unexpected dimensions for file {f}")
-            maps[i,:,:]=img
+            maps[:,:,i]=img
             i+=1
-    
-    data=maps.reshape(maps.shape[0],-1)
+
+    print(f"MAPSHAPE: {maps.shape}")
+
+#    for i in range(maps.shape[1]):
+#        print(f"ROW {i}")
+#        if np.max(maps[:,i,:]) == 0:
+#            print(f"WARNING: row {i} empty")
+
+    data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
+    print(f"DATASHAPE: {data.shape}")
 
     data=np.swapaxes(data,0,1)
 

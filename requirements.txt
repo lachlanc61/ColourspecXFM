@@ -9,6 +9,7 @@ backcall==0.2.0
 beautifulsoup4==4.12.0
 bleach==6.0.0
 cffi==1.15.1
+colorcet==3.0.1
 comm==0.1.3
 contourpy==1.0.7
 cycler==0.11.0
@@ -62,11 +63,14 @@ nbformat==5.8.0
 nest-asyncio==1.5.6
 notebook==6.5.3
 notebook_shim==0.2.2
+nptyping==2.5.0
 numba==0.56.4
 numpy==1.23.5
 packaging==23.0
 pandas==2.0.0
 pandocfilters==1.5.0
+param==1.13.0
+-e git+ssh://git@github.com/lachlanc61/xfmparser.git@623a9fe0f61383accac9d34ce9484c00692debbf#egg=parsercore&subdirectory=../../xfmparser
 parso==0.8.3
 periodictable==1.6.1
 pexpect==4.8.0
@@ -83,6 +87,7 @@ py==1.11.0
 pybaselines==1.0.0
 pybind11==2.10.4
 pycparser==2.21
+pyct==0.5.0
 Pygments==2.14.0
 pylint==2.17.2
 pynndescent==0.5.8

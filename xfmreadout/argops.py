@@ -182,3 +182,42 @@ def readargs(args_in, config):
     args = checkargs(args, config)
 
     return args
+
+
+def readargs_processed(args_in, config):
+    """
+    read in a set of command-line args for analysing processed maps
+    """
+
+    #initialise the parser
+    argparser = argparse.ArgumentParser(
+        description="XFM data loader and analysis package"
+    )
+
+    #--------------------------
+    #set up the expected args
+    #--------------------------
+    #inputs and outputs locations
+    argparser.add_argument(
+        "-d", "--input-directory", 
+        help="Specify a directory containing processed .tiff files"
+        "with pixel values corresponding to concentration, areal density, or counts",
+        type=os.path.abspath,
+    )
+    argparser.add_argument(
+        "-o", "--output-directory", 
+        help="Specify the filepath to be used for outputs"
+        "Results will be placed in a  ./outs/ subfolder within this directory"
+        "Defaults to the directory containing the input file",
+        type=os.path.abspath,
+    )
+
+    argparser.add_argument(
+        "-ff", "--force", 
+        help="Force recalculation of all pixels/classes",
+        action='store_true', 
+    )
+
+    args = argparser.parse_args(args_in)
+
+    return args
