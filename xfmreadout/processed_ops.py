@@ -87,27 +87,45 @@ def load_maps(filepaths):
             maps[:,:,i]=img
             i+=1
 
-    print(f"MAPSHAPE: {maps.shape}")
+    print(f"Map shape: {maps.shape}")
 
-#    for i in range(maps.shape[1]):
-#        print(f"ROW {i}")
-#        if np.max(maps[:,i,:]) == 0:
-#            print(f"WARNING: row {i} empty")
+    emptymin=0
+    emptymax=0
+    for i in range(maps.shape[0]):
+        nmax=np.max(maps[i,:,:])
+        navg=np.average(maps[i,:,:])
+        #print(f"ROW {i}, max: {nmax}, avg: {navg}")
+        if nmax == 0:
+            
+            if emptymin == 0:
+                emptymin=i
+                emptymax=i
+                print(f"EMPTY ROW at {i}")
+            elif emptymax == (i-1):
+                emptymax = i
+                print(f"EMPTY ROW at {i}")
+            else:
+                emptymax = i
+                print(f"WARNING: DISCONTIGUOUS EMPTY ROW at {i}")
 
+    maps=maps[0:emptymax,:,:]
+    print(f"Revised map shape: {maps.shape}")
     data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
-    print(f"DATASHAPE: {data.shape}")
+    print(f"Data shape: {data.shape}")
 
-    data=np.swapaxes(data,0,1)
+    dims=maps[:,:,0].shape
+    #data=np.swapaxes(data,0,1)
 
     return data, dims
 
 def modify_maps(data, elements):
-    BASEFACTOR=100000   #ppm to wt%
+    #BASEFACTOR=100000   #ppm to wt%
+    BASEFACTOR=1/100000
     MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si']
     #MODIFY_FACTORS = [ 1000, 50, 20, 30 ]
     #MODIFY_FACTORS = [ 100, 5, 2, 3 ] <--best manual
     #MODIFY_FACTORS = [ 100, 5, 1, 1.5 ]
-    MODIFY_FACTORS = [ 1, 1, 5, 10 ]
+    MODIFY_FACTORS = [ 0.1, 0.1, 0.5, 1 ]
 
     """
     FUTURE: normalise MODIFY_LIST to MODIFY_SET eg. 1.0, 2.0, 3.0
@@ -116,23 +134,22 @@ def modify_maps(data, elements):
 
 
     #i=0
-    print(data.shape)
-    print(len(elements))
-    print(data.shape[1])
+    #print(data.shape)
+    #print(len(elements))
+    #print(data.shape[1])
 
     for i in range(data.shape[1]):
         factor=BASEFACTOR
 
-        print(f"{elements[i]}, pre, max: {np.max(data[:,i])}")
+        #print(f"{elements[i]}, pre, max: {np.max(data[:,i])}")
 
-        for idx, snames in enumerate(MODIFY_LIST):
-            if elements[i] in snames:
-                #factor=BASEFACTOR*MODIFY_FACTORS[idx]
+        for idx, sname in enumerate(MODIFY_LIST):
+            if elements[i] == sname:
                 factor=MODIFY_FACTORS[idx]/np.max(data[:,i])
-                print(i, elements[i], idx, snames, factor)
+                #print(i, elements[i], idx, sname, factor)
 
         data[:,i]=(data[:,i]*factor)
-        print(f"{elements[i]}, post, max: {np.max(data[:,i])}, factor: {factor}")
+        #print(f"{elements[i]}, post, max: {np.max(data[:,i])}, factor: {factor}")
 
     #    i+=1
 
@@ -152,21 +169,28 @@ def get_data(image_directory):
 
     print(elements)
     print(f"data shape: {data.shape}")
-    print(f"----{elements[8]} tracker: {np.max(data[:,8])}")    #DEBUG
+    #print(f"----{elements[8]} tracker: {np.max(data[:,8])}")    #DEBUG
 
     data = modify_maps(data, elements)
 
-    print(f"-----{elements[8]} tracker: {np.max(data[:,8])}")   #DEBUG
+    #print(f"-----{elements[8]} tracker: {np.max(data[:,8])}")   #DEBUG
 
     #print(maps.shape, data.shape)
 
     return data, elements, dims
 
+OVERWRITE=False
+
 def process(data, dims, image_directory, force=False):
 
-    print(force)
+    if OVERWRITE:
+        overwrite=force
+    else:
+        overwrite=False
 
-    categories, classavg, embedding, clusttimes = clustering.get(data, image_directory, force=force)
+    print(force, overwrite)
+
+    categories, classavg, embedding, clusttimes = clustering.get(data, image_directory, force=force, overwrite=overwrite)
 
     return categories, classavg, embedding, clusttimes, data, dims
 

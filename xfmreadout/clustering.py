@@ -121,8 +121,9 @@ def doclustering(embedding, npx):
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
 
-    #DBSCAN_E=0.1    #many small clusters
-    DBSCAN_E=0.01   #larger clusters
+    #DBSCAN_E=0.5    #really large clusters
+    #DBSCAN_E=0.1   #many small clusters
+    DBSCAN_E=0.0001   #smaller clusters
 
     #initialise clustering options
     kmeans = KMeans(
@@ -140,8 +141,8 @@ def doclustering(embedding, npx):
         gen_min_span_tree=True
     )
 
-    print(f"SCAN PARAM {DBSCAN_E}")
-
+    print("RUNNING CLUSTERING")
+    print(f"DBSCAN PARAM {DBSCAN_E}, {dbscan.cluster_selection_epsilon}")    
     classifier = dbscan
 
     categories=np.zeros((npx),dtype=np.uint16)
@@ -205,6 +206,7 @@ def calculate(data):
     reducer, embedding, clusttimes = reduce(data)
 
     #   cluster via kmeans on embedding
+    print("RUNNING CLUSTERING")
     classifier, categories = doclustering(embedding, totalpx)
 
     #produce and save cluster averages
@@ -242,10 +244,12 @@ def get(data, output_dir: str, force=False, overwrite=False):
             and  os.path.isfile(file_embed) and os.path.isfile(file_ctime)
     
     if force or not filesexist:
+        print("GENERATING CLUSTERS")
         categories, classavg, embedding, clusttimes = calculate(data)
         #embedding, clusttimes = clustering.reduce(data)
 
         if overwrite:
+            print("OVERWRITING EXISTING CLUSTERS")
             np.save(file_cats,categories)
             np.save(file_classes,classavg)
             np.save(file_embed,embedding)

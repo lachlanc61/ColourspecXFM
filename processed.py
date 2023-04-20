@@ -29,11 +29,10 @@ def main(args_in):
     categories, classavg, embedding, clusttimes, data, dims = processed_ops.process(data, dims, image_directory, force=args.force)
     print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
 
-    processed_ops.plot_all(categories, classavg, embedding, data, elements, dims)
-
     for i in range(len(elements)):
         print(f"{elements[i]}, {np.max(data[:,i])}")
 
+    processed_ops.plot_all(categories, classavg, embedding, data, elements, dims)
 
 
 if __name__ == "__main__":
