@@ -120,10 +120,17 @@ def doclustering(embedding, npx):
     args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
+    #DEFAULTS
+    DBSCAN_E=0.1   #smaller clusters
+    DBSCAN_CSIZE=200
+    DBSCAN_MINSAMPLES=100
+
 
     #DBSCAN_E=0.5    #really large clusters
     #DBSCAN_E=0.1   #many small clusters
-    DBSCAN_E=0.0001   #smaller clusters
+    DBSCAN_E=0.001   #smaller clusters
+    DBSCAN_CSIZE=200
+    DBSCAN_MINSAMPLES=100
 
     #initialise clustering options
     kmeans = KMeans(
@@ -133,13 +140,13 @@ def doclustering(embedding, npx):
         max_iter=300,
         random_state=42
     )
-
     dbscan = hdbscan.HDBSCAN(
-        min_cluster_size=200,
-        min_samples=100,
+        min_cluster_size=DBSCAN_CSIZE,
+        min_samples=DBSCAN_MINSAMPLES,
         cluster_selection_epsilon=DBSCAN_E,
         gen_min_span_tree=True
     )
+
 
     print("RUNNING CLUSTERING")
     print(f"DBSCAN PARAM {DBSCAN_E}, {dbscan.cluster_selection_epsilon}")    
@@ -197,29 +204,6 @@ def count_categories(categories):
 
     return num_cats
 
-def calculate(data):
-
-    totalpx = data.shape[0]
-    n_channels = data.shape[1]
-
-    #   produce reduced-dim embedding per reducer
-    reducer, embedding, clusttimes = reduce(data)
-
-    #   cluster via kmeans on embedding
-    print("RUNNING CLUSTERING")
-    classifier, categories = doclustering(embedding, totalpx)
-
-    #produce and save cluster averages
-
-    n_clusters = count_categories(categories)
-
-    #   initialise averages
-    classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
-
-    classavg=sumclusters(data, categories, n_clusters, n_channels)    
-
-    return categories, classavg, embedding, clusttimes
-
 
 def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_clusters, dirs ):
        
@@ -230,37 +214,57 @@ def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_
 
     return 
 
-def get(data, output_dir: str, force=False, overwrite=False):
-
+def get(data, output_dir: str, force_embed=False, force_clust=False, overwrite=False):
+    file_embed=os.path.join(output_dir,"embedding.npy")
     file_cats=os.path.join(output_dir,"categories.npy")
     file_classes=os.path.join(output_dir,"classavg.npy")
-    file_embed=os.path.join(output_dir,"embedding.npy")
     file_ctime=os.path.join(output_dir,"clusttimes.npy")
 
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+    exists_embed = os.path.isfile(file_embed)
+    exists_cats = os.path.isfile(file_cats)
+    exists_classes = os.path.isfile(file_classes)
+    exists_ctime = os.path.isfile(file_ctime)
 
-    filesexist = os.path.isfile(file_cats) and os.path.isfile(file_classes) \
-            and  os.path.isfile(file_embed) and os.path.isfile(file_ctime)
-    
-    if force or not filesexist:
-        print("GENERATING CLUSTERS")
-        categories, classavg, embedding, clusttimes = calculate(data)
-        #embedding, clusttimes = clustering.reduce(data)
+    totalpx = data.shape[0]
+    n_channels = data.shape[1]
 
-        if overwrite:
-            print("OVERWRITING EXISTING CLUSTERS")
-            np.save(file_cats,categories)
-            np.save(file_classes,classavg)
+    #   produce reduced-dim embedding per reducer
+    if force_embed or not exists_embed:
+        print("CALCULATING EMBED")
+        reducer, embedding, clusttimes = reduce(data)
+        if overwrite or not exists_embed:
             np.save(file_embed,embedding)
+        if overwrite or not exists_embed:
             np.save(file_ctime,clusttimes)
     else:
-        categories = np.load(file_cats)
-        classavg = np.load(file_classes)
+        print("LOADING EMBED")
         embedding = np.load(file_embed)
-        clusttimes = np.load(file_ctime)
+        clusttimes = np.load(file_ctime)        
+
+
+    #   calculate clusters from embedding
+    if force_clust or not exists_cats:
+        print("CALCULATING CATS")        
+        classifier, categories = doclustering(embedding, totalpx)
+        if overwrite or not exists_cats:
+            np.save(file_cats,categories)
+    else:
+        print("LOADING CATS")
+        categories = np.load(file_cats)
+
+    #   sum and extract class averages
+    n_clusters = count_categories(categories)
+    classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
+
+    if force_clust or not exists_classes:
+        classavg=sumclusters(data, categories, n_clusters, n_channels) 
+        if overwrite or not exists_classes:
+            np.save(file_classes,classavg)
+    else:
+        classavg = np.load(file_classes)
 
     return categories, classavg, embedding, clusttimes
+
 
 #-----------------------------------
 #INITIALISE

@@ -66,6 +66,16 @@ def get_elements(files):
 
 
 def load_maps(filepaths):
+
+    #YMIN=0
+    #YMAX=9999
+    #XMIN=0
+    #XMAX=9999
+    YMIN=100
+    YMAX=275
+    XMIN=50
+    XMAX=600
+
     print(filepaths)
 
     #load an image and check dimensions
@@ -109,6 +119,10 @@ def load_maps(filepaths):
                 print(f"WARNING: DISCONTIGUOUS EMPTY ROW at {i}")
 
     maps=maps[0:emptymax,:,:]
+
+
+
+    maps=maps[YMIN:YMAX,XMIN:XMAX,:]
     print(f"Revised map shape: {maps.shape}")
     data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
     print(f"Data shape: {data.shape}")
@@ -121,11 +135,11 @@ def load_maps(filepaths):
 def modify_maps(data, elements):
     #BASEFACTOR=100000   #ppm to wt%
     BASEFACTOR=1/100000
-    MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si']
+    MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si', 'Cl']
     #MODIFY_FACTORS = [ 1000, 50, 20, 30 ]
     #MODIFY_FACTORS = [ 100, 5, 2, 3 ] <--best manual
     #MODIFY_FACTORS = [ 100, 5, 1, 1.5 ]
-    MODIFY_FACTORS = [ 0.1, 0.1, 0.5, 1 ]
+    MODIFY_FACTORS = [ 0.1, 0.1, 0.5, 1, 1]
 
     """
     FUTURE: normalise MODIFY_LIST to MODIFY_SET eg. 1.0, 2.0, 3.0
@@ -181,16 +195,11 @@ def get_data(image_directory):
 
 OVERWRITE=False
 
-def process(data, dims, image_directory, force=False):
+def process(data, dims, image_directory, force_embed=False, force_clust=False ):
 
-    if OVERWRITE:
-        overwrite=force
-    else:
-        overwrite=False
+    print(force_embed, force_clust, OVERWRITE)
 
-    print(force, overwrite)
-
-    categories, classavg, embedding, clusttimes = clustering.get(data, image_directory, force=force, overwrite=overwrite)
+    categories, classavg, embedding, clusttimes = clustering.get(data, image_directory, force_embed=force_embed, force_clust=force_clust, overwrite=OVERWRITE)
 
     return categories, classavg, embedding, clusttimes, data, dims
 
