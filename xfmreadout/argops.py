@@ -1,5 +1,6 @@
 import os
 import argparse
+import psutil
 
 def checkargs(args, config):
     """
@@ -64,6 +65,19 @@ def readargs(args_in, config):
     argparser = argparse.ArgumentParser(
         description="XFM data loader and analysis package"
     )
+
+    #--------------------------
+    #set defaults where needed
+    #--------------------------
+
+    #attempt to guess chunksize from memory via psutils
+    vmem=psutil.virtual_memory()
+
+    default_chunksize=round(vmem[0]*float(config['CHUNK_FRACTION'])*1e-6)
+
+        #sanity check and use config if failed
+    if not isinstance(default_chunksize, int) or default_chunksize <= 1000:
+        default_chunksize = config['CHUNKSIZE']
 
     #--------------------------
     #set up the expected args
@@ -174,7 +188,7 @@ def readargs(args_in, config):
         help="Size of memory buffer (in Mb) to load while parsing"
         "Defaults to 1000 (Mb)",
         type=int, 
-        default=int(config['CHUNKSIZE']),
+        default=int(default_chunksize),
     )
 
     args = argparser.parse_args(args_in)

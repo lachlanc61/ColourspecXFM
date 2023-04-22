@@ -211,58 +211,12 @@ def parse(xfmap, pixelseries, multiproc):
                     #increment beginning of next buffer
                     buffer_start_px = buffer_break_px+1
 
-            """         
-            start_idx_flat=np.searchsorted(indices_ravel, buffer_start)
-            start_idx=divmod(start_idx_flat, indexlist.shape[0])
-
-
-            end_idx_flat=np.searchsorted(indices_ravel, buffer_end)-1   #-1 to get last idx fully within buffer
-            end_idx=divmod(end_idx_flat, indexlist.shape[0])
-
-#            start_coords=unravel(indexlist, buffer_start, True)
-#            end_coords=unravel(indexlist, buffer_end, False)
-
-            indices_sliced = indices_ravel[start_idx_flat:end_idx_flat] 
-            pxlens_sliced = pxlens_ravel[start_idx_flat:end_idx_flat] 
-
-            worker_array = parallel.worker(buffer.data, indices_sliced, pxlens_sliced, pxheaderlen, bytesperchan, nchannels)
-            """
-
     except MapDone:
 
         buffer.wait()
         xfmap.resetfile()
         
         return pixelseries
-
-
-def unravel(indexlist, max_value: int, is_start: bool):
-    """
-    UNUSED
-    
-    extracts 2D index of indexlist where pixel is fully within buffer
-
-    https://stackoverflow.com/questions/22565023/numpy-searchsorted-with-2d-array
-        ravel order F interleaves arrays eg. ( 1 3 5 ),(2 4 6) => (1 2 3 4 5 6)
-        searchsorted finds index where buffer_end would be inserted
-        divmod shape0 converts back to original coords
-                        
-    """
-    NDET=2
-
-    ravel=np.ravel(indexlist, order='F')
-    
-    if is_start == True:
-        shift=0     #0 to start
-    else:
-        shift=-1    #-1 to get last idx fully within buffer
-
-    idx_flat=np.searchsorted(ravel, max_value)
-    idx_flat+=shift    
-    coords=divmod(idx_flat, indexlist.shape[0])
-
-    return coords[::-1]
-
 
 def writemap(config, xfmap, pixelseries, xcoords, ycoords, dtfill, multiproc):
     """

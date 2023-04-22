@@ -5,7 +5,7 @@ import numpy as np
 
 import xfmreadout.utils as utils
 import xfmreadout.argops as argops
-import xfmreadout.processed_ops as processed_ops
+import xfmreadout.processops as processops
 
 #-----------------------------------
 #vars
@@ -22,17 +22,17 @@ def main(args_in):
     image_directory=args.input_directory
     output_directory=os.path.join(image_directory, "outputs")
 
-    data, elements, dims = processed_ops.get_data(image_directory)
+    data, elements, dims = processops.get_data(image_directory)
 
     print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
 
-    categories, classavg, embedding, clusttimes, data, dims = processed_ops.process(data, dims, image_directory, force=args.force)
+    categories, classavg, embedding, clusttimes, data, dims = processops.process(data, dims, image_directory, force=args.force)
     print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
 
     for i in range(len(elements)):
         print(f"{elements[i]}, {np.max(data[:,i])}")
 
-    processed_ops.plot_all(categories, classavg, embedding, data, elements, dims)
+    processops.plot_all(categories, classavg, embedding, data, elements, dims)
 
 
 if __name__ == "__main__":

@@ -2,14 +2,15 @@
 #FLAGS
 #-----------------------------------
 
-SAVEPXSPEC: False         #save pixel spectra
+OVERWRITE_EXPORTS: True   #overwrite if present
 SAVEFMT_READABLE: False   #save as human-readable 
-SEPSUMSPEC: False         #sum class spectra
+
 DOBG: False      #apply background fitting
 LOWBGADJUST: False    #tweak background for low signal data
 CMAP: 'Set1' #default colourmap for clusters
 
-CHUNKSIZE: 1000             #(Mb) default chunk to load into memory 
+CHUNK_FRACTION: 0.2         #fraction of vmem to allocate to chunks while parsing
+CHUNKSIZE_FALLBACK: 1000    #(Mb) chunk size if cannot be determined from vmem 
 
 #-----------------------------------
 #VARIABLES
@@ -18,17 +19,19 @@ CHUNKSIZE: 1000             #(Mb) default chunk to load into memory
 #names of subdirectories for output
 ANADIR: "out"
 OUTDIR: "out"
-TRANSDIR: "transformations"
-PLOTDIR: "plots"
-EXPORTDIR: "pixeldata"
+TRANSDIR: "transformations"   #destination for exported transformations (eg. embedding, clusters)
+PLOTDIR: "plots"              #destination for automatic plots
+EXPORTDIR: "pixeldata"        #destination for extracted data
 
-export_filename: "pxspec"   #name of spectrum-by-pixel csv
+export_filename: "dataset"   #name of spectrum-by-pixel csv
 convext: "_export"  #converted file extension
 
 #instrument config
-nclust: 6       #no of clusters
 use_detector: 0
 time_constant: 0.5
+
+#fitting params
+nclust: 6       #no of clusters
 
 #figure params (currently not used)
 figx: 20         #cm width of figure

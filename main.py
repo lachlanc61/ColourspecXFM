@@ -7,6 +7,7 @@ import xfmreadout.utils as utils
 import xfmreadout.argops as argops
 import xfmreadout.colour as colour
 import xfmreadout.clustering as clustering
+import xfmreadout.visualisations as vis
 import xfmreadout.structures as structures
 import xfmreadout.dtops as dtops
 import xfmreadout.bufferops as bufferops
@@ -116,8 +117,10 @@ def main(args_in):
         rgbarray = None
     #perform clustering
     if args.classify_spectra:
-        pixelseries.categories, pixelseries.classavg, embedding, clusttimes = clustering.get( pixelseries.flattened, dirs )
-    #    clustering.complete(pixelseries.categories, pixelseries.classavg, embedding, clusttimes, xfmap.energy, xfmap.xres, xfmap.yres, config['nclust'], dirs)
+        pixelseries.categories, pixelseries.classavg, embedding, clusttimes = clustering.run( pixelseries.flattened, dirs.transforms, force_embed=args.force, overwrite=config['OVERWRITE_EXPORTS'] )
+        
+        clust_palette = vis.plot_clusters(pixelseries.categories, pixelseries.classavg, embedding, pixelseries.dimensions)
+#        clustering.complete(pixelseries.categories, pixelseries.classavg, embedding, clusttimes, xfmap.energy, xfmap.xres, xfmap.yres, config['nclust'], dirs.plots)
         #colour.plot_colourmap_explainer(pixelseries.energy, pixelseries.classavg[1:1], pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, dirs)
     else:
         categories = None

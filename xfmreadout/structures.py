@@ -65,6 +65,7 @@ class Xfmap:
 
         #derived vars
         self.npx = self.xres*self.yres        #expected number of pixels
+        self.dimensions = ( self.yres, self.xres )
 
         #config constants
         self.PXHEADERLEN=config['PXHEADERLEN'] 
@@ -92,8 +93,11 @@ class Xfmap:
 class PixelSeries:
     def __init__(self, config, xfmap, npx, detarray, INDEX_ONLY):
 
+        #copied variables
         self.source=xfmap
         self.energy=xfmap.energy
+        self.dimensions = xfmap.dimensions
+
 
         #assign number of detectors
         self.detarray = detarray

@@ -2,12 +2,9 @@ import os
 import re
 import numpy as np
 import periodictable as pt
-import pandas as pd
 from PIL import Image
 
 import xfmreadout.clustering as clustering
-import xfmreadout.processed_plots as processed_plots
-
 
 
 FORCE = True
@@ -17,22 +14,21 @@ EMBED_DIRNAME = "embedding"
 
 IGNORE_ELEMENTS=['sum','Back','Compton','Mo','MoL']
 
-TRUE_ELEMENTS = []
-
-for ptelement in pt.elements:
-    TRUE_ELEMENTS.append(ptelement.symbol)
-
 
 def get_elements(files):
     """
 
     Extract element names and corresponding files
 
-    Discard files that do not correspond to elements
+    Ignore files that do not correspond to elements
 
     """
     elements=[]
+    true_elements = []
     keepfiles=[]    
+
+    for ptelement in pt.elements:
+        true_elements.append(ptelement.symbol)
 
     for fname in files:
 
@@ -44,7 +40,7 @@ def get_elements(files):
         finally:
             if found in IGNORE_ELEMENTS:
                 pass
-            elif found in TRUE_ELEMENTS:
+            elif found in true_elements:
                 elements.append(found)
                 keepfiles.append(fname)
             else:
@@ -141,35 +137,21 @@ def modify_maps(data, elements):
     #MODIFY_FACTORS = [ 100, 5, 1, 1.5 ]
     MODIFY_FACTORS = [ 0.1, 0.1, 0.5, 1, 1]
 
-    """
-    FUTURE: normalise MODIFY_LIST to MODIFY_SET eg. 1.0, 2.0, 3.0
-    instead of using tuneable factor
-    """
-
-
-    #i=0
-    #print(data.shape)
-    #print(len(elements))
-    #print(data.shape[1])
-
+    #iterate through all elements
     for i in range(data.shape[1]):
         factor=BASEFACTOR
 
-        #print(f"{elements[i]}, pre, max: {np.max(data[:,i])}")
-
+        #check if element in MODIFY_LIST
+        #   then norm to MODIFY_FACTOR
         for idx, sname in enumerate(MODIFY_LIST):
             if elements[i] == sname:
                 factor=MODIFY_FACTORS[idx]/np.max(data[:,i])
-                #print(i, elements[i], idx, sname, factor)
 
         data[:,i]=(data[:,i]*factor)
-        #print(f"{elements[i]}, post, max: {np.max(data[:,i])}, factor: {factor}")
-
-    #    i+=1
 
     return data
 
-def get_data(image_directory):
+def compile(image_directory):
 
     print(image_directory)
 
@@ -192,32 +174,3 @@ def get_data(image_directory):
     #print(maps.shape, data.shape)
 
     return data, elements, dims
-
-OVERWRITE=False
-
-def process(data, dims, image_directory, force_embed=False, force_clust=False ):
-
-    print(force_embed, force_clust, OVERWRITE)
-
-    categories, classavg, embedding, clusttimes = clustering.get(data, image_directory, force_embed=force_embed, force_clust=force_clust, overwrite=OVERWRITE)
-
-    return categories, classavg, embedding, clusttimes, data, dims
-
-
-def plot_all(categories, classavg, embedding, data, elements, dims):
-
-    IDX=8       #element index
-
-    palette=processed_plots.build_palette(categories)
-
-    processed_plots.show_map(data, elements, dims, IDX)
-
-    processed_plots.category_map(categories, data, dims, palette=palette)
-    
-    processed_plots.category_avgs(categories, elements, classavg, palette=palette)
-
-    processed_plots.seaborn_embedplot(embedding, categories, palette=palette)
-
-#    processed_plots.seaborn_kdeplot(embedding, categories)
-
-#   processed_plots.seaborn_kdecontours(embedding, categories)

@@ -3,9 +3,14 @@ import sys
 import os
 import yaml
 import argparse
+import psutil
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+
 from copy import deepcopy
+
 
 from scipy.stats import norm
 
@@ -262,3 +267,12 @@ def pxinsubmap(xin, yin, xread, yread):
         return True
     else:
         return False
+
+
+def findelement(elements: list, target:str):
+    """
+    search a sorted list and return first matching index
+    """
+    for idx, name in enumerate(elements):
+        if name == target:
+            return idx

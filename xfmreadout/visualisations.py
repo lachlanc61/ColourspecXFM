@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from PIL import Image
 
+import xfmreadout.utils as utils
 
 
 REDUCER=1
@@ -88,7 +89,9 @@ def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):
     return palette
 
 
-def show_map(data, elements, dims, idx):
+def show_map(data, elements, dims, ename):
+
+    idx = utils.findelement(elements, ename)
 
     maps=remap(data, dims)
 
@@ -107,7 +110,7 @@ def show_map(data, elements, dims, idx):
 
     return
 
-def category_map ( categories, data, dims, palette=None ):
+def category_map ( categories, dims, palette=None ):
     """
     image of categories
     """
@@ -239,21 +242,7 @@ def seaborn_kdeplot(embedding, categories):
     """
     x=embedding.T[0]
     y=embedding.T[1]
-    """
-    sns.set_style('white')
-    ax = sns.jointplot(x=x, y=y,
-                cut = 0, hue=categories,
-                palette=sns.color_palette("dark"),
-                kind='kde', fill=True,
-                height=15, ratio=6,
-                joint_kws = dict(alpha=0.4),
-                marginal_kws=dict(fill=True),
-                legend=False)
-    ax.ax_marg_x.remove()
-    ax.ax_marg_y.remove()
-    ax = sns.despine(ax=None, left=True, bottom=True)
-    #plt.savefig('kde_tr_fill.png', transparent=True)
-    """
+
     sns.set_style('white')
     ax = sns.kdeplot(x=x, y=y,
                 hue=categories,
@@ -292,3 +281,28 @@ def seaborn_kdecontours(embedding, categories):
     ax = sns.despine(ax=None, left=True, bottom=True)
     #plt.savefig('kde_tr_fill.png', transparent=True)
     plt.show()
+
+
+
+
+def plot_clusters(categories, classavg, embedding, dims):
+
+    palette=build_palette(categories)
+
+#    xplots.show_map(data, elements, dims, 'Fe')
+
+    category_map(categories, dims, palette=palette)
+    
+#    xplots.category_avgs(categories, labels, classavg, palette=palette)
+
+    seaborn_embedplot(embedding, categories, palette=palette)
+
+    return palette
+
+#    xplots.seaborn_kdeplot(embedding, categories)
+
+#   xplots.seaborn_kdecontours(embedding, categories)
+
+def plot_classes(categories, labels, classavg, palette):
+    
+    category_avgs(categories, labels, classavg, palette=palette)    

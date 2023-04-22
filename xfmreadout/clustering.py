@@ -11,8 +11,6 @@ from sklearn.cluster import KMeans
 import umap.umap_ as umap
 import hdbscan
 
-import xfmreadout.utils as utils
-
 #-----------------------------------
 #CONSTANTS
 #-----------------------------------
@@ -214,7 +212,11 @@ def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_
 
     return 
 
-def get(data, output_dir: str, force_embed=False, force_clust=False, overwrite=False):
+def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=False):
+
+    if force_embed:
+        force_clust = True
+
     file_embed=os.path.join(output_dir,"embedding.npy")
     file_cats=os.path.join(output_dir,"categories.npy")
     file_classes=os.path.join(output_dir,"classavg.npy")
