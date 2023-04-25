@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["-f", "data/example_datafile.GeoPIXE", "-a",]
+            "args": ["-f", "data/example_datafile.GeoPIXE", "-a", "-c", "-m", "-ff",]
         },
     ]
 }
