@@ -5,7 +5,7 @@
 
 # About the project
 
-ReadoutXFM is a Python3 tool for parsing and analysis of X-ray Flourescence Microscopy (XFM) hyperspectral maps. It is currently compatible with ATLAS-series spectrometers from IXRF Inc., and the GeoPIXE analysis package from CSIRO.  It  performs a range of automated analyses on fluorescence map data. 
+ReadoutXFM is a Python3 tool for analysis of X-ray Flourescence Microscopy (XFM) hyperspectral maps. It is currently compatible with ATLAS-series spectrometers from IXRF Inc., and the GeoPIXE analysis package from CSIRO.  It  performs a range of automated analyses on fluorescence map data. 
 
 # Usage
 
