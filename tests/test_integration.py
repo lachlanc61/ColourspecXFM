@@ -20,7 +20,7 @@ sys.path.append(BASE_DIR)
 
 import xfmreadout.bufferops as bufferops
 import tests.utils_tests as ut
-import main
+import xfmreadout.xfmreadout as main
 
 
 #get config
