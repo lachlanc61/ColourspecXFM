@@ -19,10 +19,13 @@ RUN pip install --upgrade pip
 
 # Install pip requirements
 #COPY requirements.txt .
-#RUN python -m pip install -r requirements.txt
 
 #PROJECT
 COPY . /app
+#pybind11 for submodule not being found - manually install reqs for submodule first
+#   . removed from submodule reqs.txt
+#   might also be able to pip install /app/xfmparser instead?
+RUN python -m pip install -r /app/xfmparser/requirements.txt
 RUN pip install -e /app/
 
 #UIDs
@@ -41,4 +44,4 @@ RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME
 
 USER $UNAME
 # During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-#CMD ["python", "main.py"]
+#CMD ["xfmreadout"]
