@@ -1,6 +1,11 @@
+build/
+dist/
+*.egg-info/
+
 out
 data
 tests/out
+
 
 # Distribution / packaging
 .venv
