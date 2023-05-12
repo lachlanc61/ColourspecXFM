@@ -7,10 +7,25 @@
 
 ReadoutXFM is a Python3 tool for analysis of X-ray Fluorescence Microscopy (XFM) hyperspectral maps. It is currently compatible with ATLAS-series spectrometers from IXRF Inc., and the GeoPIXE analysis package from CSIRO.  It  performs a range of automated analyses on fluorescence map data, including spectral classification, visualisation, and reporting of deadtime statistics. 
 
+
+# Installation
+
+```py
+git clone git@github.com:lachlanc61/readoutxfm.git
+
+cd readoutxfm
+
+pip install -e .
+```
+
+The package requires python>=3.8
+
+The optional submodule xfmparse greatly improves read performance. It requires a compiler compatible with ISO/IEC C++17.
+
 # Usage
 
 ```py
-usage: main.py -f source [-o destination] [-e] [-w] [-x X1 X2] [-y Y1 Y2] [-i] [-a] [-c] [-dt] [-m] [-s SIZE]
+usage: xfmread-raw -f source [-o destination] [-e] [-w] [-x X1 X2] [-y Y1 Y2] [-i] [-a] [-c] [-dt] [-m] [-s SIZE]
 
 required arguments:
 -f --input-file             .GeoPIXE file to be parsed
@@ -35,21 +50,21 @@ optional arguments:
 
 Perform analysis and dimensionality reduction on example dataset:
 ```py
-python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -a -c
+xfmread-raw -f ./data/example_dataset.GeoPIXE -o ./out/ -a -c
 ```
 
 Rapidly extract pixel header statistics and visualise deadtime data:
 ```py
-python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -i -a
+xfmread-raw -f ./data/example_dataset.GeoPIXE -o ./out/ -i -a
 ```
 
 Produce a submap cropped to coordinates (20,10) to (40,30):
 ```py
-python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -i -w -x 20 40 -y 10 30 
+xfmread-raw -f ./data/example_dataset.GeoPIXE -o ./out/ -i -w -x 20 40 -y 10 30 
 ```
 Use spectrum data to predict missing deadtime statistics and write new file for further processing:
 ```py
-python main.py -f ./data/example_dataset.GeoPIXE -o ./out/ -w -dt 
+xfmread-raw -f ./data/example_dataset.GeoPIXE -o ./out/ -w -dt 
 ```
 # Data format
 
