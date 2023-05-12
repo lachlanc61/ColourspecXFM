@@ -283,8 +283,6 @@ def seaborn_kdecontours(embedding, categories):
     plt.show()
 
 
-
-
 def plot_clusters(categories, classavg, embedding, dims):
 
     palette=build_palette(categories)

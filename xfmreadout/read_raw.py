@@ -32,12 +32,20 @@ PACKAGE_CONFIG='xfmreadout/config.yaml'
 #INITIALISE
 #-----------------------------------
 
+def entry():
+    """
+    entry point without explicit args
+    """
+    args_in = sys.argv[1:]  #NB: exclude 0 == script name
+    main(args_in)
+
 def main(args_in):
     """
     parse map according to args_in
     
     return pixelseries, xfmap and analysis results
     """
+    
     #create input config from args and config files
     config =utils.initcfg(PACKAGE_CONFIG)
 
@@ -75,7 +83,7 @@ def main(args_in):
     if args.classify_spectra:
         pixelseries.categories, pixelseries.classavg, embedding, clusttimes = clustering.run( pixelseries.flattened, dirs.transforms, force_embed=args.force, overwrite=config['OVERWRITE_EXPORTS'] )
         
-        clust_palette = vis.plot_clusters(pixelseries.categories, pixelseries.classavg, embedding, pixelseries.dimensions)
+        vis.plot_clusters(pixelseries.categories, pixelseries.classavg, embedding, pixelseries.dimensions)
 #        clustering.complete(pixelseries.categories, pixelseries.classavg, embedding, clusttimes, xfmap.energy, xfmap.xres, xfmap.yres, config['nclust'], dirs.plots)
         #colour.plot_colourmap_explainer(pixelseries.energy, pixelseries.classavg[1:1], pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, dirs)
     else:
@@ -87,6 +95,8 @@ def main(args_in):
     return pixelseries, xfmap, #dt_log
 
 if __name__ == "__main__":
-    main(sys.argv[1:])      #NB: exclude 0 == script name
+    args_in = sys.argv[1:]
+
+    main(args_in)        
 
     sys.exit()

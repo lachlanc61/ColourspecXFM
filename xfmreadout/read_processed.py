@@ -6,13 +6,23 @@ import numpy as np
 import xfmreadout.utils as utils
 import xfmreadout.argops as argops
 import xfmreadout.processops as processops
+import xfmreadout.clustering as clustering
+import xfmreadout.visualisations as vis
 
 #-----------------------------------
 #vars
 #-----------------------------------
 PACKAGE_CONFIG='xfmreadout/config.yaml'
 
+def entry():
+    """
+    entry point without explicit args
+    """
+    args_in = sys.argv[1:]  #NB: exclude 0 == script name
+    main(args_in)
+
 def main(args_in):
+
     #create input config from args and config files
     config =utils.initcfg(PACKAGE_CONFIG)
 
@@ -22,20 +32,20 @@ def main(args_in):
     image_directory=args.input_directory
     output_directory=os.path.join(image_directory, "outputs")
 
-    data, elements, dims = processops.get_data(image_directory)
+    data, elements, dims = processops.compile(image_directory)
 
     print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
-
-    categories, classavg, embedding, clusttimes, data, dims = processops.process(data, dims, image_directory, force=args.force)
+    categories, classavg, embedding, clusttimes = clustering.run(data, image_directory)
     print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
+
+    vis.plot_clusters(categories, classavg, embedding, dims)
 
     for i in range(len(elements)):
-        print(f"{elements[i]}, {np.max(data[:,i])}")
-
-    processops.plot_all(categories, classavg, embedding, data, elements, dims)
+        print(f"{elements[i]}, max: {np.max(data[:,i]):.2f}, 98: {np.quantile(data[:,i],0.98):.2f}, avg: {np.average(data[:,i]):.2f}")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])      #NB: exclude 0 == script name
+    args_in = sys.argv[1:]
 
+    main(args_in)      
     sys.exit()
