@@ -1,8 +1,9 @@
+import time
 import numpy as np
 
 import xfmreadout.bufferops as bufferops
 import xfmreadout.utils as utils
-import xfmreadout.parallel as parallel
+import xfmreadout.structures as structures
 
 import parsercore
 
@@ -264,3 +265,56 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, dtfill, multiproc):
         buffer.wait()
         xfmap.resetfile()
         return 
+    
+
+
+def read(config, args, dirs):
+    """
+    Parse full file, creating map and extracted data objects
+    """
+    #start a timer
+    starttime = time.time() 
+    
+    try:
+        #initialise map object
+        xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub, args.write_modified, args.chunk_size, args.multiprocess)
+
+        #initialise the spectrum-by-pixel object
+        pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray, args.index_only)
+
+        pixelseries, xfmap.indexlist = indexmap(xfmap, pixelseries, args.multiprocess)
+
+        if not args.index_only:
+            pixelseries = parse(xfmap, pixelseries, args.multiprocess)
+            pixelseries = pixelseries.get_derived(config, xfmap)    #calculate additional derived properties after parse
+
+        if args.write_modified:
+            writemap(config, xfmap, pixelseries, args.x_coords, args.y_coords, \
+                args.fill_deadtimes, args.multiprocess)
+
+    finally:
+        xfmap.closefiles()
+
+        #complete the timer
+        runtime = time.time() - starttime
+
+        print(
+        "---------------------------\n"
+        "COMPLETE\n"
+        "---------------------------\n"
+        f"dimensions expected (x,y): {xfmap.xres},{xfmap.yres}\n"
+        f"pixels expected (X*Y): {xfmap.npx}\n"
+        f"pixels found: {pixelseries.npx}\n"
+        f"total time: {round(runtime,2)} s\n"
+        f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
+        "---------------------------"
+        )
+
+        #export the pixel header stats and data
+
+        pixelseries.exportpxstats(config, dirs.exports)
+
+        if args.export_data:
+            pixelseries.exportpxdata(config, dirs.exports)    
+
+    return xfmap, pixelseries

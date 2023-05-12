@@ -1,7 +1,5 @@
 import time
 import sys
-import numpy as np
-import argparse
 
 import xfmreadout.utils as utils
 import xfmreadout.argops as argops
@@ -10,9 +8,7 @@ import xfmreadout.clustering as clustering
 import xfmreadout.visualisations as vis
 import xfmreadout.structures as structures
 import xfmreadout.dtops as dtops
-import xfmreadout.bufferops as bufferops
 import xfmreadout.parser as parser
-import xfmreadout.fitting as fitting
 import xfmreadout.diagops as diagops
 
 """
@@ -21,7 +17,7 @@ Parses spectrum-by-pixel maps from IXRF XFM
 - parses binary .GeoPIXE files
 - extracts pixel parameters
 - extracts pixel data
-- classifies data via PCA and UMAP
+- classifies data via eg. UMAP, HDBSCAN
 - displays classified maps
 - produces average spectrum per class
 
@@ -51,50 +47,10 @@ def main(args_in):
     #initialise read file and directory structure 
     config, dirs = utils.initfiles(args, config)
 
-    #start a timer
-    starttime = time.time() 
-    
-    try:
-        #initialise map object
-        xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub, args.write_modified, args.chunk_size, args.multiprocess)
+    #perform parse
+    xfmap, pixelseries = parser.read(config, args, dirs)
 
-        #initialise the spectrum-by-pixel object
-        pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray, args.index_only)
-
-        pixelseries, xfmap.indexlist = parser.indexmap(xfmap, pixelseries, args.multiprocess)
-
-        if not args.index_only:
-            pixelseries = parser.parse(xfmap, pixelseries, args.multiprocess)
-            pixelseries = pixelseries.get_derived(config, xfmap)    #calculate additional derived properties after parse
-
-        if args.write_modified:
-            parser.writemap(config, xfmap, pixelseries, args.x_coords, args.y_coords, \
-                args.fill_deadtimes, args.multiprocess)
-
-    finally:
-        xfmap.closefiles()
-
-        #complete the timer
-        runtime = time.time() - starttime
-
-    print(
-    "---------------------------\n"
-    "COMPLETE\n"
-    "---------------------------\n"
-    f"dimensions expected (x,y): {xfmap.xres},{xfmap.yres}\n"
-    f"pixels expected (X*Y): {xfmap.npx}\n"
-    f"pixels found: {pixelseries.npx}\n"
-    f"total time: {round(runtime,2)} s\n"
-    f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
-    "---------------------------"
-    )
-
-    #export the pixel header stats and data
-
-    pixelseries.exportpxstats(config, dirs.exports)
-
-    if args.export_data:
-        pixelseries.exportpxdata(config, dirs.exports)
+    #ANALYSIS
 
     #perform post-analysis:
     #   create and show colourmap, deadtime/sum reports
