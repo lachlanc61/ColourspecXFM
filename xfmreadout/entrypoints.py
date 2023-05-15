@@ -10,6 +10,7 @@ import xfmreadout.structures as structures
 import xfmreadout.dtops as dtops
 import xfmreadout.parser as parser
 import xfmreadout.diagops as diagops
+import xfmreadout.processops as processops
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -36,6 +37,7 @@ def entry_raw():
     """
     entrypoint wrapper gettings args from sys
     """
+    print("RAW BEGIN")
     args_in = sys.argv[1:]  #NB: exclude 0 == script name
     read_raw(args_in)
 
