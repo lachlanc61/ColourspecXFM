@@ -159,8 +159,12 @@ def getstream(buffer, idx: int, length: int):
         a=1
 
     if len(stream) < length:
-        raise ValueError("FATAL: received stream shorter than expected")
-
+        if buffer.len == 0:
+            print(f"\n WARNING: Mismatch between EOF and expected pixel count - map dimensions may be incorrect in file header.")
+            raise parser.MapDone
+        else:
+            raise ValueError("FATAL: unexpected stream size before end of buffer")
+        
     return stream, idx, buffer
 
 

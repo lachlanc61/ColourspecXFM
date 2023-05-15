@@ -1,5 +1,7 @@
 import time
 import sys
+import os
+import numpy as np
 
 import xfmreadout.utils as utils
 import xfmreadout.argops as argops
@@ -37,7 +39,6 @@ def entry_raw():
     """
     entrypoint wrapper gettings args from sys
     """
-    print("RAW BEGIN")
     args_in = sys.argv[1:]  #NB: exclude 0 == script name
     read_raw(args_in)
 
@@ -129,3 +130,9 @@ def read_processed(args_in):
 
     for i in range(len(elements)):
         print(f"{elements[i]}, max: {np.max(data[:,i]):.2f}, 98: {np.quantile(data[:,i],0.98):.2f}, avg: {np.average(data[:,i]):.2f}")
+
+
+if __name__ == '__main__':
+    entry_raw()      
+
+    sys.exit()

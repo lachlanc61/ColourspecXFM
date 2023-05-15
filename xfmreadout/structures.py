@@ -143,8 +143,7 @@ class PixelSeries:
 
         self.parsing = INDEX_ONLY
 
-        self.npx=0
-        self.nrows=0
+        #self.nrows=0
 
     def receiveheader(self, pxidx, pxlen, xcoord, ycoord, det, dt):
         self.pxlen[pxidx,det]=pxlen
