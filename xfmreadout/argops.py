@@ -16,11 +16,17 @@ def checkargs(args, config):
         print("continuing with --index-only disabled")
         args.index_only = False
 
-    if args.index_only and args.fill_deadtimes:
+    if args.index_only and args.modify_deadtimes == 999:
         print("-------------------------------")
-        print("WARNING: must parse map to use --fill-deadtimes")
+        print("WARNING: must parse map to predict deadtimes")
         print("continuing with --index-only disabled")
         args.index_only = False
+
+    if not args.modify_deadtimes == -1 and not args.write_modified:
+        print("-------------------------------")
+        print("WARNING: must write map to apply modified deadtimes")
+        print("continuing with --write-modified enabled")
+        args.write_modified = True
 
     if args.index_only and args.export_data:
         print("-------------------------------")
@@ -31,11 +37,20 @@ def checkargs(args, config):
     if args.input_file == None:   
         raise ValueError("No input file specified")
 
+    if args.modify_deadtimes >= 0 and args.modify_deadtimes <= 100:
+        pass
+    elif args.modify_deadtimes == -1:
+        pass
+    elif args.modify_deadtimes == 999:
+        pass
+    else:
+       raise ValueError("modify-deadtimes value out of range, expected a float within 0.0-100.0") 
+
     if args.write_modified:
-        if args.x_coords[1] == None:
-            args.x_coords[1]=int(999999)
-        if args.y_coords[1] == None:
-            args.y_coords[1]=int(999999)
+        if args.x_coords == None:
+            args.x_coords = [ 0, int(999999)]
+        if args.y_coords == None:
+            args.y_coords = [0 , int(999999)]
 
         if (args.x_coords[0] >= args.x_coords[1]):
             raise ValueError("First x_coordinate must be < second x_coordinate")
@@ -114,7 +129,7 @@ def readargs(args_in, config):
         "-w", "--write-modified", 
         help="Write modified .GeoPIXE file readable by CSIRO GeoPIXE package"
         "will crop to within --submap-coords"
-        "will attempt to predict missing deadtimes from counts if --fill-deadtimes is specified.",
+        "will attempt to predict missing deadtimes from counts if --modify-deadtimes is specified.",
         action='store_true',
     )
     argparser.add_argument(
@@ -137,13 +152,32 @@ def readargs(args_in, config):
         nargs='+', 
         type=int, 
     )
+    argparser.add_argument(
+        "-dt", "--modify-deadtimes", 
+        help="Fill or predict deadtimes and write to output .GeoPIXE file"
+        "If given a float from 0-100, will fill that value"
+        "If no value is given, will perform a per-pixel prediction from parsed counts"
+        "Use with ----write-modified"
+        "WARNING: experimental, prediction highly approximate",
+        const=float(999),
+        default=float(-1),
+        action='store',
+        nargs='?',
+        type=float,
+        #DEFAULTS: 
+        #   if arg not given, value = -1 
+        #       = do not fill deadtimes
+        #   if arg given but no value specified, value = 999
+        #        = predict deadtimes from counts
+
+    )
     #--------------------------
     #run control args
     argparser.add_argument(
         "-i", "--index-only", 
         help="Only index headers, do not extract data from files"
         "much faster but extracts header data only"
-        "incompatible with --fill-deadtimes and --classify-spectra",
+        "incompatible with --modify-deadtimes and --classify-spectra",
         action='store_true',
     )
     argparser.add_argument(
@@ -158,14 +192,6 @@ def readargs(args_in, config):
         "generate spectral classification maps" 
         "uses PCA, UMAP and k-means to produce clusters based on raw spectra"
         "not compatible with --index-only",
-        action='store_true',
-    )
-    argparser.add_argument(
-        "-dt", "--fill-deadtimes", 
-        help="Predict deadtimes from counts"
-        "use with ----write-modified"
-        "not compatible with --index-only"
-        "WARNING: experimental, prediction highly approximate",
         action='store_true',
     )
     argparser.add_argument(

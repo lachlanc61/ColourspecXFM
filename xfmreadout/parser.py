@@ -213,13 +213,13 @@ def parse(xfmap, pixelseries, multiproc):
                     buffer_start_px = buffer_break_px+1
 
     except MapDone:
-
+        pixelseries.parsed = True
         buffer.wait()
         xfmap.resetfile()
         
         return pixelseries
 
-def writemap(config, xfmap, pixelseries, xcoords, ycoords, dtfill, multiproc):
+def writemap(config, xfmap, pixelseries, xcoords, ycoords, modify_dt, multiproc):
     """
     Write a map or submap
         Updates headers and pixel headers
@@ -233,7 +233,7 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, dtfill, multiproc):
     bufferops.writefileheader(xfmap, xcoords, ycoords)
 
     print("--------------")
-    print("EXPORTING MAP")
+    print("WRITING NEW .GeoPIXE FILE")
     try:
         xfmap.resetfile()
         buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
@@ -251,7 +251,7 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, dtfill, multiproc):
                 raise ValueError(f"values read from pixel header do not match result from indexing")
 
             if utils.pxinsubmap(xcoords, ycoords, pixelseries.xidx[pxidx,det], pixelseries.yidx[pxidx,det]):            
-                bufferops.writepxheader(config, xfmap, pixelseries, det, pxidx, xcoords, ycoords, dtfill)
+                bufferops.writepxheader(config, xfmap, pixelseries, det, pxidx, xcoords, ycoords, modify_dt)
            
             stream, idx, buffer = bufferops.getstream(buffer, idx, pixelseries.pxlen[pxidx,det]-pxheaderlen)
             
@@ -286,11 +286,15 @@ def read(config, args, dirs):
 
         if not args.index_only:
             pixelseries = parse(xfmap, pixelseries, args.multiprocess)
-            pixelseries = pixelseries.get_derived(config, xfmap)    #calculate additional derived properties after parse
+            pixelseries = pixelseries.get_derived()    #calculate additional derived properties after parse
+
+        #assign modified deadtimes
+        if not args.modify_deadtimes == -1: #-1 = False
+            pixelseries = pixelseries.get_dtmod(config, xfmap, args.modify_deadtimes)
 
         if args.write_modified:
             writemap(config, xfmap, pixelseries, args.x_coords, args.y_coords, \
-                args.fill_deadtimes, args.multiprocess)
+                args.modify_deadtimes, args.multiprocess)
 
     finally:
         xfmap.closefiles()

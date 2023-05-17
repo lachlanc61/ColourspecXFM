@@ -358,7 +358,7 @@ def writefileheader(xfmap, xcoords, ycoords):
     #   think we can ignore this, the info is not used, but header is different when rewritten
 
 
-def writepxheader(config, xfmap, pxseries, det: int, pxidx: int, xcoords, ycoords, calc_dt:bool):
+def writepxheader(config, xfmap, pxseries, det: int, pxidx: int, xcoords, ycoords, modify_dt:float):
     """
     write the header for a single pixel
     takes:
@@ -368,10 +368,10 @@ def writepxheader(config, xfmap, pxseries, det: int, pxidx: int, xcoords, ycoord
         - whether we are calculating new deadtimes
 
     """
-    if calc_dt:
-        dt = pxseries.dtpred[pxidx,det]
-    else:
+    if modify_dt == -1:
         dt=pxseries.dt[pxidx,det]
+    else:
+        dt=pxseries.dtmod[pxidx,det]
 
     pxflag=config['PXFLAG']
     pxflag0=pxflag[0].encode(config['CHARENCODE'])

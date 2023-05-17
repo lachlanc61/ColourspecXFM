@@ -106,6 +106,7 @@ class PixelSeries:
         self.nchan=config['NCHAN']
 
         #initialise pixel value arrays
+        self.parsed=False
         self.pxlen=np.zeros((npx,self.ndet),dtype=np.uint16)
         self.xidx=np.zeros((npx,self.ndet),dtype=np.uint16)
         self.yidx=np.zeros((npx,self.ndet),dtype=np.uint16)
@@ -119,7 +120,7 @@ class PixelSeries:
         self.dtflat=np.zeros((npx),dtype=np.float32)  
         #per-detector
         self.sum=np.zeros((npx,self.ndet),dtype=np.uint32)  
-        self.dtpred=np.zeros((npx,self.ndet),dtype=np.float32)  
+        self.dtmod=np.zeros((npx,self.ndet),dtype=np.float32)  
 
         #create analysis outputs
         self.rvals=np.zeros(npx)
@@ -154,15 +155,32 @@ class PixelSeries:
         
         return self
 
-    def get_derived(self, config, xfmap):
+    def get_dtmod(self, config, xfmap, modify_dt: float):
+            """
+            calculate derived arrays from values extracted from map
+            """
+            #modify_dt used as both flag and value
+            if modify_dt == -1:
+                #dt = unchanged
+                self.dtmod = self.dt
+            elif modify_dt == 999:
+                #dt = predicted
+                self.dtmod = dtops.predict_dt(config, self, xfmap)
+            elif modify_dt >= 0 and modify_dt <= 100:
+                #dt = assigned value 0-100
+                self.dtmod = np.full((self.dt.shape), np.float32(modify_dt), dtype=np.float32) 
+            else:
+                raise ValueError("unexpected value for modify_dt") 
+
+            return self
+
+    def get_derived(self):
         """
         calculate derived arrays from values extracted from map
         """
         self.flattened = np.sum(self.data, axis=1, dtype=np.uint32)
         self.sum = np.sum(self.data, axis=2, dtype=np.uint32)
         self.flatsum = np.sum(self.sum, axis=1, dtype=np.uint32)
-
-        self.dtpred = dtops.predict_dt(config, self, xfmap)
 
         return self
 
@@ -195,7 +213,7 @@ class PixelSeries:
                 #include derived stats if data was fully parsed
                 if self.parsing:
                     np.savetxt(os.path.join(dir, "pxstats_sum.txt"), self.sum, fmt='%d', delimiter=",")  
-                    np.savetxt(os.path.join(dir, "pxstats_dtpred.txt"), self.dtpred, fmt='%d', delimiter=",")    
+                    np.savetxt(os.path.join(dir, "pxstats_dtmod.txt"), self.dtmod, fmt='%d', delimiter=",")    
                     np.savetxt(os.path.join(dir, "pxstats_dtflat.txt"), self.dtflat, fmt='%d', delimiter=",")  
         else:
             np.save(os.path.join(dir, "pxstats_pxlen"), self.pxlen)            
@@ -206,7 +224,7 @@ class PixelSeries:
 
             if self.parsing:
                 np.save(os.path.join(dir, "pxstats_sum"), self.sum)  
-                np.save(os.path.join(dir, "pxstats_dtpred"), self.dtpred)    
+                np.save(os.path.join(dir, "pxstats_dtmod"), self.dtmod)    
                 np.save(os.path.join(dir, "pxstats_dtflat"), self.dtflat) 
 
 

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 cset = ['red', 'blue']
 
-def predictdt(config, pxsum, dwell, timeconst):
+def predict_single_dt(config, pxsum, dwell, timeconst):
     """
     predict missing deadtimes from countrate, dwell and time-constant
     must be calibrated for each time-constant, will fail if current TC is uncalibrated    
@@ -16,10 +16,10 @@ def predictdt(config, pxsum, dwell, timeconst):
     c=float(config['dtcalc_c'])
     cutoff=float(config['dtcalc_cutoff'])
 
-    dtpred=norm_sum*a+c
-    dtpred=float(min(dtpred,cutoff))
+    dtmod=norm_sum*a+c
+    dtmod=float(min(dtmod,cutoff))
 
-    return dtpred
+    return dtmod
 
 def predict_dt(config, pixelseries, xfmap):
     """
@@ -33,34 +33,35 @@ def predict_dt(config, pixelseries, xfmap):
     dwell = xfmap.dwell
     ndet = pixelseries.ndet
 
+    if pixelseries.parsed == False and not np.max(pixelseries.flatsum) > 0:
+        raise ValueError("Deadtime prediction requires parsed map with flattened data")
+
     if len(pixelseries.flatsum) != len(pixelseries.dtflat):
         raise ValueError("sum and dt array sizes differ")
 
-    dtpred=np.zeros((len(pixelseries.dtflat),ndet),dtype=np.float32) 
+    dtmod=np.zeros((len(pixelseries.dtflat),ndet),dtype=np.float32) 
 
-    if timeconst == 0.5:    #hardcoded for now
-
+    if timeconst == 0.5:    #currently hardcoded to TC = 0.5 us
         for i in range(len(pixelseries.flatsum)):
             for j in range(ndet):
-                dtpred[i,j]=predictdt(config, pixelseries.flatsum[i], dwell, timeconst)
-    
+                dtmod[i,j]=predict_single_dt(config, pixelseries.flatsum[i], dwell, timeconst)
     else:
         raise ValueError(f"Deadtime prediction not yet calibrated for TC={timeconst}")        
 
-    return dtpred
+    return dtmod
 
 
-def export(dir:str, dtpred, flatsum):
+def export(dir:str, dtmod, flatsum):
     """
     export the derived deadtime values
     - pass if arrays are zero - eg. if map was not parsed to generate them
     """
 
-    #NB: printing as if dtpred is list of lists -> newlines after each value
+    #NB: printing as if dtmod is list of lists -> newlines after each value
     #   not sure why, workaround is to pass as list of itself
     # https://stackoverflow.com/questions/42068144/numpy-savetxt-is-not-adding-comma-delimiter
-    if np.sum(dtpred[0] > 0) and np.sum(flatsum > 0):
-        np.savetxt(os.path.join(dir, "pxstats_dtpred.txt"), [dtpred], fmt='%f', delimiter=",")
+    if np.sum(dtmod[0] > 0) and np.sum(flatsum > 0):
+        np.savetxt(os.path.join(dir, "pxstats_dtmod.txt"), [dtmod], fmt='%f', delimiter=",")
         np.savetxt(os.path.join(dir, "pxstats_flatsum.txt"), [flatsum], fmt='%d', delimiter=",")
     else:
         pass
@@ -164,7 +165,7 @@ def dtscatter(dt, sum, dir: str, ndet: int):
     
     return
 
-def predhist(dt, dtpred, dir: str, ndet: int):
+def predhist(dt, dtmod, dir: str, ndet: int):
     """
     generate the predicted deadtime histogram plot
     """ 
@@ -178,18 +179,18 @@ def predhist(dt, dtpred, dir: str, ndet: int):
     i=0
     labels = [ "measured", "predicted" ]
 
-    for data in [ dt, dtpred ]:
+    for data in [ dt, dtmod ]:
         ax.hist(data, 100, fc=cset[i], alpha=0.5, label=f"{labels[i]}")
         i+=1
 
     fig.savefig(os.path.join(dir, 'predicted_deadtime_histograms.png'), dpi=150)
     return
 
-def preddiffimage(dt, dtpred, dir: str, xres: int, yres: int, ndet: int):
+def preddiffimage(dt, dtmod, dir: str, xres: int, yres: int, ndet: int):
     """
     plot the differences in predicted deadtimes between detectors as a map image
     """          
-    diffmap = dtpred-dt
+    diffmap = dtmod-dt
 
     diffimage = diffmap.reshape(yres,xres)
 
@@ -204,7 +205,7 @@ def preddiffimage(dt, dtpred, dir: str, xres: int, yres: int, ndet: int):
     plt.savefig(os.path.join(dir, 'predicted_difference_map.png'), dpi=150)
     return
 
-def predscatter(dt, dtpred, sum, dir: str, ndet: int):
+def predscatter(dt, dtmod, sum, dir: str, ndet: int):
     """
     produce scatterplot of predicted deadtime vs counts per pixel
     """  
@@ -217,7 +218,7 @@ def predscatter(dt, dtpred, sum, dir: str, ndet: int):
     labels = [ "measured", "predicted" ]
 
     i=0
-    for data in [ dt, dtpred ]:
+    for data in [ dt, dtmod ]:
         ax.scatter(sum, data, color=cset[i], marker='o', s=50, alpha=0.1, linewidths=None, label=f"{labels[i]}")
         i+=1
 
@@ -233,7 +234,7 @@ def predscatter(dt, dtpred, sum, dir: str, ndet: int):
     return
 
 
-def dtplots(config, dir: str, dt, sum, dtpred, dtavg, mergedsum, xres: int, yres: int, ndet: int, INDEX_ONLY: bool):
+def dtplots(config, dir: str, dt, sum, dtmod, dtavg, mergedsum, xres: int, yres: int, ndet: int, INDEX_ONLY: bool):
     """
     produce all deadtime-related plots
     """
@@ -253,9 +254,9 @@ def dtplots(config, dir: str, dt, sum, dtpred, dtavg, mergedsum, xres: int, yres
     elif (np.amax(sum) <= 0):
         raise ValueError("Sum array is empty or zero - cannot generate sum plots")
 
-    #predhist(dtavg, dtpred, dir, ndet)
-    #preddiffimage(dtavg, dtpred, dir, xres, yres, ndet)
-    #predscatter(dtavg, dtpred, mergedsum, dir, ndet)
+    #predhist(dtavg, dtmod, dir, ndet)
+    #preddiffimage(dtavg, dtmod, dir, xres, yres, ndet)
+    #predscatter(dtavg, dtmod, mergedsum, dir, ndet)
 
     plt.close()
 
