@@ -157,9 +157,8 @@ def test_integration_cycle(datafiles):
     #check results
     assert np.allclose(pixelseries.data, expected_pxdata)
 
-
 #-------------------------------------------------------------------
-#------------MULTIPROC----------------------------------------------
+#------------CPP PARSE----------------------------------------------
 #-------------------------------------------------------------------
 
 @pytest.mark.datafiles(
@@ -284,3 +283,67 @@ def test_integration_cycle_cpp(datafiles):
 
     #check results
     assert np.allclose(pixelseries.data, expected_pxdata)
+
+
+@pytest.mark.datafiles(
+    os.path.join(BIGDATA_DIR, 'ts2_01_sub.GeoPIXE'),
+    os.path.join(BIGDATA_DIR, 'ts2_01_sub_data.npy'),
+    os.path.join(DATA_DIR, 'ts2_01_sub_pxlen.npy'),
+    os.path.join(DATA_DIR, 'ts2_01_sub_xidx.npy'),
+    os.path.join(DATA_DIR, 'ts2_01_sub_yidx.npy'),
+    os.path.join(DATA_DIR, 'ts2_01_sub_dt.npy'),
+    )
+def test_cycle_unchanged_cpp(datafiles):
+    """
+        read->write->read cycle:
+            writes an unchanged .GeoPIXE file, then parses this 
+            to confirm data and headervals unchanged
+
+        - read datafile and write new file
+        - assert filesize is correct
+        - read new file back in
+        - assert pixeldata and headervals are correct
+
+    """
+    control_args = CONTROL_ARGS_MULTIPROC
+
+    #get expected
+    ef = ut.findin("ts2_01_sub_data.npy", datafiles)
+    expected_pxdata = np.load(str(ef))     
+    
+    ef = ut.findin("pxlen.npy", datafiles)
+    expected_pxlen = np.load(ef)
+
+    ef = ut.findin("xidx.npy", datafiles)
+    expected_xidx = np.load(ef)
+
+    ef = ut.findin("yidx.npy", datafiles)
+    expected_yidx = np.load(ef)
+
+    ef = ut.findin("dt.npy", datafiles)
+    expected_dt = np.load(ef) 
+
+    #prep
+    f = ut.findin("ts2_01_sub.GeoPIXE", datafiles)
+
+    #arguments for write
+    args_in = [ "-f", str(f), "-i", "-w", ] + control_args
+
+    #run crop/write
+    ___, ___ = entrypoints.read_raw(args_in)
+
+    #use output from crop/write as next input
+    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_export.GeoPIXE")
+
+    #use output file as input for next run
+    next_args_in = [ "-f", f_result, ] + control_args
+
+    #run
+    pixelseries, ___ = entrypoints.read_raw(next_args_in)
+
+    #check results
+    assert np.allclose(pixelseries.data, expected_pxdata)
+    assert np.allclose(pixelseries.pxlen, expected_pxlen)
+    assert np.allclose(pixelseries.xidx, expected_xidx)
+    assert np.allclose(pixelseries.yidx, expected_yidx)
+    assert np.allclose(pixelseries.dt, expected_dt)
