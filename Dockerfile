@@ -7,6 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
+#-----------------------------
 #INIT
 #---CHANGES ABOVE HERE WILL TRIGGER FULL APT UPDATE---
 
@@ -16,13 +17,17 @@ RUN apt-get update && apt-get -y install \
     vim
 RUN pip install --upgrade pip
 
+#-----------------------------
 #PROJECT
 COPY . /app
 
-#manually install submodule reqs to ensure pybind11 is recognised
+#manually install submodule reqs (needed to ensure pybind11 is recognised)
 RUN python -m pip install -r /app/xfmparser/requirements.txt
+#install main package
 RUN pip install -e /app/
 
+#-----------------------------
+#UIDs
 #Adjust UIDs so written files belong to user building container
 ARG UNAME=user
 ARG UID=1000
@@ -33,4 +38,6 @@ RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME
 
 USER $UNAME
 
+#-----------------------------
+#ENTRYPOINT
 CMD ["xfmread-raw"]
