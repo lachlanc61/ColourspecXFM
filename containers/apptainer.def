@@ -1,10 +1,10 @@
 #to build clean from dockerhub
-#BootStrap: docker
-#From: python:3.10.6  
+BootStrap: docker
+From: python:3.10.6  
 
 #local cached
-BootStrap: localimage
-From: /home/lachlan/SIFSTORE/python_3.10.6.sif
+#BootStrap: localimage
+#From: /home/lachlan/SIFSTORE/python_3.10.6.sif
 
 %files
 #   apptainer doesn't seem to have an equivalent to .dockerignore 
@@ -36,6 +36,9 @@ From: /home/lachlan/SIFSTORE/python_3.10.6.sif
 
 %runscript
     #echo "This is what happens when you run the container..."
-    xfmread-raw
+    echo "Arguments received: $*"
+    exec xfmread-raw "$@"
+    exec echo "$@"
+    
 
 
