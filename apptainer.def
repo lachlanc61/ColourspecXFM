@@ -1,0 +1,47 @@
+#to build clean from dockerhub
+#BootStrap: docker
+#From: python:3.10.6  
+
+#local cached
+BootStrap: localimage
+From: /home/lachlan/SIFSTORE/python_3.10.6.sif
+
+%files
+#   apptainer doesn't seem to have an equivalent to .dockerignore 
+#   need to list everything explicitly to avoid unwanted data in the container
+    ./xfmparser /app/xfmparser
+    ./xfmreadout /app/xfmreadout
+    ./tests /app/tests    
+    ./data/example_datafile.GeoPIXE /app/data/example_datafile.GeoPIXE
+    ./pyproject.toml /app/
+    ./setup.cfg /app/
+    ./README.md /app/
+
+%post
+    apt-get update && apt-get -y install \
+        git \
+        vim
+    pip install --upgrade pip
+
+    #manually install submodule reqs (needed to ensure pybind11 is recognised)
+    python -m pip install -r /app/xfmparser/requirements.txt
+    
+    #install main package
+    pip install -e /app
+
+#%test
+#not working, needs to be able to write to /app folder
+#    cd /app
+#    pytest
+
+%runscript
+    #echo "This is what happens when you run the container..."
+    xfmread-raw
+
+
+
+#to interact 
+#apptainer shell --containall --bind /tmp,./data:/data  $SIFDIR/xfmreadout_latest.sif
+
+#to run
+#apptainer run --containall --bind /tmp,./data:/data  $SIFDIR/xfmreadout_latest.sif -f ./data/example_datafile.GeoPIXE
