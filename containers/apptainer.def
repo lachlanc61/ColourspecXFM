@@ -9,13 +9,13 @@ From: /home/lachlan/SIFSTORE/python_3.10.6.sif
 %files
 #   apptainer doesn't seem to have an equivalent to .dockerignore 
 #   need to list everything explicitly to avoid unwanted data in the container
-    ./xfmparser /app/xfmparser
-    ./xfmreadout /app/xfmreadout
-    ./tests /app/tests    
-    ./data/example_datafile.GeoPIXE /app/data/example_datafile.GeoPIXE
-    ./pyproject.toml /app/
-    ./setup.cfg /app/
-    ./README.md /app/
+    ../xfmparser /app/xfmparser
+    ../xfmreadout /app/xfmreadout
+    ../tests /app/tests    
+    ../data/example_datafile.GeoPIXE /app/data/example_datafile.GeoPIXE
+    ../pyproject.toml /app/
+    ../setup.cfg /app/
+    ../README.md /app/
 
 %post
     apt-get update && apt-get -y install \
@@ -39,9 +39,3 @@ From: /home/lachlan/SIFSTORE/python_3.10.6.sif
     xfmread-raw
 
 
-
-#to interact 
-#apptainer shell --containall --bind /tmp,./data:/data  $SIFDIR/xfmreadout_latest.sif
-
-#to run
-#apptainer run --containall --bind /tmp,./data:/data  $SIFDIR/xfmreadout_latest.sif -f ./data/example_datafile.GeoPIXE
