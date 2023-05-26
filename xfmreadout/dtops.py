@@ -4,6 +4,26 @@ import matplotlib.pyplot as plt
 
 cset = ['red', 'blue']
 
+def dt_stats(dt):
+    """
+    print deadtime statistics to stdout
+    """
+    print(
+        "---------------------------\n"
+        "DT STATISTICS\n"
+        "---------------------------"
+    )
+    
+    for i in range(dt.shape[1]):
+        dt_mean = np.mean(dt[:,i])    
+        print(f"detector {i} mean: {dt_mean: .2f}")
+    
+    dt_mean = np.mean(dt)  
+    print(f"overall mean: {dt_mean: .2f}")
+    print("---------------------------")
+    return dt_mean
+
+
 def predict_single_dt(config, pxsum, dwell, timeconst):
     """
     predict missing deadtimes from countrate, dwell and time-constant

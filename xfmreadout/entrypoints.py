@@ -78,15 +78,21 @@ def read_raw(args_in):
 
         #dtops.export(dirs.exports, pixelseries.dtmod, pixelseries.flatsum)
 
+        #if using log file
         if args.log_file is not None:
             realtime, livetime, triggers, events, icr, ocr, dt_evt, dt_rt = diagops.dtfromdiag(dirs.logf)
             print(dt_evt)
 
-        dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtmod[:,0], pixelseries.dtflat, \
-            pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
+        #if data is present
+        if (np.max(pixelseries.data) > 0) and pixelseries.parsing == True:
+            dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtmod[:,0], pixelseries.dtflat, \
+                pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
 
-        pixelseries.rgbarray, pixelseries.rvals, pixelseries.gvals, pixelseries.bvals \
-            = colour.calccolours(config, pixelseries, xfmap, pixelseries.flattened, dirs)       #flattened / corrected
+            pixelseries.rgbarray, pixelseries.rvals, pixelseries.gvals, pixelseries.bvals \
+                = colour.calccolours(config, pixelseries, xfmap, pixelseries.flattened, dirs)       #flattened / corrected
+        
+        dt_avg = dtops.dt_stats(pixelseries.dt)
+     
     else:
         rgbarray = None
     #perform clustering

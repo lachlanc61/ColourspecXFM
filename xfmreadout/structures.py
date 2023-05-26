@@ -91,7 +91,7 @@ class Xfmap:
 
 
 class PixelSeries:
-    def __init__(self, config, xfmap, npx, detarray, INDEX_ONLY):
+    def __init__(self, config, xfmap, npx, detarray, INDEX_ONLY: bool):
 
         #copied variables
         self.source=xfmap
