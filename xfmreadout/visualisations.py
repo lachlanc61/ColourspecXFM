@@ -131,8 +131,6 @@ def category_map ( categories, dims, palette=None ):
         palette=build_palette(categories)
 
     cmap = colors.ListedColormap(palette)
-    #reshape the category list back to the map dimensions using xdim
-    #WARNING: fails using SHORTRUN unless ends at end of row - fix this later
 
     catmap=remap(categories+1,dims)
 
@@ -140,6 +138,7 @@ def category_map ( categories, dims, palette=None ):
     print(np.min(catmap))
 
     #show this category image
+    plt.savefig('catplot.png', transparent=True)    
     ax.imshow(catmap, cmap=cmap)
 
     return
@@ -224,13 +223,13 @@ def seaborn_embedplot(embedding, categories, palette=None):
                 hue=categories, palette=palette,
                 lw=0,
                 joint_kws = dict(alpha=0.01),
-                height=10, ratio=6
+                height=20, ratio=6
                 )
 
     #xlim=[-3,3], ylim=[-3,3],
 
     ax = sns.despine(ax=None, left=True, bottom=True)
-    #plt.savefig('j_scatter_tr.png', transparent=True)
+    plt.savefig('embedplot.png', transparent=True)
     plt.show()
 
     return

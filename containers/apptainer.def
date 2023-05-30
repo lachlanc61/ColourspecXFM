@@ -23,8 +23,9 @@ From: python:3.10.6
         vim
     pip install --upgrade pip
 
-    #manually install submodule reqs (needed to ensure pybind11 is recognised)
-    python -m pip install -r /app/xfmparser/requirements.txt
+    #manually pre-install pybind11 (needed for for C++ submodule to connect properly)
+    python -m pip install pybind11==2.10.4
+    #python -m pip install -r /app/xfmparser/requirements.txt
     
     #install main package
     pip install -e /app
