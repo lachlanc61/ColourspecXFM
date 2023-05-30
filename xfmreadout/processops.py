@@ -67,6 +67,7 @@ def load_maps(filepaths):
     #YMAX=9999
     #XMIN=0
     #XMAX=9999
+    print(f"WARNING: MANUAL CROP ACTIVE")
     YMIN=100
     YMAX=275
     XMIN=50
@@ -135,7 +136,7 @@ def modify_maps(data, elements):
     #MODIFY_FACTORS = [ 1000, 50, 20, 30 ]
     #MODIFY_FACTORS = [ 100, 5, 2, 3 ] <--best manual
     #MODIFY_FACTORS = [ 100, 5, 1, 1.5 ]
-    MODIFY_FACTORS = [ 0.1, 0.1, 0.5, 1, 1]
+    MODIFY_FACTORS = [ 0.005, 0.01, 0.025, 0.1, 0.1]
 
     #iterate through all elements
     for i in range(data.shape[1]):

@@ -48,7 +48,7 @@ CLUSTERERS = [
 
     (hdbscan.HDBSCAN, {"min_cluster_size": 200,
         "min_samples": 100,
-        "cluster_selection_epsilon": 1.0,       #do not separate clusters closer than this value - refer umap min_dist
+        "cluster_selection_epsilon": 1.0,       
         "gen_min_span_tree": True }),
 ]
 
@@ -83,7 +83,7 @@ def reduce(data):
 
     umapper = umap.UMAP(
         n_components=n_components,
-        n_neighbors=30, 
+        n_neighbors=300, 
         min_dist=0.1, 
         low_memory=True, 
         verbose=True
@@ -119,16 +119,19 @@ def doclustering(embedding, npx):
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
     #DEFAULTS
-    DBSCAN_E=0.1   #smaller clusters
-    DBSCAN_CSIZE=200
-    DBSCAN_MINSAMPLES=100
+    DBSCAN_E=0.5   #epsilon: do not separate clusters closer than this value - refer umap min_dist
+    DBSCAN_CSIZE=200    #minimum cluster size
+    DBSCAN_MINSAMPLES=100   #minimum samples - larger = more conservative, more unclustered points
 
 
     #DBSCAN_E=0.5    #really large clusters
     #DBSCAN_E=0.1   #many small clusters
-    DBSCAN_E=0.001   #smaller clusters
-    DBSCAN_CSIZE=200
-    DBSCAN_MINSAMPLES=100
+    DBSCAN_E=0.5   #smaller clusters
+    DBSCAN_CSIZE=50
+    DBSCAN_MINSAMPLES=200
+    #try leaf instead of eom - look at docs
+    #alternately try vanilla DBSCAN
+
 
     #initialise clustering options
     kmeans = KMeans(
