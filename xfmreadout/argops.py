@@ -258,6 +258,13 @@ def readargs_processed(args_in, config):
         action='store_true', 
     )
 
+    argparser.add_argument(
+        "-fc", "--force-clustering", 
+        help="Force recalculation of clusters - overridden by --force",
+        action='store_true', 
+    )    
+
+
     args = argparser.parse_args(args_in)
 
     return args

@@ -129,7 +129,7 @@ def read_processed(args_in):
     data, elements, dims = processops.compile(image_directory)
 
     print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
-    categories, classavg, embedding, clusttimes = clustering.run(data, image_directory, force_clust=True)
+    categories, classavg, embedding, clusttimes = clustering.run(data, image_directory, force_embed=args.force, force_clust=args.force_clustering)
     print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
 
     vis.plot_clusters(categories, classavg, embedding, dims)

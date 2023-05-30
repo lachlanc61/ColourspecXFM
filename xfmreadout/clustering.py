@@ -38,7 +38,7 @@ REDUCERS = [
     (decomposition.PCA, {}),
 #    (decomposition.IncrementalPCA, {"batch_size": 10000}),
 #    (umap.UMAP, {"n_neighbors": 30, "min_dist": 0.3, "low_memory": True, "verbose": True}),
-    (umap.UMAP, {"n_neighbors": 30, "min_dist": 0.3, "low_memory": True, "verbose": True}),
+    (umap.UMAP, {"n_neighbors": 500, "min_dist": 0.3, "low_memory": True, "verbose": True}),
 ]
 
 
@@ -48,7 +48,7 @@ CLUSTERERS = [
 
     (hdbscan.HDBSCAN, {"min_cluster_size": 200,
         "min_samples": 100,
-        "cluster_selection_epsilon": 0.01,
+        "cluster_selection_epsilon": 1.0,       #do not separate clusters closer than this value - refer umap min_dist
         "gen_min_span_tree": True }),
 ]
 

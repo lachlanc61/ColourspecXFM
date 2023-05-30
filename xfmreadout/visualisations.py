@@ -138,8 +138,8 @@ def category_map ( categories, dims, palette=None ):
     print(np.min(catmap))
 
     #show this category image
-    plt.savefig('catplot.png', transparent=True)    
     ax.imshow(catmap, cmap=cmap)
+    plt.savefig('catplot.png', transparent=True)    
 
     return
 
@@ -223,7 +223,7 @@ def seaborn_embedplot(embedding, categories, palette=None):
                 hue=categories, palette=palette,
                 lw=0,
                 joint_kws = dict(alpha=0.01),
-                height=20, ratio=6
+                height=12, ratio=6
                 )
 
     #xlim=[-3,3], ylim=[-3,3],
