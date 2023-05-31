@@ -73,7 +73,7 @@ def test_cycle_dtfill_cpp(datafiles):
     ___, ___ = entrypoints.read_raw(args_in)
 
     #use output from crop/write as next input
-    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_export.GeoPIXE")
+    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_mod.GeoPIXE")
 
     #use output file as input for next run
     next_args_in = [ "-f", f_result, ] + control_args

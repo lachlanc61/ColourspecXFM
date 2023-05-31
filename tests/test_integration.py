@@ -143,7 +143,7 @@ def test_integration_cycle(datafiles):
     ___, ___ = entrypoints.read_raw(args_in)
 
     #use output from crop/write as next input
-    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_export.GeoPIXE")
+    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_mod.GeoPIXE")
 
     #check filesize is correct
     assert os.path.getsize(f_result) == expected_size
@@ -270,7 +270,7 @@ def test_integration_cycle_cpp(datafiles):
     ___, ___ = entrypoints.read_raw(args_in)
 
     #use output from crop/write as next input
-    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_export.GeoPIXE")
+    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_mod.GeoPIXE")
 
     #check filesize is correct
     assert os.path.getsize(f_result) == expected_size
@@ -333,7 +333,7 @@ def test_cycle_unchanged_cpp(datafiles):
     ___, ___ = entrypoints.read_raw(args_in)
 
     #use output from crop/write as next input
-    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_export.GeoPIXE")
+    f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_mod.GeoPIXE")
 
     #use output file as input for next run
     next_args_in = [ "-f", f_result, ] + control_args
