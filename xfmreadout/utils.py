@@ -49,7 +49,7 @@ class DirectoryStructure:
         #assign output:
         #   to input_fname if output blank
         #   otherwise as assigned
-        appended_dir=config['ANADIR']+"_"+self.fname
+        appended_dir=config['OUTDIR']+"_"+self.fname
 
         if args.output_directory == "" or args.output_directory == None:
             self.odir=os.path.join(os.path.dirname(self.fi),appended_dir)
@@ -66,19 +66,19 @@ class DirectoryStructure:
 
         #if terminal directory has the correct format, continue
         #   otherwise, add a subdir with that name
-        if outbase == config['ANADIR'] or outbase == appended_dir:      
+        if outbase == config['OUTDIR'] or outbase == appended_dir:      
             pass
         else:
-            self.odir=os.path.join(self.odir,config['ANADIR'])
+            self.odir=os.path.join(self.odir,config['OUTDIR'])
 
         #assign and create analysis subdirs, if needed
-        self.transforms=os.path.join(self.odir,config['TRANSDIR'])
+        self.embeddings=os.path.join(self.odir,config['EMBED_DIR'])
         self.plots=os.path.join(self.odir,config['PLOTDIR'])
         self.exports=os.path.join(self.odir,config['EXPORTDIR'])
 
         #setup submap export location and extension
         if args.write_modified:
-            self.subname=self.fname+config['convext']
+            self.subname=self.fname+config['write_suffix']
             self.fsub = os.path.join(self.odir,self.subname+config['FTYPE'])
 
             if not self.subname == os.path.splitext(os.path.basename(self.fsub))[0]:
@@ -97,7 +97,7 @@ class DirectoryStructure:
         if not os.path.isdir(self.odir):
             os.mkdir(self.odir)
         
-        for dir in [ self.transforms, self.plots, self.exports ]:
+        for dir in [ self.embeddings, self.plots, self.exports ]:
             if not os.path.isdir(dir):
                 os.mkdir(dir)
 
@@ -112,7 +112,7 @@ class DirectoryStructure:
         if not config['FTYPE'] == ".GeoPIXE":
             raise ValueError(f"Filetype {config['FTYPE']} not recognised")
     
-        for dir in [ self.odir, self.transforms, self.plots, self.exports ]:
+        for dir in [ self.odir, self.embeddings, self.plots, self.exports ]:
                 if not os.path.isdir(dir):
                     raise FileNotFoundError(f"Directory {dir} expected but not found")
         

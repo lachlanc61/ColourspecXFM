@@ -169,9 +169,9 @@ def export_show(rgbimg, rvals, gvals, bvals, dirs):
     saves colourmap and displays image
     """
 
-    np.savetxt(os.path.join(dirs.transforms, "colourmap_red.txt"), rvals, delimiter=',')
-    np.savetxt(os.path.join(dirs.transforms, "colourmap_green.txt"), gvals, delimiter=',')
-    np.savetxt(os.path.join(dirs.transforms, "colourmap_blue.txt"), bvals, delimiter=',')
+    np.savetxt(os.path.join(dirs.embeddings, "colourmap_red.txt"), rvals, delimiter=',')
+    np.savetxt(os.path.join(dirs.embeddings, "colourmap_green.txt"), gvals, delimiter=',')
+    np.savetxt(os.path.join(dirs.embeddings, "colourmap_blue.txt"), bvals, delimiter=',')
 
     plt.imshow(rgbimg)
     plt.savefig(os.path.join(dirs.plots, 'colours.png'), dpi=150)

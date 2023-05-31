@@ -97,7 +97,7 @@ def read_raw(args_in):
         rgbarray = None
     #perform clustering
     if args.classify_spectra:
-        pixelseries.categories, pixelseries.classavg, embedding, clusttimes = clustering.run( pixelseries.flattened, dirs.transforms, force_embed=args.force, overwrite=config['OVERWRITE_EXPORTS'] )
+        pixelseries.categories, pixelseries.classavg, embedding, clusttimes = clustering.run( pixelseries.flattened, dirs.embeddings, force_embed=args.force, overwrite=config['OVERWRITE_EXPORTS'] )
         
         vis.plot_clusters(pixelseries.categories, pixelseries.classavg, embedding, pixelseries.dimensions)
 #        clustering.complete(pixelseries.categories, pixelseries.classavg, embedding, clusttimes, xfmap.energy, xfmap.xres, xfmap.yres, config['nclust'], dirs.plots)

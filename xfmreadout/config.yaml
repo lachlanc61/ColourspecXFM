@@ -17,14 +17,13 @@ CHUNKSIZE_FALLBACK: 1000    #(Mb) chunk size if cannot be determined from vmem
 #-----------------------------------
 
 #names of subdirectories for output
-ANADIR: "out"
-OUTDIR: "out"
-TRANSDIR: "transformations"   #destination for exported transformations (eg. embedding, clusters)
+OUTDIR: "out"                 #master directory
+EMBED_DIR: "embeddings"        #destination for exported transformations (eg. embedding, clusters)
 PLOTDIR: "plots"              #destination for automatic plots
-EXPORTDIR: "pixeldata"        #destination for extracted data
+EXPORTDIR: "data"             #destination for extracted data
 
 export_filename: "dataset"   #name of spectrum-by-pixel csv
-convext: "_export"  #converted file extension
+write_suffix: "_mod"  #converted file extension
 
 #instrument config
 use_detector: 0
