@@ -63,15 +63,17 @@ def get_elements(files):
 
 def load_maps(filepaths):
 
-    #YMIN=0
-    #YMAX=9999
-    #XMIN=0
-    #XMAX=9999
-    print(f"WARNING: MANUAL CROP ACTIVE")
-    YMIN=100
-    YMAX=275
-    XMIN=50
-    XMAX=600
+    YMIN=0
+    YMAX=9999
+    XMIN=0
+    XMAX=9999
+    
+    if False:
+        print(f"WARNING: MANUAL CROP ACTIVE")
+        YMIN=100
+        YMAX=275
+        XMIN=50
+        XMAX=600
 
     print(filepaths)
 

@@ -122,14 +122,15 @@ def doclustering(embedding, npx):
     DBSCAN_E=0.5   #epsilon: do not separate clusters closer than this value - refer umap min_dist
     DBSCAN_CSIZE=200    #minimum cluster size
     DBSCAN_MINSAMPLES=100   #minimum samples - larger = more conservative, more unclustered points
-
+    DBSCAN_METHOD="eom"
 
     #DBSCAN_E=0.5    #really large clusters
     #DBSCAN_E=0.1   #many small clusters
-    DBSCAN_E=0.5   #smaller clusters
-    DBSCAN_CSIZE=50
-    DBSCAN_MINSAMPLES=200
-    #try leaf instead of eom - look at docs
+    DBSCAN_E=0.1   #epsilon: do not separate clusters closer than this value - refer umap min_dist
+    DBSCAN_CSIZE=5000  #minimum cluster size
+    DBSCAN_MINSAMPLES=1000   #minimum samples - larger = more conservative, more unclustered points
+    DBSCAN_METHOD="leaf"
+        #try leaf instead of eom - look at docs
     #alternately try vanilla DBSCAN
 
 
@@ -145,7 +146,9 @@ def doclustering(embedding, npx):
         min_cluster_size=DBSCAN_CSIZE,
         min_samples=DBSCAN_MINSAMPLES,
         cluster_selection_epsilon=DBSCAN_E,
+        cluster_selection_method=DBSCAN_METHOD,
         gen_min_span_tree=True
+
     )
 
 
@@ -215,7 +218,7 @@ def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_
 
     return 
 
-def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=False):
+def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True):
 
     if force_embed:
         force_clust = True
@@ -268,7 +271,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=F
     else:
         classavg = np.load(file_classes)
 
-    return categories, classavg, embedding, clusttimes
+    return categories, classavg, embedding, clusttimes, classifier
 
 
 #-----------------------------------
