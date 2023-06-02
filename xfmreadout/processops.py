@@ -61,12 +61,7 @@ def get_elements(files):
     return elements, files
 
 
-def load_maps(filepaths):
-
-    YMIN=0
-    YMAX=9999
-    XMIN=0
-    XMAX=9999
+def load_maps(filepaths, x_min=0, x_max=9999, y_min=0, y_max=9999):
     
     if False:
         print(f"WARNING: MANUAL CROP ACTIVE")
@@ -119,9 +114,7 @@ def load_maps(filepaths):
 
     maps=maps[0:emptymax,:,:]
 
-
-
-    maps=maps[YMIN:YMAX,XMIN:XMAX,:]
+    maps=maps[y_min:y_max,x_min:x_max,:]
     print(f"Revised map shape: {maps.shape}")
     data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
     print(f"Data shape: {data.shape}")
@@ -154,7 +147,7 @@ def modify_maps(data, elements):
 
     return data
 
-def compile(image_directory):
+def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
 
     print(image_directory)
 
@@ -164,7 +157,7 @@ def compile(image_directory):
 
     filepaths = [os.path.join(image_directory, file) for file in files ] 
 
-    data, dims = load_maps(filepaths)
+    data, dims = load_maps(filepaths, x_min, x_max, y_min, y_max)
 
     print(elements)
     print(f"data shape: {data.shape}")

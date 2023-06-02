@@ -90,7 +90,9 @@ def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):
 
 
 def show_map(data, elements, dims, ename):
-
+    """
+        display a single map
+    """
     idx = utils.findelement(elements, ename)
 
     maps=remap(data, dims)
@@ -98,7 +100,7 @@ def show_map(data, elements, dims, ename):
     img = maps[:,:,idx]
 
     print(elements[idx])
-    print(np.quantile(img, 0.1), np.quantile(img, 0.5), np.quantile(img, 0.9))
+    print(f"{ename}, max: {np.max(img):.2f}, 98: {np.quantile(img,0.98):.2f}, avg: {np.average(img):.2f}")
 
     fig = plt.figure(figsize=(12,6))
 
@@ -112,7 +114,7 @@ def show_map(data, elements, dims, ename):
 
 def category_map ( categories, dims, palette=None ):
     """
-    image of categories
+        display categories as map image
     """
 
     #KCMAPS=["tab10"]    #colourmaps for kmeans
@@ -146,6 +148,9 @@ def category_map ( categories, dims, palette=None ):
     #fig.savefig(os.path.join(EMBED_DIR,"cluster_map.png"), dpi=200)
 
 def category_avgs(categories, elements, classavg, palette=None ):
+    """
+        display category spectra
+    """
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
 
@@ -171,7 +176,7 @@ def category_avgs(categories, elements, classavg, palette=None ):
 
 def category_boxplots(data, categories, elements):
     """
-    category:element boxplots
+    display category:element boxplots
     """
 
     ncats=np.max(categories)+1
@@ -207,7 +212,9 @@ def category_boxplots(data, categories, elements):
     fig.show()
 
 def seaborn_embedplot(embedding, categories, palette=None):
-
+    """
+    display seaborn plot of embedding space
+    """
 
     if palette is None:
         log.warning(f"palette not given, building from categories")
@@ -236,7 +243,9 @@ def seaborn_embedplot(embedding, categories, palette=None):
 
 def seaborn_kdeplot(embedding, categories):
     """
-    kde plot filled with colors with transparent background
+    display  plot of embedding space as kernel density
+    
+    filled colors, transparent background
 
     """
     x=embedding.T[0]
@@ -252,16 +261,12 @@ def seaborn_kdeplot(embedding, categories):
     
     #ax = sns.despine(ax=None, left=True, bottom=True)
 
-
-
     plt.show()
-
-#
 
 def seaborn_kdecontours(embedding, categories):
     """
-    kde plot filled with colors with transparent background
-
+    display  plot of embedding space as contours
+    
     """
     x=embedding.T[0]
     y=embedding.T[1]
@@ -283,23 +288,23 @@ def seaborn_kdecontours(embedding, categories):
 
 
 def plot_clusters(categories, classavg, embedding, dims):
+    """
+    display all plots for clusters
+    
+    """
 
     palette=build_palette(categories)
 
-#    xplots.show_map(data, elements, dims, 'Fe')
-
     category_map(categories, dims, palette=palette)
-    
-#    xplots.category_avgs(categories, labels, classavg, palette=palette)
 
     seaborn_embedplot(embedding, categories, palette=palette)
 
     return palette
 
-#    xplots.seaborn_kdeplot(embedding, categories)
-
-#   xplots.seaborn_kdecontours(embedding, categories)
 
 def plot_classes(categories, labels, classavg, palette):
+    """
+    display details for categories
     
+    """
     category_avgs(categories, labels, classavg, palette=palette)    
