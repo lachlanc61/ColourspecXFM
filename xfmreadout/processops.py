@@ -12,8 +12,14 @@ AUTOSAVE = True
 
 EMBED_DIRNAME = "embedding"
 
-IGNORE_ELEMENTS=['sum','Back','Compton','Mo','MoL']
+#IGNORE_LINES=['sum','Back','Compton','Mo','MoL']
+IGNORE_LINES=['Ar']
+CUSTOM_LINES=['sum','Back','Compton']
+Z_CUTOFFS=[11, 55, 37, 73]       #K min, K max, L min, M min
 
+MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si', 'Cl', 'sum', 'Back', 'Mo', 'MoL', 'Compton']
+MODIFY_NORMS = [ 0.005, 0.01, 0.025, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.5 ]
+BASEFACTOR=1/100000 #ppm to wt%
 
 def get_elements(files):
     """
@@ -24,11 +30,21 @@ def get_elements(files):
 
     """
     elements=[]
-    true_elements = []
+    possible_lines = []
     keepfiles=[]    
 
+    #use the periodic table and known z-cutoffs to get possible lines
     for ptelement in pt.elements:
-        true_elements.append(ptelement.symbol)
+        #add three versions of the line: K (unlabelled), L, M
+        if ptelement.number >= Z_CUTOFFS[0] and ptelement.number <= Z_CUTOFFS[1]:
+            possible_lines.append(ptelement.symbol)
+        if ptelement.number >= Z_CUTOFFS[2]:
+            possible_lines.append(ptelement.symbol+"L")
+        if ptelement.number >= Z_CUTOFFS[3]:            
+            possible_lines.append(ptelement.symbol+"M")
+
+    for line in CUSTOM_LINES:
+        possible_lines.append(line)
 
     for fname in files:
 
@@ -38,9 +54,9 @@ def get_elements(files):
             print(f"WARNING: no element found in {fname}")
             found=''
         finally:
-            if found in IGNORE_ELEMENTS:
+            if found in IGNORE_LINES:
                 pass
-            elif found in true_elements:
+            elif found in possible_lines:
                 elements.append(found)
                 keepfiles.append(fname)
             else:
@@ -125,13 +141,6 @@ def load_maps(filepaths, x_min=0, x_max=9999, y_min=0, y_max=9999):
     return data, dims
 
 def modify_maps(data, elements):
-    #BASEFACTOR=100000   #ppm to wt%
-    BASEFACTOR=1/100000
-    MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si', 'Cl']
-    #MODIFY_FACTORS = [ 1000, 50, 20, 30 ]
-    #MODIFY_FACTORS = [ 100, 5, 2, 3 ] <--best manual
-    #MODIFY_FACTORS = [ 100, 5, 1, 1.5 ]
-    MODIFY_FACTORS = [ 0.005, 0.01, 0.025, 0.1, 0.1]
 
     #iterate through all elements
     for i in range(data.shape[1]):
@@ -141,7 +150,7 @@ def modify_maps(data, elements):
         #   then norm to MODIFY_FACTOR
         for idx, sname in enumerate(MODIFY_LIST):
             if elements[i] == sname:
-                factor=MODIFY_FACTORS[idx]/np.max(data[:,i])
+                factor=MODIFY_NORMS[idx]/np.max(data[:,i])
 
         data[:,i]=(data[:,i]*factor)
 

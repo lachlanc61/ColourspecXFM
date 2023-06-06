@@ -140,6 +140,7 @@ def read_processed(args_in):
 
 
 if __name__ == '__main__':
-    entry_raw()      
+#    entry_raw()      
+    entry_processed()
 
     sys.exit()
