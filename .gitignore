@@ -7,7 +7,7 @@ dist/
 out
 data
 tests/out
-
+notebooks/*.png
 
 # Distribution / packaging
 .venv
