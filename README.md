@@ -106,21 +106,24 @@ The file is parsed in three stages:
 
 # Analytics and visualisations
 
-Spectra are mapped to an RGB colourspace using a HSV colourmap:
+Spectra are categorised via hierachical density-based methods to produce a classified map, with class-average spectra for further processing:
+<p align="left">
+  <img src="./docs/IMG/geo_category_map.png" alt="Spectrum" width="1024">
+  <br />
+</p>
+<p align="left">
+  <img src="./docs/IMG/geo_sns_embed.png" alt="Spectrum" width="1024">
+  <br />
+</p>
+
+Spectra are also mapped to an RGB colourspace using a HSV colourmap to produce an at-a-glance visualisation of the mapped regions:
 
 <p align="left">
   <img src="./docs/IMG/hsv_spectrum2.png" alt="Spectrum" width="700">
   <br />
 </p>
 
-An X*Y map is created using these RGB values to produce an at-a-glance visualisation of the mapped regions:
 <p align="left">
   <img src="./docs/IMG/geo_colours2.png" alt="Spectrum" width="700">
-  <br />
-</p>
-
-Spectra are categorised via PCA, UMAP and K-means to produce a classified map and class-average spectra for further processing:
-<p align="left">
-  <img src="./docs/IMG/geo_clusters.png" alt="Spectrum" width="1024">
   <br />
 </p>
