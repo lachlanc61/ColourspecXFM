@@ -17,8 +17,8 @@ IGNORE_LINES=['Ar']
 CUSTOM_LINES=['sum','Back','Compton']
 Z_CUTOFFS=[11, 55, 37, 73]       #K min, K max, L min, M min
 
-MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si', 'Cl', 'sum', 'Back', 'Mo', 'MoL', 'Compton']
-MODIFY_NORMS = [ 0.005, 0.01, 0.025, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.5 ]
+MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si', 'Cl', 'sum', 'Back', 'Mo', 'MoL', 'Compton', 'S']
+MODIFY_NORMS = [ 0.005, 0.01, 0.025, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0 ]
 BASEFACTOR=1/100000 #ppm to wt%
 
 def get_elements(files):

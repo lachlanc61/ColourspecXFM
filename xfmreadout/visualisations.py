@@ -119,7 +119,7 @@ def category_map ( categories, dims, palette=None ):
 
     #KCMAPS=["tab10"]    #colourmaps for kmeans
 
-    fig = plt.figure(figsize=(12,6))
+    fig = plt.figure(figsize=(24,12))
     ax = fig.add_subplot(111)
 
     ncats=np.max(categories)+2
@@ -138,6 +138,8 @@ def category_map ( categories, dims, palette=None ):
 
     print(np.min(categories))
     print(np.min(catmap))
+
+    ax.tick_params(axis='both', which='major', labelsize=16)
 
     #show this category image
     ax.imshow(catmap, cmap=cmap)

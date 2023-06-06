@@ -127,7 +127,7 @@ def doclustering(embedding, npx):
     #DBSCAN_E=0.5    #really large clusters
     #DBSCAN_E=0.1   #many small clusters
     DBSCAN_E=0.1   #epsilon: do not separate clusters closer than this value - refer umap min_dist
-    DBSCAN_CSIZE=5000  #minimum cluster size
+    DBSCAN_CSIZE=1000  #minimum cluster size
     DBSCAN_MINSAMPLES=500   #minimum samples - larger = more conservative, more unclustered points
     DBSCAN_METHOD="leaf"
         #try leaf instead of eom - look at docs
