@@ -99,7 +99,7 @@ def show_map(data, elements, dims, ename):
 
     img = maps[:,:,idx]
 
-    print(elements[idx])
+    print(f"ELEMENT MAP: {elements[idx]}")
     print(f"{ename}, max: {np.max(img):.2f}, 98: {np.quantile(img,0.98):.2f}, avg: {np.average(img):.2f}")
 
     fig = plt.figure(figsize=(12,6))

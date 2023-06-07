@@ -77,16 +77,12 @@ def get_elements(files):
     return elements, files
 
 
-def load_maps(filepaths, x_min=0, x_max=9999, y_min=0, y_max=9999):
-    
-    if False:
-        print(f"WARNING: MANUAL CROP ACTIVE")
-        YMIN=100
-        YMAX=275
-        XMIN=50
-        XMAX=600
+def maps_load(filepaths):
+    """
+    load maps from datafiles, cleanup and reshape
 
-    print(filepaths)
+    return dataset and dimensions
+    """    
 
     #load an image and check dimensions
     im = Image.open(filepaths[0])
@@ -107,40 +103,65 @@ def load_maps(filepaths, x_min=0, x_max=9999, y_min=0, y_max=9999):
             maps[:,:,i]=img
             i+=1
 
-    print(f"Map shape: {maps.shape}")
+    return maps
 
-    emptymin=0
-    emptymax=0
-    for i in range(maps.shape[0]):
-        nmax=np.max(maps[i,:,:])
-        navg=np.average(maps[i,:,:])
-        #print(f"ROW {i}, max: {nmax}, avg: {navg}")
-        if nmax == 0:
-            
-            if emptymin == 0:
-                emptymin=i
-                emptymax=i
-                print(f"EMPTY ROW at {i}")
-            elif emptymax == (i-1):
-                emptymax = i
-                print(f"EMPTY ROW at {i}")
-            else:
-                emptymax = i
-                print(f"WARNING: DISCONTIGUOUS EMPTY ROW at {i}")
+def maps_unroll(maps):
+    """
+    reshape map (x, y, counts) to data (i, counts)
 
-    maps=maps[0:emptymax,:,:]
+    returns dataset and dimensions
+    """
 
-    maps=maps[y_min:y_max,x_min:x_max,:]
-    print(f"Revised map shape: {maps.shape}")
     data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
-    print(f"Data shape: {data.shape}")
+
+    print(f"Final shape: {data.shape}")
 
     dims=maps[:,:,0].shape
-    #data=np.swapaxes(data,0,1)
 
     return data, dims
 
-def modify_maps(data, elements):
+def maps_cleanup(maps):
+    """
+    discard empty rows at end of map
+    """
+
+    print(f"Initial shape: {maps.shape}")
+
+    empty_begin=0
+    empty_last=0
+    for i in range(maps.shape[0]):
+        row_maxcounts=np.max(maps[i,:,:])
+        if row_maxcounts == 0:
+            if empty_begin == 0:
+                empty_begin=i
+                empty_last=i
+                print(f"WARNING: found empty row at {i} of {maps.shape[0]-1}")
+            elif empty_last == (i-1):
+                empty_last = i
+            else:
+                empty_last = i
+                print(f"WARNING: DISCONTIGUOUS EMPTY ROW at {i}")
+
+    maps=maps[0:empty_begin,:,:]
+    print(f"Revised shape: {maps.shape}")
+
+    return maps
+
+
+def maps_crop(maps, x_min=0, x_max=9999, y_min=0, y_max=9999):
+    """
+    crop map to designated size
+    """     
+    maps=maps[y_min:y_max,x_min:x_max,:]        #will likely fail if default out of range
+
+    dims=maps[:,:,0].shape
+
+    print(f"Cropped shape: {maps.shape}")
+
+    return maps
+
+
+def data_normalise(data, elements):
 
     #iterate through all elements
     for i in range(data.shape[1]):
@@ -151,14 +172,23 @@ def modify_maps(data, elements):
         for idx, sname in enumerate(MODIFY_LIST):
             if elements[i] == sname:
                 factor=MODIFY_NORMS[idx]/np.max(data[:,i])
+                print(f"--- scaling {sname} to {MODIFY_NORMS[idx]}")
 
         data[:,i]=(data[:,i]*factor)
 
     return data
 
 def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
+    """
+    read tiffs from image directory 
+    
+    return corrected 2D stack, array of elements, and dimensions
+    """
 
-    print(image_directory)
+    print("-----------------")
+    print("BEGIN reading processed data")
+    print(f"Location: {image_directory}")
+    print("-----")
 
     files = [f for f in os.listdir(image_directory) if f.endswith('.tiff')]
 
@@ -166,16 +196,20 @@ def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
 
     filepaths = [os.path.join(image_directory, file) for file in files ] 
 
-    data, dims = load_maps(filepaths, x_min, x_max, y_min, y_max)
+    maps = maps_load(filepaths)
 
+    maps = maps_cleanup(maps)
+
+    maps = maps_crop(maps, x_min, x_max, y_min, y_max)
+
+    data, dims = maps_unroll(maps)
+
+    print("-----")
+    print("Elements identified:")
     print(elements)
-    print(f"data shape: {data.shape}")
-    #print(f"----{elements[8]} tracker: {np.max(data[:,8])}")    #DEBUG
 
-    data = modify_maps(data, elements)
+    data = data_normalise(data, elements)
 
-    #print(f"-----{elements[8]} tracker: {np.max(data[:,8])}")   #DEBUG
-
-    #print(maps.shape, data.shape)
-
+    print("-----------------")
+    
     return data, elements, dims
