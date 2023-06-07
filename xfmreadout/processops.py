@@ -47,21 +47,21 @@ def get_elements(files):
         possible_lines.append(line)
 
     for fname in files:
-
         try:
             found=re.search('\-(\w+)\.', fname).group(1)
         except AttributeError:
             print(f"WARNING: no element found in {fname}")
             found=''
         finally:
-            if found in IGNORE_LINES:
+            if found == "var":
+                pass
+            elif found in IGNORE_LINES:
                 pass
             elif found in possible_lines:
                 elements.append(found)
                 keepfiles.append(fname)
             else:
-                pass
-               # print(f"WARNING: Unexpected element {found} not used")
+               print(f"WARNING: Unexpected element {found} not used")
 
     files = keepfiles
     if len(elements) == len(files):
@@ -76,6 +76,16 @@ def get_elements(files):
 
     return elements, files
 
+
+def get_variance_files(elements, files):
+
+    for fname in files:
+        try:
+            found=re.search('\-(\w+)-var\.', fname).group(1)
+            print(f"var: {found}")
+        except AttributeError:
+            found=''
+    return 
 
 def maps_load(filepaths):
     """
@@ -190,11 +200,16 @@ def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
     print(f"Location: {image_directory}")
     print("-----")
 
-    files = [f for f in os.listdir(image_directory) if f.endswith('.tiff')]
+    files_all = [f for f in os.listdir(image_directory) if f.endswith('.tiff')]
 
-    elements, files = get_elements(files)
+    elements, files_maps = get_elements(files_all)
 
-    filepaths = [os.path.join(image_directory, file) for file in files ] 
+    files_variance = get_variance_files(elements, files_all)
+    #read variance
+    #repeat below for var
+    #need to check for element map w/o variance and create dummy
+    
+    filepaths = [os.path.join(image_directory, file) for file in files_maps ] 
 
     maps = maps_load(filepaths)
 
@@ -211,5 +226,5 @@ def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
     data = data_normalise(data, elements)
 
     print("-----------------")
-    
+
     return data, elements, dims
