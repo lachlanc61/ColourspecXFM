@@ -2,10 +2,6 @@
 BootStrap: docker
 From: python:3.10.6  
 
-#local cached
-#BootStrap: localimage
-#From: /home/lachlan/SIFSTORE/python_3.10.6.sif
-
 %files
 #   apptainer doesn't seem to have an equivalent to .dockerignore 
 #   need to list everything explicitly to avoid unwanted data in the container
@@ -29,15 +25,16 @@ From: python:3.10.6
     
     #install main package
     pip install /app
-    pip uninstall --yes 'python /app/setup.py --name'
+
+    #remove it again to leave dependencies only
+    pip uninstall --yes xfmreadout
 
 #%test
-#not working, needs to be able to write to /app folder
-#    cd /app
-#    pytest
+#   doesn't work, need to be able to write to /app folder
+#   test in build wrapper instead
 
 %runscript
-    #echo "This is what happens when you run the container..."
+    #This is what happens when you run the container
     echo "Arguments received: $*"
     exec echo "$@"
     exec bash

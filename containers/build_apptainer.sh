@@ -5,6 +5,8 @@ IMAGENAME='xfmreadout_latest'
 
 APPDIR="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE}")")")"
 
+cd $APPDIR/containers
+
 apptainer build $SIFDIR/${IMAGENAME}.sif $APPDIR/containers/apptainer.def
 
 #test
