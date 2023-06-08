@@ -218,10 +218,13 @@ def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_
 
     return 
 
-def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True):
+def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True, sqrt=True):
 
     if force_embed:
         force_clust = True
+
+    #start a timer
+    starttime = time.time() 
 
     file_embed=os.path.join(output_dir,"embedding.npy")
     file_cats=os.path.join(output_dir,"categories.npy")
@@ -235,6 +238,9 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
 
     totalpx = data.shape[0]
     n_channels = data.shape[1]
+
+    if sqrt:
+        data=np.sqrt(data)
 
     #   produce reduced-dim embedding per reducer
     if force_embed or not exists_embed:
@@ -271,6 +277,18 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
             np.save(file_classes,classavg)
     else:
         classavg = np.load(file_classes)
+
+    #complete the timer
+    runtime = time.time() - starttime
+
+    print(
+    "---------------------------\n"
+    "CLASSIFICATION COMPLETE\n"
+    "---------------------------\n"
+    f"total time: {round(runtime,2)} s\n"
+    f"time per pixel: {round((runtime/totalpx),6)} s\n"
+    "---------------------------"
+    )
 
     return categories, classavg, embedding, clusttimes, classifier
 

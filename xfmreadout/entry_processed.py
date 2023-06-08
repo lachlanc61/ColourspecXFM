@@ -1,3 +1,4 @@
+import time
 import sys
 import os
 import numpy as np
@@ -61,7 +62,7 @@ def read_processed(args_in):
     data, dims = processops.data_crop(data, dims, args.x_coords[0], args.x_coords[1], args.y_coords[0], args.y_coords[1])
 
     overwrite = ( args.force or args.force_clustering )
-    categories, classavg, embedding, clusttimes, classifier = clustering.run(data, image_directory, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
+    categories, classavg, embedding, clusttimes, classifier = clustering.run(data, image_directory, sqrt=True, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
 
     vis.plot_clusters(categories, classavg, embedding, dims, output_directory=output_directory)
 
