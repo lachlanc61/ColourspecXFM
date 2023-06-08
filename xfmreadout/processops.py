@@ -5,7 +5,7 @@ import periodictable as pt
 from PIL import Image
 
 import xfmreadout.clustering as clustering
-
+import xfmreadout.utils as utils
 
 FORCE = True
 AUTOSAVE = True
@@ -76,16 +76,49 @@ def get_elements(files):
 
     return elements, files
 
-
 def get_variance_files(elements, files):
+    """
+    search for variance sidecar files in filelist
+
+    return list of variance files, with order matching elements
+
+    raise an error if one is missing
+    """
+
+    variance_files = []
+
+    variance_present = False
 
     for fname in files:
         try:
-            found=re.search('\-(\w+)-var\.', fname).group(1)
-            print(f"var: {found}")
+            symbol=re.search('\-(\w+)-var\.', fname).group(1)
         except AttributeError:
-            found=''
-    return 
+            symbol=''
+        if symbol != '':
+            variance_present = True
+            break
+
+    if variance_present:
+
+        for element in elements:
+
+            found_variance = False
+
+            for fname in files:
+                try:
+                    symbol=re.search('\-(\w+)-var\.', fname).group(1)
+                except AttributeError:
+                    symbol=''
+
+                if symbol == element:
+                    variance_files.append(fname)
+                    found_variance = True
+                    break
+
+            if found_variance == False:
+                raise FileNotFoundError(f"No variance found for element {element}")
+
+    return variance_files
 
 def maps_load(filepaths):
     """
@@ -113,30 +146,14 @@ def maps_load(filepaths):
             maps[:,:,i]=img
             i+=1
 
+    print(f"Initial shape: {maps.shape}")
+
     return maps
-
-def maps_unroll(maps):
-    """
-    reshape map (x, y, counts) to data (i, counts)
-
-    returns dataset and dimensions
-    """
-
-    data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
-
-    print(f"Final shape: {data.shape}")
-
-    dims=maps[:,:,0].shape
-
-    return data, dims
 
 def maps_cleanup(maps):
     """
     discard empty rows at end of map
     """
-
-    print(f"Initial shape: {maps.shape}")
-
     empty_begin=0
     empty_last=0
     for i in range(maps.shape[0]):
@@ -158,19 +175,6 @@ def maps_cleanup(maps):
     return maps
 
 
-def maps_crop(maps, x_min=0, x_max=9999, y_min=0, y_max=9999):
-    """
-    crop map to designated size
-    """     
-    maps=maps[y_min:y_max,x_min:x_max,:]        #will likely fail if default out of range
-
-    dims=maps[:,:,0].shape
-
-    print(f"Cropped shape: {maps.shape}")
-
-    return maps
-
-
 def data_normalise(data, elements):
 
     #iterate through all elements
@@ -187,6 +191,75 @@ def data_normalise(data, elements):
         data[:,i]=(data[:,i]*factor)
 
     return data
+
+
+def data_normalise_to_sd(data, sd, elements):
+
+    SD_MULTIPLE = 2
+    DIRECT_MAPS = ["Compton", "sum", "Back"]
+    result = np.ndarray(data.shape, dtype=np.float32)
+
+    #iterate through all elements
+    for i in range(data.shape[1]):
+        avg_sd = np.average(sd[:,i])
+        avg_data = np.average(data[:,i])
+        ratio=avg_sd*SD_MULTIPLE/avg_data
+        print(f"{elements[i]} -- data: {avg_data}, var: {avg_sd}, ratio: {ratio}")
+
+        if elements[i] not in DIRECT_MAPS:
+            if ratio >= 1:
+                result[:,i] = data[:,i]/ratio
+            else:
+                result[:,i] = data[:,i]
+            result[:,i] = np.where(result[:,i]<0, 0, result[:,i])
+
+        else:
+            result[:,i] = data[:,i]/np.max(data[:,i])
+
+    return result
+
+
+def variance_to_std(data):
+    result = np.sqrt(data)
+    return result
+
+def ppm_to_wt(data):
+    result = data*BASEFACTOR
+    return result
+
+def data_crop(data, dims, x_min=0, x_max=9999, y_min=0, y_max=9999):
+    """
+    crop map to designated size
+    """     
+    maps = utils.map_roll(data, dims)
+
+    print(f"Pre-crop shape: {maps.shape}")
+
+    maps=maps[y_min:y_max,x_min:x_max,:]        #will likely fail if default out of range
+
+    dims=maps[:,:,0].shape
+
+    print(f"Cropped shape: {maps.shape}")
+
+    ret_data, ret_dims = utils.map_unroll(maps)
+
+    return ret_data, ret_dims
+
+
+def extract_data(image_directory, files, variance=False):
+
+    filepaths = [os.path.join(image_directory, file) for file in files ] 
+
+    maps = maps_load(filepaths)
+
+    if not variance:
+        maps = maps_cleanup(maps)
+
+    data, dims = utils.map_unroll(maps)
+
+    print("-----")
+
+    return data, dims
 
 def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
     """
@@ -205,26 +278,35 @@ def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
     elements, files_maps = get_elements(files_all)
 
     files_variance = get_variance_files(elements, files_all)
-    #read variance
-    #repeat below for var
-    #need to check for element map w/o variance and create dummy
-    
-    filepaths = [os.path.join(image_directory, file) for file in files_maps ] 
 
-    maps = maps_load(filepaths)
+    print(f"Map files found: {len(files_maps)}")
+    print(f"Elements identified: {elements}")
 
-    maps = maps_cleanup(maps)
+    if len(files_maps) != len(files_variance):
+        raise ValueError("Mismatch between map and variance files")
 
-    maps = maps_crop(maps, x_min, x_max, y_min, y_max)
+    print("-----------------")    
+    print(f"READING MAP DATA")
+    data, dims = extract_data(image_directory, files_maps)
+    data = ppm_to_wt(data)
 
-    data, dims = maps_unroll(maps)
+    print("-----------------")
+    print(f"READING VARIANCE DATA")
+    var_data, var_dims = extract_data(image_directory, files_variance, variance=True)
+    sd_data = variance_to_std(var_data)
+    sd_data = ppm_to_wt(sd_data)
+    sd_dims = var_dims
 
-    print("-----")
-    print("Elements identified:")
-    print(elements)
+#    if dims != var_dims:
+#        raise ValueError("Mismatch between map and variance dimensions")        
 
-    data = data_normalise(data, elements)
+
+    data = data_normalise_to_sd(data, sd_data, elements)
 
     print("-----------------")
 
-    return data, elements, dims
+    data, dims = data_crop(data, dims, x_min, x_max, y_min, y_max)
+
+    print(f"Final shape: {data.shape}")
+
+    return data, elements, dims, sd_data, sd_dims

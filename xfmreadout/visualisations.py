@@ -17,18 +17,6 @@ logging.basicConfig(format='%(message)s')
 log = logging.getLogger(__name__)
 
 
-def remap(indata, dims):
-    """
-    restores map from linear data + map dimensions
-    """
-    print(indata.shape)
-    if np.shape(indata.shape)[0] == 2:
-        return indata.reshape(dims[0], dims[1], -1)
-    else:
-        return indata.reshape(dims[0], -1)
-
-
-
 def shuffle_palette(palette):
     """
     shuffles palette into N blocks of spaced sequential colours
@@ -89,13 +77,13 @@ def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):
     return palette
 
 
-def show_map(data, elements, dims, ename):
+def show_map(data, dims, elements, ename):
     """
         display a single map
     """
     idx = utils.findelement(elements, ename)
 
-    maps=remap(data, dims)
+    maps=utils.map_roll(data, dims)
 
     img = maps[:,:,idx]
 
@@ -134,7 +122,7 @@ def category_map ( categories, dims, palette=None ):
 
     cmap = colors.ListedColormap(palette)
 
-    catmap=remap(categories+1,dims)
+    catmap=utils.map_roll(categories+1,dims)
 
     print(np.min(categories))
     print(np.min(catmap))

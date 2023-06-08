@@ -276,3 +276,27 @@ def findelement(elements: list, target:str):
     for idx, name in enumerate(elements):
         if name == target:
             return idx
+
+
+def map_roll(indata, dims):
+    """
+    restores map from linear data + map dimensions
+    """
+    print(indata.shape)
+    if np.shape(indata.shape)[0] == 2:
+        return indata.reshape(dims[0], dims[1], -1)
+    else:
+        return indata.reshape(dims[0], -1)
+    
+def map_unroll(maps):
+    """
+    reshape map (x, y, counts) to data (i, counts)
+
+    returns dataset and dimensions
+    """
+
+    data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
+
+    dims=maps[:,:,0].shape
+
+    return data, dims
