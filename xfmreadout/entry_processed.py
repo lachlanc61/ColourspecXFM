@@ -64,7 +64,7 @@ def read_processed(args_in):
     
     elements, data, dims, sd_data, sd_dims = processops.compile(image_directory)
 
-    data, dims = processops.data_crop(data, dims, 100, 500, 150, 350)
+    data, dims = processops.data_crop(data, dims, args.x_coords[0], args.x_coords[1], args.y_coords[0], args.y_coords[1])
 
     overwrite = ( args.force or args.force_clustering )
     categories, classavg, embedding, clusttimes, classifier = clustering.run(data, image_directory, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)

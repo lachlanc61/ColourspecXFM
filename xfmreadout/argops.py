@@ -224,6 +224,24 @@ def readargs(args_in, config):
     return args
 
 
+
+def checkargs_processed(args, config):
+    """
+    sanity check on arg combinations
+    """
+    if args.x_coords == None:
+        args.x_coords = [ 0, int(999999)]
+    if args.y_coords == None:
+        args.y_coords = [0 , int(999999)]
+
+    if (args.x_coords[0] >= args.x_coords[1]):
+        raise ValueError("First x_coordinate must be < second x_coordinate")
+    if (args.y_coords[0] >= args.x_coords[1]):
+        raise ValueError("First y_coordinate must be < second y_coordinate")
+
+
+    return args
+
 def readargs_processed(args_in, config):
     """
     read in a set of command-line args for analysing processed maps
@@ -247,9 +265,25 @@ def readargs_processed(args_in, config):
     argparser.add_argument(
         "-o", "--output-directory", 
         help="Specify the filepath to be used for outputs"
-        "Results will be placed in a  ./outs/ subfolder within this directory"
-        "Defaults to the directory containing the input file",
+        "Results will be placed in a  ./outputs/ subfolder within this directory"
+        "Defaults to the input directory",
         type=os.path.abspath,
+    )
+    argparser.add_argument(
+        '-x', "--x-coords", 
+        help="Start and end coordinates in X direction"
+        "as: X_start, X_end"
+        "Crop the exported map to these coordinates",
+        nargs='+', 
+        type=int, 
+    )
+    argparser.add_argument(
+        '-y', "--y-coords", 
+        help="Start and end coordinates in Y direction"
+        "as: Y_start, Y_end"
+        "Crop the exported map to these coordinates",
+        nargs='+', 
+        type=int, 
     )
 
     argparser.add_argument(
@@ -266,5 +300,7 @@ def readargs_processed(args_in, config):
 
 
     args = argparser.parse_args(args_in)
+
+    args = checkargs_processed(args, config)
 
     return args
