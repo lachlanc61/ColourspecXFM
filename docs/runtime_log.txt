@@ -37,3 +37,16 @@ parallelize - single proc:                  #f3ea355 30/01/23
 parallelize - multiproc:
     index+parse             
 """
+
+
+
+
+
+
+Processed: wlen_full
+"""
+home                        0.001859 s   510.21 s
+bunya 1c 50m                
+
+
+

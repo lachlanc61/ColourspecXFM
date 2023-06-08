@@ -13,9 +13,11 @@ binds="/tmp,$DATADIR:/data,$APPDIR:/repo"
 
 if [ "$#" -lt 1 ]; then
     echo "ERROR: No arguments given"
-    exit 1
+    #exit 1
 else
     args="$@"
 fi
 
 apptainer exec --containall --bind $binds  $SIFDIR/$IMAGENAME.sif python /repo/xfmreadout/entry_processed.py $args
+
+#apptainer exec --containall --bind $binds  $SIFDIR/$IMAGENAME.sif bash
