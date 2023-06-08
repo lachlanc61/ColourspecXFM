@@ -1,7 +1,13 @@
 SIFDIR=$SIFDIR
 IMAGENAME='xfmreadout_latest'
 APPDIR="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE}")")")"
-DATADIR="$APPDIR/data"
+
+if [[ -z "${DATADIR}" ]]; 
+then
+    DATADIR="$APPDIR/data"
+else
+    DATADIR=$DATADIR
+fi
 
 binds="/tmp,$DATADIR:/data,$APPDIR:/repo"
 
