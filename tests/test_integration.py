@@ -20,7 +20,7 @@ sys.path.append(BASE_DIR)
 
 import xfmreadout.bufferops as bufferops
 import tests.utils_tests as ut
-import xfmreadout.entrypoints as entrypoints
+import xfmreadout.entry_raw as entry_raw
 
 
 #get config
@@ -70,7 +70,7 @@ def test_integration_index(datafiles):
     args_in = ["-f", str(f), "-i", ] + control_args
 
     #run
-    pixelseries, ___ = entrypoints.read_raw(args_in)
+    pixelseries, ___ = entry_raw.read_raw(args_in)
 
     #assert 0
     assert np.allclose(pixelseries.pxlen, expected_pxlen)
@@ -103,7 +103,7 @@ def test_integration_parse(datafiles):
     args_in = [ "-f", str(f), ] + control_args
 
     #run
-    pixelseries, ___ = entrypoints.read_raw(args_in)
+    pixelseries, ___ = entry_raw.read_raw(args_in)
 
     assert np.allclose(pixelseries.data, expected_pxdata)
 
@@ -140,7 +140,7 @@ def test_integration_cycle(datafiles):
     args_in = [ "-f", str(f), "-i", "-w", "-x", "20", "40", "-y", "10", "20", ] + control_args
 
     #run crop/write
-    ___, ___ = entrypoints.read_raw(args_in)
+    ___, ___ = entry_raw.read_raw(args_in)
 
     #use output from crop/write as next input
     f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_mod.GeoPIXE")
@@ -152,7 +152,7 @@ def test_integration_cycle(datafiles):
     next_args_in = [ "-f", f_result, ] + control_args
 
     #run
-    pixelseries, ___ = entrypoints.read_raw(next_args_in)
+    pixelseries, ___ = entry_raw.read_raw(next_args_in)
 
     #check results
     assert np.allclose(pixelseries.data, expected_pxdata)
@@ -197,7 +197,7 @@ def test_integration_index_cpp(datafiles):
     args_in = ["-f", str(f), "-i", ] + control_args
 
     #run
-    pixelseries, ___ = entrypoints.read_raw(args_in)
+    pixelseries, ___ = entry_raw.read_raw(args_in)
 
     #assert 0
     assert np.allclose(pixelseries.pxlen, expected_pxlen)
@@ -230,7 +230,7 @@ def test_integration_parse_cpp(datafiles):
     args_in = [ "-f", str(f), ] + control_args
 
     #run
-    pixelseries, ___ = entrypoints.read_raw(args_in)
+    pixelseries, ___ = entry_raw.read_raw(args_in)
 
     assert np.allclose(pixelseries.data, expected_pxdata)
 
@@ -267,7 +267,7 @@ def test_integration_cycle_cpp(datafiles):
     args_in = [ "-f", str(f), "-i", "-w", "-x", "20", "40", "-y", "10", "20", ] + control_args
 
     #run crop/write
-    ___, ___ = entrypoints.read_raw(args_in)
+    ___, ___ = entry_raw.read_raw(args_in)
 
     #use output from crop/write as next input
     f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_mod.GeoPIXE")
@@ -279,7 +279,7 @@ def test_integration_cycle_cpp(datafiles):
     next_args_in = [ "-f", f_result, ] + control_args
 
     #run
-    pixelseries, ___ = entrypoints.read_raw(next_args_in)
+    pixelseries, ___ = entry_raw.read_raw(next_args_in)
 
     #check results
     assert np.allclose(pixelseries.data, expected_pxdata)
@@ -330,7 +330,7 @@ def test_cycle_unchanged_cpp(datafiles):
     args_in = [ "-f", str(f), "-i", "-w", ] + control_args
 
     #run crop/write
-    ___, ___ = entrypoints.read_raw(args_in)
+    ___, ___ = entry_raw.read_raw(args_in)
 
     #use output from crop/write as next input
     f_result = os.path.join(os.path.dirname(f), "out_ts2_01_sub/ts2_01_sub_mod.GeoPIXE")
@@ -339,7 +339,7 @@ def test_cycle_unchanged_cpp(datafiles):
     next_args_in = [ "-f", f_result, ] + control_args
 
     #run
-    pixelseries, ___ = entrypoints.read_raw(next_args_in)
+    pixelseries, ___ = entry_raw.read_raw(next_args_in)
 
     #check results
     assert np.allclose(pixelseries.data, expected_pxdata)
