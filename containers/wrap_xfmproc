@@ -1,0 +1,15 @@
+SIFDIR=$SIFDIR
+IMAGENAME='xfmreadout_latest'
+APPDIR="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE}")")")"
+DATADIR="$APPDIR/data"
+
+binds="/tmp,$DATADIR:/data,$APPDIR:/repo"
+
+if [ "$#" -lt 1 ]; then
+    echo "ERROR: No arguments given"
+    exit 1
+else
+    args="$@"
+fi
+
+apptainer exec --containall --bind $binds  $SIFDIR/$IMAGENAME.sif python /repo/xfmreadout/entry_processed.py $args
