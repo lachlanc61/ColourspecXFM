@@ -42,6 +42,8 @@ def entry_processed():
     args_in = sys.argv[1:]  #NB: exclude 0 == script name
     read_processed(args_in)
 
+    return
+
 def read_processed(args_in):
     """
     read exported tiffs from geopixe
@@ -57,17 +59,19 @@ def read_processed(args_in):
     image_directory=args.input_directory
     output_directory=os.path.join(image_directory, "outputs")
 
+    if not os.path.isdir(output_directory):
+        os.mkdir(output_directory)
+    
     elements, data, dims, sd_data, sd_dims = processops.compile(image_directory)
 
-    print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
+    data, dims = processops.data_crop(data, dims, 100, 500, 150, 350)
+
     overwrite = ( args.force or args.force_clustering )
     categories, classavg, embedding, clusttimes, classifier = clustering.run(data, image_directory, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
-    print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
 
-    vis.plot_clusters(categories, classavg, embedding, dims)
+    vis.plot_clusters(categories, classavg, embedding, dims, output_directory=output_directory)
 
-    for i in range(len(elements)):
-        print(f"{elements[i]}, max: {np.max(data[:,i]):.2f}, 98: {np.quantile(data[:,i],0.98):.2f}, avg: {np.average(data[:,i]):.2f}")
+    return
 
 if __name__ == '__main__':
  

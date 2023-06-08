@@ -328,7 +328,13 @@ def compile(image_directory):
         data = data_normalise(data, elements)
 
     print("-----------------")
-
     print(f"Final shape: {data.shape}")
+
+    print("-----------------")
+    print(f"Element values:")    
+    for i in range(len(elements)):
+        print(f"{elements[i]}, max: {np.max(data[:,i]):.2f}, 98: {np.quantile(data[:,i],0.98):.2f}, avg: {np.average(data[:,i]):.2f}")
+    print("-----------------")
+
 
     return elements, data, dims, sd_data, sd_dims

@@ -259,6 +259,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     else:
         print("LOADING CATS")
         categories = np.load(file_cats)
+        classifier = None
 
     #   sum and extract class averages
     n_clusters = count_categories(categories)

@@ -1,4 +1,5 @@
 import copy
+import os
 import logging
 import numpy as np
 import seaborn as sns
@@ -131,9 +132,8 @@ def category_map ( categories, dims, palette=None ):
 
     #show this category image
     ax.imshow(catmap, cmap=cmap)
-    plt.savefig('catplot.png', transparent=True)    
 
-    return
+    return fig
 
     #fig.savefig(os.path.join(EMBED_DIR,"cluster_map.png"), dpi=200)
 
@@ -201,6 +201,8 @@ def category_boxplots(data, categories, elements):
 
     fig.show()
 
+    return fig
+
 def seaborn_embedplot(embedding, categories, palette=None):
     """
     display seaborn plot of embedding space
@@ -216,7 +218,7 @@ def seaborn_embedplot(embedding, categories, palette=None):
     ### scatter plot with marginal axes
     sns.set_style('white')
 
-    sns.jointplot(x=x, y=y,
+    embed_plot = sns.jointplot(x=x, y=y,
                 hue=categories, palette=palette,
                 lw=0,
                 joint_kws = dict(alpha=0.01),
@@ -225,11 +227,13 @@ def seaborn_embedplot(embedding, categories, palette=None):
 
     #xlim=[-3,3], ylim=[-3,3],
 
-    ax = sns.despine(ax=None, left=True, bottom=True)
-    plt.savefig('embedplot.png', transparent=True)
+    sns.despine(ax=None, left=True, bottom=True)
+    fig = embed_plot.fig
+
+    #plt.savefig('embedplot.png', transparent=True)
     plt.show()
 
-    return
+    return fig
 
 def seaborn_kdeplot(embedding, categories):
     """
@@ -242,16 +246,20 @@ def seaborn_kdeplot(embedding, categories):
     y=embedding.T[1]
 
     sns.set_style('white')
-    ax = sns.kdeplot(x=x, y=y,
+    kdeplot = sns.kdeplot(x=x, y=y,
                 hue=categories,
                 fill=True,
                 legend=False)
 #    ax.ax_marg_x.remove()
 #    ax.ax_marg_y.remove()
     
+    fig = kdeplot.fig
+
     #ax = sns.despine(ax=None, left=True, bottom=True)
 
     plt.show()
+
+    return fig
 
 def seaborn_kdecontours(embedding, categories):
     """
@@ -277,17 +285,18 @@ def seaborn_kdecontours(embedding, categories):
     plt.show()
 
 
-def plot_clusters(categories, classavg, embedding, dims):
+def plot_clusters(categories, classavg, embedding, dims, output_directory="."):
     """
     display all plots for clusters
     
     """
-
     palette=build_palette(categories)
 
-    category_map(categories, dims, palette=palette)
+    fig_map = category_map(categories, dims, palette=palette)
+    fig_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
 
-    seaborn_embedplot(embedding, categories, palette=palette)
+    fig_embed = seaborn_embedplot(embedding, categories, palette=palette)
+    fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
 
     return palette
 
