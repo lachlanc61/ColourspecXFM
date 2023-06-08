@@ -126,7 +126,7 @@ def read_processed(args_in):
     image_directory=args.input_directory
     output_directory=os.path.join(image_directory, "outputs")
 
-    data, elements, dims = processops.compile(image_directory)
+    elements, data, dims, sd_data, sd_dims = processops.compile(image_directory)
 
     print(f"-----{elements[10]} tracker: {np.max(data[:,10])}")
     overwrite = ( args.force or args.force_clustering )

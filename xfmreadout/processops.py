@@ -176,7 +176,13 @@ def maps_cleanup(maps):
 
 
 def data_normalise(data, elements):
+    """
+    attempt to normalise data in absence of variance stats
+    
+    using pre-set list of approx. normalisation factors
 
+    likely requires hand-tuning for each map
+    """
     #iterate through all elements
     for i in range(data.shape[1]):
         factor=BASEFACTOR
@@ -194,7 +200,12 @@ def data_normalise(data, elements):
 
 
 def data_normalise_to_sd(data, sd, elements):
-
+    """
+    normalise data against standard deviation
+    
+    use ratio of average_sd * 2 : average_conc
+    divide by ratio if < 1
+    """
     SD_MULTIPLE = 2
     DIRECT_MAPS = ["Compton", "sum", "Back"]
     result = np.ndarray(data.shape, dtype=np.float32)
@@ -220,10 +231,16 @@ def data_normalise_to_sd(data, sd, elements):
 
 
 def variance_to_std(data):
+    """
+    convert variance stats to standard deviations via sqrt
+    """
     result = np.sqrt(data)
     return result
 
 def ppm_to_wt(data):
+    """
+    convert from ppm (as-read) to wt% 
+    """
     result = data*BASEFACTOR
     return result
 
@@ -247,6 +264,11 @@ def data_crop(data, dims, x_min=0, x_max=9999, y_min=0, y_max=9999):
 
 
 def extract_data(image_directory, files, variance=False):
+    """
+    get data from list of tiffs
+
+    kwark to specify whether reading variance or maps
+    """
 
     filepaths = [os.path.join(image_directory, file) for file in files ] 
 
@@ -261,7 +283,7 @@ def extract_data(image_directory, files, variance=False):
 
     return data, dims
 
-def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
+def compile(image_directory):
     """
     read tiffs from image directory 
     
@@ -278,6 +300,9 @@ def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
     elements, files_maps = get_elements(files_all)
 
     files_variance = get_variance_files(elements, files_all)
+    
+    if files_variance != []:
+        variance_found = True
 
     print(f"Map files found: {len(files_maps)}")
     print(f"Elements identified: {elements}")
@@ -290,23 +315,20 @@ def compile(image_directory, x_min=0, x_max=9999, y_min=0, y_max=9999):
     data, dims = extract_data(image_directory, files_maps)
     data = ppm_to_wt(data)
 
+    if variance_found:
+        print("-----------------")
+        print(f"READING VARIANCE DATA")
+        var_data, var_dims = extract_data(image_directory, files_variance, variance=True)
+        sd_data = variance_to_std(var_data)
+        sd_data = ppm_to_wt(sd_data)
+        sd_dims = var_dims
+
+        data = data_normalise_to_sd(data, sd_data, elements)
+    else:
+        data = data_normalise(data, elements)
+
     print("-----------------")
-    print(f"READING VARIANCE DATA")
-    var_data, var_dims = extract_data(image_directory, files_variance, variance=True)
-    sd_data = variance_to_std(var_data)
-    sd_data = ppm_to_wt(sd_data)
-    sd_dims = var_dims
-
-#    if dims != var_dims:
-#        raise ValueError("Mismatch between map and variance dimensions")        
-
-
-    data = data_normalise_to_sd(data, sd_data, elements)
-
-    print("-----------------")
-
-    data, dims = data_crop(data, dims, x_min, x_max, y_min, y_max)
 
     print(f"Final shape: {data.shape}")
 
-    return data, elements, dims, sd_data, sd_dims
+    return elements, data, dims, sd_data, sd_dims
