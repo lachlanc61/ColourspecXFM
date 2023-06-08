@@ -1,17 +1,11 @@
-import time
 import sys
 import os
 import numpy as np
 
 import xfmreadout.utils as utils
 import xfmreadout.argops as argops
-import xfmreadout.colour as colour
 import xfmreadout.clustering as clustering
 import xfmreadout.visualisations as vis
-import xfmreadout.structures as structures
-import xfmreadout.dtops as dtops
-import xfmreadout.parser as parser
-import xfmreadout.diagops as diagops
 import xfmreadout.processops as processops
 
 """
