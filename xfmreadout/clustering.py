@@ -88,7 +88,6 @@ def find_operator(list, target_name: str):
     raise ValueError(f"{target_name} not a valid operator")
 
 
-
 def multireduce(data, target_components=2):
     """
     perform dimensionality reduction
@@ -121,64 +120,22 @@ def multireduce(data, target_components=2):
 
     return reducer, embedding, clusttimes
 
-def reduce(data, reducer, args):
-    """
-    perform dimensionality reduction
-    args:       data
-    returns:    embedding matrix, time per cluster
-    """
-    """
-    for reducer, args in reducers:
-        redname=getredname(i)
-        embed = reducer(**args).fit_transform(data)
-    """
-    
-    """    
-    umapper = umap.UMAP(
-        n_components=n_components,
-        n_neighbors=300, 
-        min_dist=0.1, 
-        low_memory=True, 
-        verbose=True
-    )
-    """
 
-    redname=get_operator_name(reducer)
-
-    npx=data.shape[0]
-
-    start_time = time.time()
-
-    print(f'Dimensionality reduction via {redname} across {npx} elements')
-    #do it
-    reducer.fit(data)
-    
-    embedding = reducer.transform(data)
-
-    #_transform(data)
-    
-    clusttimes = time.time() - start_time
-
-    return reducer, embedding, clusttimes
-
-
-def doclustering(embedding, npx):
+def doclustering(embedding):
     """
     performs clustering on embedding to produce final clusters
 
     args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
-    #DEFAULTS
 
-    hdbscan = CLUSTERERS[1][0]
+    print("RUNNING CLASSIFIER")
+    classifier_list = CLUSTERERS
 
-    print("RUNNING CLUSTERING")
-    classifier = hdbscan
-
-    categories=np.zeros((npx),dtype=np.uint16)
-
-    classifier.fit(embedding)
+    operator, args = find_operator(classifier_list, "HDBSCAN")
+        
+    classifier = operator(**args)
+    embedding = classifier.fit(embedding)
 
     categories=classifier.labels_
 
