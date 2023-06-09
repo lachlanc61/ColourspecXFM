@@ -10,9 +10,11 @@ from sklearn.cluster import KMeans
 #-----------------------------------
 #CONSTANTS
 #-----------------------------------
-KMEANS_CLUSTERS=10
+#REDUCERS
 UMAP_COMPONENTS=2
-KMEANS_COMPONENTS=2
+PCA_COMPONENTS=2
+UMAP_LOW_MEM=False
+UMAP_VERBOSE=False
 
 #DEFAULTS
 DBSCAN_E=0.5   #epsilon: do not separate clusters closer than this value - refer umap min_dist
@@ -26,6 +28,9 @@ DBSCAN_CSIZE=1000  #minimum cluster size
 DBSCAN_MINSAMPLES=500   #minimum samples - larger = more conservative, more unclustered points
 DBSCAN_METHOD="leaf"
 
+#KMEANS
+KMEANS_CLUSTERS=10
+
 #-----------------------------------
 #GROUPS
 #-----------------------------------
@@ -34,7 +39,7 @@ REDUCERS = [
     (umap.UMAP, {"n_components":2, 
         "n_neighbors": 300, 
         "min_dist": 0.1, 
-        "low_memory": True, 
+        "low_memory": UMAP_LOW_MEM, 
         "verbose": True}),
 ]
 
@@ -68,7 +73,7 @@ def get_operation_name(obj):
     else:
         return repr(obj).split("(")[0]
 
-def reduce(data, reducer):
+def reduce(data):
     """
     perform dimensionality reduction
     args:       data
