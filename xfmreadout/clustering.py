@@ -1,5 +1,6 @@
 import time
 import os
+import re
 import hdbscan
 import numpy as np
 import umap.umap_ as umap
@@ -43,6 +44,9 @@ REDUCERS = [
         "verbose": True}),
 ]
 
+
+
+
 CLUSTERERS = [
     (KMeans, {"init":"random", 
         "n_clusters": KMEANS_CLUSTERS, 
@@ -62,53 +66,90 @@ CLUSTERERS = [
 #FUNCTIONS
 #-----------------------------------
 
-def get_operation_name(obj):
+def get_operator_name(operator):
     """
-    get name of reducer from object
-    args:       index of reducer
-    returns:    reducer name
+    extract name of operator from the object
+    eg. extracts "UMAP" from <class umap.umap_.UMAP>
     """
-    if type(obj) == type:
-        return repr(obj()).split("(")[0]
+    if type(operator) == type:
+        return repr(operator()).split("(")[0]
     else:
-        return repr(obj).split("(")[0]
+        return repr(operator).split("(")[0]
 
 
-def reduce2(data, target_components=2):
+def find_operator(list, target_name: str):
+    """
+    search for a particular operator in a list
+    """
+    for operator, args in list:
+        opname=get_operator_name(operator)
+        if re.search(target_name,opname):
+            return operator, args
+    raise ValueError(f"{target_name} not a valid operator")
+
+
+
+def multireduce(data, target_components=2):
     """
     perform dimensionality reduction
     args:       data
     returns:    embedding matrix, time per cluster
     """  
-    data.shape[0]
+    UMAP_CUTOFF=50000000
+    CHAN_CUTOFF=31
 
+    reducer_list=REDUCERS
+    npx=data.shape[0]
+    nchan=data.shape[1]
 
-    pass
+    start_time = time.time()
 
-def reduce(data):
+    if nchan >= CHAN_CUTOFF:
+        operator, args = find_operator(reducer_list, "PCA")
+        args["n_components"]=target_components
+        
+        reducer = operator(**args)
+        embedding = reducer.fit_transform(data)
+    else:
+        operator, args=find_operator(reducer_list, "UMAP")
+        args["n_components"]=target_components        
+        
+        reducer = operator(**args)
+        embedding = reducer.fit_transform(data)
+
+    clusttimes = time.time() - start_time
+
+    return reducer, embedding, clusttimes
+
+def reduce(data, reducer, args):
     """
     perform dimensionality reduction
     args:       data
     returns:    embedding matrix, time per cluster
     """
+    """
+    for reducer, args in reducers:
+        redname=getredname(i)
+        embed = reducer(**args).fit_transform(data)
+    """
+    
+    """    
+    umapper = umap.UMAP(
+        n_components=n_components,
+        n_neighbors=300, 
+        min_dist=0.1, 
+        low_memory=True, 
+        verbose=True
+    )
+    """
 
-    n_components = 2
-
-    #initialise reducer options
-    pca=REDUCERS[0][0]
-
-    umap = REDUCERS[1][0]
-
-    reducer = umap
-    redname=get_operation_name(reducer)
+    redname=get_operator_name(reducer)
 
     npx=data.shape[0]
-    embedding=np.zeros((npx,n_components))
 
     start_time = time.time()
 
     print(f'Dimensionality reduction via {redname} across {npx} elements')
-
     #do it
     reducer.fit(data)
     
@@ -216,7 +257,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     #   produce reduced-dim embedding per reducer
     if force_embed or not exists_embed:
         print("CALCULATING EMBED")
-        reducer, embedding, clusttimes = reduce(data)
+        reducer, embedding, clusttimes = multireduce(data)
         if overwrite or not exists_embed:
             np.save(file_embed,embedding)
         if overwrite or not exists_embed:
