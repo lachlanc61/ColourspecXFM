@@ -73,6 +73,18 @@ def get_operation_name(obj):
     else:
         return repr(obj).split("(")[0]
 
+
+def reduce2(data, target_components=2):
+    """
+    perform dimensionality reduction
+    args:       data
+    returns:    embedding matrix, time per cluster
+    """  
+    data.shape[0]
+
+
+    pass
+
 def reduce(data):
     """
     perform dimensionality reduction
@@ -83,16 +95,16 @@ def reduce(data):
     n_components = 2
 
     #initialise reducer options
-    pca=REDUCERS[0]
+    pca=REDUCERS[0][0]
 
-    umap = REDUCERS[1]
+    umap = REDUCERS[1][0]
 
     reducer = umap
+    redname=get_operation_name(reducer)
 
     npx=data.shape[0]
     embedding=np.zeros((npx,n_components))
 
-    redname=get_operation_name(reducer)
     start_time = time.time()
 
     print(f'Dimensionality reduction via {redname} across {npx} elements')
@@ -118,7 +130,7 @@ def doclustering(embedding, npx):
     """
     #DEFAULTS
 
-    hdbscan = CLUSTERERS[1]
+    hdbscan = CLUSTERERS[1][0]
 
     print("RUNNING CLUSTERING")
     classifier = hdbscan
