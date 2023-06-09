@@ -228,7 +228,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
         print("CALCULATING CATS")        
-        classifier, categories = doclustering(embedding, totalpx)
+        classifier, categories = doclustering(embedding)
         if overwrite or not exists_cats:
             np.save(file_cats,categories)
     else:
