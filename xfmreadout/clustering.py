@@ -57,7 +57,7 @@ CLUSTERERS = [
     (hdbscan.HDBSCAN, {"min_cluster_size": DBSCAN_CSIZE,
         "min_samples": DBSCAN_MINSAMPLES,
         "cluster_selection_epsilon": DBSCAN_E, 
-        "cluster_selection_epsilon": DBSCAN_METHOD,    
+        "cluster_selection_method": DBSCAN_METHOD,    
         "gen_min_span_tree": True }),
 ]
 
@@ -222,7 +222,8 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     else:
         print("LOADING EMBED")
         embedding = np.load(file_embed)
-        clusttimes = np.load(file_ctime)        
+        #clusttimes = np.load(file_ctime)     
+        clusttimes = None   
 
 
     #   calculate clusters from embedding
