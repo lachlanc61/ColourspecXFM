@@ -128,12 +128,15 @@ def doclustering(embedding):
     args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
+    EST_N_CLUSTERS=30
 
     print("RUNNING CLASSIFIER")
     classifier_list = CLUSTERERS
 
     operator, args = find_operator(classifier_list, "HDBSCAN")
-        
+
+    args["min_cluster_size"]=round(embedding.shape[0]/EST_N_CLUSTERS)
+
     classifier = operator(**args)
     embedding = classifier.fit(embedding)
 
