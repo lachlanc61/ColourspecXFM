@@ -50,12 +50,12 @@ Processed: wlen_short
 home                        0.001859    510.21 s
 
 bunya 1c 50g                0.00346     949.4 s
-bunya 1c 128g               
+bunya 1c 128g               0.00321     880.81
 bunya 4c 50g                0.002278    625.17
 bunya 4c 128g               0.002186    599.75
+bunya 4c 256g               0.003395    931.68
 bunya 8c 128g               0.001596    438.05
-bunya 8c 256g               *
-bunya 8c 1t                 
+bunya 8c 256g               0.002192    601.41
 bunya 16c 128g              0.002096    575.02
 bunya 32c 512g              0.002604    714.47
 
