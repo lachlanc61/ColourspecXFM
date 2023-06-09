@@ -1,66 +1,65 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import time
 import os
-
-from matplotlib import cm
-from sklearn import decomposition
-
-from sklearn.cluster import KMeans
-
-import umap.umap_ as umap
 import hdbscan
+import numpy as np
+import umap.umap_ as umap
+
+from sklearn import decomposition
+from sklearn.cluster import KMeans
 
 #-----------------------------------
 #CONSTANTS
 #-----------------------------------
-#KCMAPS=["Accent","Set1"]    #colourmaps for kmeans
-KCMAPS=["tab10","tab10"]    #colourmaps for kmeans
-N_CLUSTERS=10
+KMEANS_CLUSTERS=10
+UMAP_COMPONENTS=2
+KMEANS_COMPONENTS=2
+
+#DEFAULTS
+DBSCAN_E=0.5   #epsilon: do not separate clusters closer than this value - refer umap min_dist
+DBSCAN_CSIZE=200    #minimum cluster size
+DBSCAN_MINSAMPLES=100   #minimum samples - larger = more conservative, more unclustered points
+DBSCAN_METHOD="eom"
+
+#BEST
+DBSCAN_E=0.1   #epsilon: do not separate clusters closer than this value - refer umap min_dist
+DBSCAN_CSIZE=1000  #minimum cluster size
+DBSCAN_MINSAMPLES=500   #minimum samples - larger = more conservative, more unclustered points
+DBSCAN_METHOD="leaf"
 
 #-----------------------------------
-#LISTS
+#GROUPS
 #-----------------------------------
-"""
-#full reducer list here
-from sklearn import datasets, decomposition, manifold, preprocessing
-
-reducers = [
-    (manifold.TSNE, {"perplexity": 50}),
-    # (manifold.LocallyLinearEmbedding, {'n_neighbors':10, 'method':'hessian'}),
-    (manifold.Isomap, {"n_neighbors": 30}),
-    (manifold.MDS, {}),
-    (decomposition.PCA, {}),
-    (umap.UMAP, {"n_neighbors": 30, "min_dist": 0.3}),
-]
-"""
 REDUCERS = [
-    (decomposition.PCA, {}),
-#    (decomposition.IncrementalPCA, {"batch_size": 10000}),
-#    (umap.UMAP, {"n_neighbors": 30, "min_dist": 0.3, "low_memory": True, "verbose": True}),
-    (umap.UMAP, {"n_neighbors": 500, "min_dist": 0.3, "low_memory": True, "verbose": True}),
+    (decomposition.PCA, {"n_components": 2}),
+    (umap.UMAP, {"n_components":2, 
+        "n_neighbors": 300, 
+        "min_dist": 0.1, 
+        "low_memory": True, 
+        "verbose": True}),
 ]
-
 
 CLUSTERERS = [
-    (KMeans, {"init":"random", "n_clusters": N_CLUSTERS, "n_init": N_CLUSTERS, \
-              "max_iter": 300, "random_state": 42 }),
+    (KMeans, {"init":"random", 
+        "n_clusters": KMEANS_CLUSTERS, 
+        "n_init": KMEANS_CLUSTERS, 
+        "max_iter": 300, 
+        "random_state": 42 }),
 
-    (hdbscan.HDBSCAN, {"min_cluster_size": 200,
-        "min_samples": 100,
-        "cluster_selection_epsilon": 1.0,       
+    (hdbscan.HDBSCAN, {"min_cluster_size": DBSCAN_CSIZE,
+        "min_samples": DBSCAN_MINSAMPLES,
+        "cluster_selection_epsilon": DBSCAN_E, 
+        "cluster_selection_epsilon": DBSCAN_METHOD,    
         "gen_min_span_tree": True }),
 ]
-
 
 
 #-----------------------------------
 #FUNCTIONS
 #-----------------------------------
 
-def getobjname(obj):
+def get_operation_name(obj):
     """
-    get name of reducer from specified index
+    get name of reducer from object
     args:       index of reducer
     returns:    reducer name
     """
@@ -69,7 +68,7 @@ def getobjname(obj):
     else:
         return repr(obj).split("(")[0]
 
-def reduce(data):
+def reduce(data, reducer):
     """
     perform dimensionality reduction
     args:       data
@@ -79,22 +78,16 @@ def reduce(data):
     n_components = 2
 
     #initialise reducer options
-    pca= decomposition.PCA(n_components=n_components)
+    pca=REDUCERS[0]
 
-    umapper = umap.UMAP(
-        n_components=n_components,
-        n_neighbors=300, 
-        min_dist=0.1, 
-        low_memory=True, 
-        verbose=True
-    )
+    umap = REDUCERS[1]
 
-    reducer = umapper
+    reducer = umap
 
     npx=data.shape[0]
     embedding=np.zeros((npx,n_components))
 
-    redname=getobjname(reducer)
+    redname=get_operation_name(reducer)
     start_time = time.time()
 
     print(f'Dimensionality reduction via {redname} across {npx} elements')
@@ -119,42 +112,11 @@ def doclustering(embedding, npx):
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
     #DEFAULTS
-    DBSCAN_E=0.5   #epsilon: do not separate clusters closer than this value - refer umap min_dist
-    DBSCAN_CSIZE=200    #minimum cluster size
-    DBSCAN_MINSAMPLES=100   #minimum samples - larger = more conservative, more unclustered points
-    DBSCAN_METHOD="eom"
 
-    #DBSCAN_E=0.5    #really large clusters
-    #DBSCAN_E=0.1   #many small clusters
-    DBSCAN_E=0.1   #epsilon: do not separate clusters closer than this value - refer umap min_dist
-    DBSCAN_CSIZE=1000  #minimum cluster size
-    DBSCAN_MINSAMPLES=500   #minimum samples - larger = more conservative, more unclustered points
-    DBSCAN_METHOD="leaf"
-        #try leaf instead of eom - look at docs
-    #alternately try vanilla DBSCAN
-
-
-    #initialise clustering options
-    kmeans = KMeans(
-        init="random",
-        n_clusters=N_CLUSTERS,
-        n_init=N_CLUSTERS,
-        max_iter=300,
-        random_state=42
-    )
-    dbscan = hdbscan.HDBSCAN(
-        min_cluster_size=DBSCAN_CSIZE,
-        min_samples=DBSCAN_MINSAMPLES,
-        cluster_selection_epsilon=DBSCAN_E,
-        cluster_selection_method=DBSCAN_METHOD,
-        gen_min_span_tree=True
-
-    )
-
+    hdbscan = CLUSTERERS[1]
 
     print("RUNNING CLUSTERING")
-    print(f"DBSCAN PARAM {DBSCAN_E}, {dbscan.cluster_selection_epsilon}")    
-    classifier = dbscan
+    classifier = hdbscan
 
     categories=np.zeros((npx),dtype=np.uint16)
 
@@ -188,14 +150,6 @@ def sumclusters(dataset, categories, n_clusters, n_channels):
     return specsum
 
 def clustplt(embedding, categories, mapx, clusttimes):
-    """
-    receives arrays from reducers and kmeans
-    + time to cluster
-
-    plots Nx2 plot for each reducer
-
-    https://towardsdatascience.com/clearing-the-confusion-once-and-for-all-fig-ax-plt-subplots-b122bb7783ca
-    """    
     pass
 
 def count_categories(categories):
