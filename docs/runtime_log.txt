@@ -47,20 +47,22 @@ HPC STATS:
 """
 Processed: wlen_short
 """
-home                        0.001859    510.21 s
-home-apptainer	            0.002053 s  563.27 s
-bunya 1c 50g                0.00346     949.4 s
-bunya 1c 128g               0.00321     880.81
-bunya 4c 50g                0.002278    625.17
-bunya 4c 128g               0.002186    599.75
-bunya 4c 256g               0.003395    931.68
-bunya 8c 128g               0.001596    438.05
-bunya 8c 256g               0.002192    601.41
-bunya 16c 128g              0.002096    575.02
-bunya 32c 512g              0.002604    714.47
+#low mem
+#name   apt cpu mem             t/px        t
+home    b   4   64              0.001859    510.21 s
+home    c   4   64	            0.002053 s  563.27 s
+bunya   c   1   50g             0.00346     949.4 s
+bunya   c   1   128g            0.00321     880.81
+bunya   c   4   50g             0.002278    625.17
+bunya   c   4   128g            0.002186    599.75
+bunya   c   4   256g            0.003395    931.68
+bunya   c   8   128g            0.001596    438.05
+bunya   c   8   256g            0.002192    601.41
+bunya   c   16  128g            0.002096    575.02
+bunya   c   32  512g            0.002604    714.47
 
 #full mem
-bunya 8c 128g               0.003248    891.26
-bunya 8c 256g               0.002869    787.34
-bunya 8c 512g               *
-bunya 16c 256g              0.00224     614.68
+bunya   c   8   128g            0.003248    891.26
+bunya   c   8   256g            0.002869    787.34
+bunya   c   16  256g            0.00224     614.68
+bunya   b   8   128g            0.00237     650.43
