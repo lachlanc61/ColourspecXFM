@@ -48,7 +48,7 @@ HPC STATS:
 Processed: wlen_short
 """
 home                        0.001859    510.21 s
-
+home-apptainer	            0.002053 s  563.27 s
 bunya 1c 50g                0.00346     949.4 s
 bunya 1c 128g               0.00321     880.81
 bunya 4c 50g                0.002278    625.17
