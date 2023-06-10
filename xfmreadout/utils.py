@@ -277,6 +277,13 @@ def findelement(elements: list, target:str):
         if name == target:
             return idx
 
+def get_map(data, dims, elements, target: str):
+    idx = findelement(elements, target)
+
+    img=map_roll(data[:,idx], dims)
+
+    return img
+
 
 def map_roll(indata, dims):
     """

@@ -60,6 +60,7 @@ bunya   c   8   128g            0.001596    438.05
 bunya   c   8   256g            0.002192    601.41
 bunya   c   16  128g            0.002096    575.02
 bunya   c   32  512g            0.002604    714.47
+bunya   b   8   128g            
 
 #full mem
 bunya   c   8   128g            0.003248    891.26

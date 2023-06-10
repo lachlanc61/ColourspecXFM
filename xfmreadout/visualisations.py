@@ -78,18 +78,14 @@ def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):
     return palette
 
 
-def show_map(data, dims, elements, ename):
+def show_map(data, dims, elements, target):
     """
         display a single map
     """
-    idx = utils.findelement(elements, ename)
+    img = utils.get_map(data, dims, elements, target)
 
-    maps=utils.map_roll(data, dims)
-
-    img = maps[:,:,idx]
-
-    print(f"ELEMENT MAP: {elements[idx]}")
-    print(f"{ename}, max: {np.max(img):.2f}, 98: {np.quantile(img,0.98):.2f}, avg: {np.average(img):.2f}")
+    print(f"ELEMENT MAP: {target}")
+    print(f"{target}, max: {np.max(img):.2f}, 98: {np.quantile(img,0.98):.2f}, avg: {np.average(img):.2f}")
 
     fig = plt.figure(figsize=(12,6))
 
@@ -100,6 +96,50 @@ def show_map(data, dims, elements, ename):
     plt.show()
 
     return
+
+
+def norm_channel(in_array, new_max=255):
+    """
+    normalise an array from 0 to new_max
+    ie. map to 0-255 for visualisation
+
+    returns an p.uint16 array
+    """
+    in_array = in_array-np.min(in_array)
+    in_array = (in_array/np.max(in_array))    
+    in_array = np.ndarray.astype(in_array*new_max,np.uint16)
+    return in_array    
+
+
+def tricolour(r, g, b):
+    """
+    display a 3-colour RGB, normalising each channel
+    """
+    r = norm_channel(r)
+    g = norm_channel(g)
+    b = norm_channel(b)
+
+    rgb = np.stack((r,g,b), axis=2)
+
+    plt.imshow(rgb)    
+    return
+
+
+def tricolour_enames(e1:str, e2:str, e3:str, data, dims, elements):
+    """
+    display a 3-colour RGB from element names
+    normalise each channel
+    """
+    r = utils.get_map(data, dims, elements, e1)
+    g = utils.get_map(data, dims, elements, e2)
+    b = utils.get_map(data, dims, elements, e3)    
+
+    tricolour(r, g, b)
+
+    return
+
+
+
 
 def category_map ( categories, dims, palette=None ):
     """
