@@ -12,10 +12,15 @@ from sklearn.cluster import KMeans
 #CONSTANTS
 #-----------------------------------
 #REDUCERS
-UMAP_COMPONENTS=2
-PCA_COMPONENTS=2
-UMAP_LOW_MEM=False
-UMAP_VERBOSE=False
+FINAL_COMPONENTS=2
+UMAP_PRECOMPONENTS=11
+
+UMAP_LOW_MEM=True
+UMAP_VERBOSE=True
+
+
+#CLASSIFIERS:
+EST_N_CLUSTERS=30
 
 #DEFAULTS
 DBSCAN_E=0.5   #epsilon: do not separate clusters closer than this value - refer umap min_dist
@@ -37,17 +42,15 @@ KMEANS_CLUSTERS=10
 #-----------------------------------
 REDUCERS = [
     (decomposition.PCA, {"n_components": 2}),
+
     (umap.UMAP, {"n_components":2, 
-        "n_neighbors": 300, 
+        "n_neighbors": 100,  #300 
         "min_dist": 0.1, 
         "low_memory": UMAP_LOW_MEM, 
         "verbose": True}),
 ]
 
-
-
-
-CLUSTERERS = [
+CLASSIFIERS = [
     (KMeans, {"init":"random", 
         "n_clusters": KMEANS_CLUSTERS, 
         "n_init": KMEANS_CLUSTERS, 
@@ -88,50 +91,62 @@ def find_operator(list, target_name: str):
     raise ValueError(f"{target_name} not a valid operator")
 
 
-def multireduce(data, target_components=2):
-    """
-    perform dimensionality reduction
-    args:       data
-    returns:    embedding matrix, time per cluster
-    """  
-    UMAP_CUTOFF=50000000
-    CHAN_CUTOFF=31
 
+def reduce(data, reducer_name: str, target_components=FINAL_COMPONENTS):
+    """
+    perform dimensionality reduction using a specific reducer
+    args:       data, reducer_name ("PCA", "UMAP"), target components
+    returns:    reducer and embedding matrix
+    """  
     reducer_list=REDUCERS
+
+    operator, args = find_operator(reducer_list, reducer_name)
+    args["n_components"]=target_components
+    print(f"running reducer: {reducer_name} across data with shape: {data.shape}")
+
+    reducer = operator(**args)
+    embedding = reducer.fit_transform(data)    
+
+    return reducer, embedding
+
+
+def multireduce(data, target_components=FINAL_COMPONENTS):
+    """
+    manage dimensionality reduction based on size of dataset
+    """  
+    PXNR_CUTOFF=5000000
+    DIMENSIONALITY_CUTOFF=31
+
     npx=data.shape[0]
     nchan=data.shape[1]
 
     start_time = time.time()
 
-    if nchan >= CHAN_CUTOFF:
-        operator, args = find_operator(reducer_list, "PCA")
-        args["n_components"]=target_components
-        
-        reducer = operator(**args)
-        embedding = reducer.fit_transform(data)
+    if nchan >= DIMENSIONALITY_CUTOFF:
+        #if dimensionality is high, chain PCA into UMAP
+        __reducer, __embedding = reduce(data, "PCA", UMAP_PRECOMPONENTS)   
+        reducer, embedding = reduce(__embedding, "UMAP", target_components)        
+
     else:
-        operator, args=find_operator(reducer_list, "UMAP")
-        args["n_components"]=target_components        
-        
-        reducer = operator(**args)
-        embedding = reducer.fit_transform(data)
+        #go ahead with UMAP
+        print("USING UMAP DIRECTLY")
+        reducer, embedding = reduce(data, "UMAP", target_components)
 
     clusttimes = time.time() - start_time
 
     return reducer, embedding, clusttimes
 
 
-def doclustering(embedding):
+def classify(embedding):
     """
-    performs clustering on embedding to produce final clusters
+    performs classification on embedding to produce final clusters
 
     args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
-    EST_N_CLUSTERS=30
 
     print("RUNNING CLASSIFIER")
-    classifier_list = CLUSTERERS
+    classifier_list = CLASSIFIERS
 
     operator, args = find_operator(classifier_list, "HDBSCAN")
 
@@ -144,7 +159,7 @@ def doclustering(embedding):
 
     return classifier, categories
 
-def sumclusters(dataset, categories, n_clusters, n_channels):
+def calc_classavg(dataset, categories, n_clusters, n_channels):
     """
     calculate summed spectrum for each cluster
     args: 
@@ -232,7 +247,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
         print("CALCULATING CATS")        
-        classifier, categories = doclustering(embedding)
+        classifier, categories = classify(embedding)
         if overwrite or not exists_cats:
             np.save(file_cats,categories)
     else:
@@ -245,7 +260,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
 
     if force_clust or not exists_classes:
-        classavg=sumclusters(data, categories, n_clusters, n_channels) 
+        classavg=calc_classavg(data, categories, n_clusters, n_channels) 
         if overwrite or not exists_classes:
             np.save(file_classes,classavg)
     else:
