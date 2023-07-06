@@ -122,14 +122,17 @@ def multireduce(data, target_components=FINAL_COMPONENTS):
 
     start_time = time.time()
 
-    if nchan >= DIMENSIONALITY_CUTOFF:
+    if npx >= PXNR_CUTOFF:
+        #if number of pixels is very high, use PCA
+        reducer, embedding = reduce(data, "PCA", target_components)   
+
+    elif nchan >= DIMENSIONALITY_CUTOFF:
         #if dimensionality is high, chain PCA into UMAP
         __reducer, __embedding = reduce(data, "PCA", UMAP_PRECOMPONENTS)   
         reducer, embedding = reduce(__embedding, "UMAP", target_components)        
 
     else:
         #go ahead with UMAP
-        print("USING UMAP DIRECTLY")
         reducer, embedding = reduce(data, "UMAP", target_components)
 
     clusttimes = time.time() - start_time
@@ -172,7 +175,7 @@ def calc_classavg(dataset, categories, n_clusters, n_channels):
     """
     specsum=np.zeros((n_clusters,n_channels))
 
-    if n_clusters != count_categories(categories):
+    if n_clusters != count_categories(categories)[0]:
         raise ValueError("cluster count mismatch")
 
     for i in range(np.min(categories), np.max(categories)):
@@ -191,9 +194,47 @@ def count_categories(categories):
     """
     min_cat = np.min(categories)
     max_cat = np.max(categories)
+    
+    cat_list = range(min_cat, max_cat)
+
     num_cats = max_cat - min_cat + 1
 
-    return num_cats
+    return num_cats, cat_list
+
+def get_centroid(embedding):
+    """
+    finds the centroid of a 2D array
+    """    
+    if len(embedding.shape) != 2:
+        raise ValueError("invalid dimensionality for embedding, expected shape == [X, Y]")
+
+    npx = embedding.shape[0]
+
+    result = np.zeros(embedding.shape[1], dtype=np.float32)
+
+    for i in range(embedding.shape[1]):
+        result[i] = np.sum(embedding[:, i])
+
+    result = result/npx
+
+    return result
+
+def compile_centroids(embedding, categories):
+    """
+    finds the centroid of each cluster, given an embedding and a categorised array
+    """
+
+    if embedding.shape[0] != categories.shape[0]:
+        raise ValueError("Embedding and category list have different number of pixels")
+
+    ncats, category_list = count_categories(categories)
+
+    centroids=np.zeros((ncats, embedding.shape[1]), dtype=np.float32)
+
+    for i in category_list:
+        centroids[i] = get_centroid(embedding[categories==i])    
+
+    return centroids
 
 
 def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_clusters, dirs ):
@@ -232,7 +273,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     #   produce reduced-dim embedding per reducer
     if force_embed or not exists_embed:
         print("CALCULATING EMBED")
-        reducer, embedding, clusttimes = multireduce(data)
+        reducer, embedding, clusttimes = multireduce(data, target_components=3)
         if overwrite or not exists_embed:
             np.save(file_embed,embedding)
         if overwrite or not exists_embed:
@@ -256,7 +297,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
         classifier = None
 
     #   sum and extract class averages
-    n_clusters = count_categories(categories)
+    n_clusters, category_list = count_categories(categories)
     classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
 
     if force_clust or not exists_classes:
