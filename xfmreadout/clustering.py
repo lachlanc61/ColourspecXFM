@@ -46,7 +46,7 @@ REDUCERS = [
     (decomposition.PCA, {"n_components": 2}),
 
     (umap.UMAP, {"n_components":2, 
-        "n_neighbors": 100,  #300 
+        "n_neighbors": 30,  #300 
         "min_dist": 0.1, 
         "low_memory": UMAP_LOW_MEM, 
         "verbose": True}),

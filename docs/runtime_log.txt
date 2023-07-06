@@ -39,8 +39,11 @@ parallelize - multiproc:
 """
 
 
-
-
+UMAP n_neighbours for wlen_short (cropped):
+NN 100	1:20
+NN 30	0:40
+NN 20	0:48
+NN 5	0:30
 
 
 HPC STATS:
