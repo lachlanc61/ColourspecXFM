@@ -162,7 +162,7 @@ def classify(embedding):
 
     return classifier, categories
 
-def calc_classavg(dataset, categories, n_clusters, n_channels):
+def calc_classavg(data, categories, category_list, n_channels):
     """
     calculate summed spectrum for each cluster
     args: 
@@ -173,17 +173,21 @@ def calc_classavg(dataset, categories, n_clusters, n_channels):
     
     aware: nclust, number of clusters
     """
-    specsum=np.zeros((n_clusters,n_channels))
+    n_channels = data.shape[1]
+    n_clusters = len(category_list)
+
+    result=np.zeros((n_clusters,n_channels))
 
     if n_clusters != utils.count_categories(categories)[0]:
         raise ValueError("cluster count mismatch")
 
-    for i in range(np.min(categories), np.max(categories)):
-        datcat=dataset[categories==i]
-        print(f"cluster {i}, count: {datcat.shape[0]}") #DEBUG
-        pxincat = datcat.shape[0]   #no. pixels in category i
-        specsum[i,:]=(np.sum(datcat,axis=0))/pxincat
-    return specsum
+    for i in range(n_clusters):
+        #category_list:
+        data_subset=data[categories==category_list[i]]
+        pxincat = data_subset.shape[0]  #no. pixels in category i
+        print(f"cluster {i}, count: {pxincat}") #DEBUG
+        result[category_list[i],:]=(np.sum(data_subset,axis=0))/pxincat
+    return result
 
 def clustplt(embedding, categories, mapx, clusttimes):
     pass
@@ -220,7 +224,10 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     n_channels = data.shape[1]
 
     if sqrt:
+        raw_data=np.copy(data)
         data=np.sqrt(data)
+    else:
+        raw_data=data
 
     #   produce reduced-dim embedding per reducer
     if force_embed or not exists_embed:
@@ -249,7 +256,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
 
     if force_clust or not exists_classes:
-        classavg=calc_classavg(data, categories, n_clusters, n_channels) 
+        classavg=calc_classavg(raw_data, categories, category_list, n_channels) 
         if overwrite or not exists_classes:
             np.save(file_classes,classavg)
     else:

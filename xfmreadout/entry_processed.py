@@ -2,6 +2,8 @@ import time
 import sys
 import os
 import numpy as np
+import pandas as pd
+from tabulate import tabulate
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -67,6 +69,10 @@ def read_processed(args_in):
     categories, classavg, embedding = clustering.run(data, image_directory, sqrt=True, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
 
     vis.plot_clusters(categories, classavg, embedding, dims, output_directory=output_directory)
+
+    concentration_averages = pd.DataFrame(data=classavg, columns=elements)
+
+    print(tabulate(concentration_averages, headers='keys', tablefmt='psql'))
 
     return
 

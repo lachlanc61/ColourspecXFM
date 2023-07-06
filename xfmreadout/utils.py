@@ -339,7 +339,7 @@ def count_categories(categories):
     min_cat = np.min(categories)
     max_cat = np.max(categories)
     
-    cat_list = range(min_cat, max_cat)
+    cat_list = range(min_cat, max_cat+1)
 
     num_cats = max_cat - min_cat + 1
 
