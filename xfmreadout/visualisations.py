@@ -10,6 +10,7 @@ from matplotlib import colors
 from PIL import Image
 
 import xfmreadout.utils as utils
+import xfmreadout.clustering as clustering
 
 
 REDUCER=1
@@ -98,32 +99,22 @@ def show_map(data, dims, elements, target):
     return
 
 
-def norm_channel(in_array, new_max=255):
-    """
-    normalise an array from 0 to new_max
-    ie. map to 0-255 for visualisation
-
-    returns an p.uint16 array
-    """
-    in_array = in_array-np.min(in_array)
-    in_array = (in_array/np.max(in_array))    
-    in_array = np.ndarray.astype(in_array*new_max,np.uint16)
-    return in_array    
-
-
 def tricolour(r, g, b):
     """
     display a 3-colour RGB, normalising each channel
     """
-    r = norm_channel(r)
-    g = norm_channel(g)
-    b = norm_channel(b)
+    r = utils.norm_channel(r)
+    g = utils.norm_channel(g)
+    b = utils.norm_channel(b)
+
+    fig = plt.figure(figsize=(24,12))
+    ax = fig.add_subplot(111)
 
     rgb = np.stack((r,g,b), axis=2)
 
-    plt.imshow(rgb)    
-    return
+    ax.imshow(rgb)    
 
+    return fig
 
 def tricolour_enames(e1:str, e2:str, e3:str, data, dims, elements):
     """
@@ -134,12 +125,21 @@ def tricolour_enames(e1:str, e2:str, e3:str, data, dims, elements):
     g = utils.get_map(data, dims, elements, e2)
     b = utils.get_map(data, dims, elements, e3)    
 
-    tricolour(r, g, b)
+    fig = tricolour(r, g, b)
 
-    return
+    return fig
 
+def embedding_map(embedding, dims):
+    """
+    display an RGB map coloured by embedding values in each dimension
+    
+    visualises spectral distance between points
+    """
+    embedding_map = utils.map_roll(embedding, dims)
 
+    fig = tricolour(embedding_map[:,:,0], embedding_map[:,:,1], embedding_map[:,:,2])
 
+    return fig
 
 def category_map ( categories, dims, palette=None ):
     """
@@ -324,18 +324,48 @@ def seaborn_kdecontours(embedding, categories):
     #plt.savefig('kde_tr_fill.png', transparent=True)
     plt.show()
 
+def rgb_from_centroids(embedding, categories):
+    """
+    create RGB indexes based on centroids of each cluster
+    """
+
+    centroids = utils.compile_centroids(embedding, categories)
+
+    centroids_rgb = np.zeros(centroids.shape, dtype=np.float32)
+
+    for i in range(centroids.shape[1]):
+        centroids_rgb[:,i] = utils.norm_channel_float(centroids[:,i],new_max=1.0)
+
+    centroids_rgb[0] = (0.5, 0.5, 0.5)
+
+    return centroids_rgb
+
+    #cmap = LinearSegmentedColormap.from_list('custom', centroids_rgb, N=centroids.shape[0])
+
 
 def plot_clusters(categories, classavg, embedding, dims, output_directory="."):
     """
     display all plots for clusters
     
     """
-    palette=build_palette(categories)
 
-    fig_map = category_map(categories, dims, palette=palette)
-    fig_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
+    if embedding.shape[1] == 2:
+        #generate the palette from the categories, independent of distance
+        palette=build_palette(categories)
+    else:
+        #use the 3D embedding to colour the categories based on distance
+        fig_embed_map = embedding_map(embedding, dims)
+        fig_embed_map.savefig(os.path.join(output_directory,'embed_map.png'), transparent=False)  
 
-    fig_embed = seaborn_embedplot(embedding, categories, palette=palette)
+        # produce 2D embedding for visualisation
+        ___, embedding_2d = clustering.reduce(embedding, "PCA", target_components=2) 
+        colour_array=rgb_from_centroids(embedding, categories)
+        palette=sns.color_palette(colour_array)
+
+    fig_cat_map = category_map(categories, dims, palette=palette)
+    fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
+
+    fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
     fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
 
     return palette

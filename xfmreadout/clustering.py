@@ -8,6 +8,8 @@ import umap.umap_ as umap
 from sklearn import decomposition
 from sklearn.cluster import KMeans
 
+import xfmreadout.utils as utils
+
 #-----------------------------------
 #CONSTANTS
 #-----------------------------------
@@ -135,9 +137,7 @@ def multireduce(data, target_components=FINAL_COMPONENTS):
         #go ahead with UMAP
         reducer, embedding = reduce(data, "UMAP", target_components)
 
-    clusttimes = time.time() - start_time
-
-    return reducer, embedding, clusttimes
+    return reducer, embedding
 
 
 def classify(embedding):
@@ -175,7 +175,7 @@ def calc_classavg(dataset, categories, n_clusters, n_channels):
     """
     specsum=np.zeros((n_clusters,n_channels))
 
-    if n_clusters != count_categories(categories)[0]:
+    if n_clusters != utils.count_categories(categories)[0]:
         raise ValueError("cluster count mismatch")
 
     for i in range(np.min(categories), np.max(categories)):
@@ -188,53 +188,7 @@ def calc_classavg(dataset, categories, n_clusters, n_channels):
 def clustplt(embedding, categories, mapx, clusttimes):
     pass
 
-def count_categories(categories):
-    """
-    return the total number of categories, including negative values
-    """
-    min_cat = np.min(categories)
-    max_cat = np.max(categories)
-    
-    cat_list = range(min_cat, max_cat)
 
-    num_cats = max_cat - min_cat + 1
-
-    return num_cats, cat_list
-
-def get_centroid(embedding):
-    """
-    finds the centroid of a 2D array
-    """    
-    if len(embedding.shape) != 2:
-        raise ValueError("invalid dimensionality for embedding, expected shape == [X, Y]")
-
-    npx = embedding.shape[0]
-
-    result = np.zeros(embedding.shape[1], dtype=np.float32)
-
-    for i in range(embedding.shape[1]):
-        result[i] = np.sum(embedding[:, i])
-
-    result = result/npx
-
-    return result
-
-def compile_centroids(embedding, categories):
-    """
-    finds the centroid of each cluster, given an embedding and a categorised array
-    """
-
-    if embedding.shape[0] != categories.shape[0]:
-        raise ValueError("Embedding and category list have different number of pixels")
-
-    ncats, category_list = count_categories(categories)
-
-    centroids=np.zeros((ncats, embedding.shape[1]), dtype=np.float32)
-
-    for i in category_list:
-        centroids[i] = get_centroid(embedding[categories==i])    
-
-    return centroids
 
 
 def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_clusters, dirs ):
@@ -257,12 +211,10 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     file_embed=os.path.join(output_dir,"embedding.npy")
     file_cats=os.path.join(output_dir,"categories.npy")
     file_classes=os.path.join(output_dir,"classavg.npy")
-    file_ctime=os.path.join(output_dir,"clusttimes.npy")
 
     exists_embed = os.path.isfile(file_embed)
     exists_cats = os.path.isfile(file_cats)
     exists_classes = os.path.isfile(file_classes)
-    exists_ctime = os.path.isfile(file_ctime)
 
     totalpx = data.shape[0]
     n_channels = data.shape[1]
@@ -273,17 +225,13 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     #   produce reduced-dim embedding per reducer
     if force_embed or not exists_embed:
         print("CALCULATING EMBED")
-        reducer, embedding, clusttimes = multireduce(data, target_components=3)
+        reducer, embedding = multireduce(data, target_components=3)
         if overwrite or not exists_embed:
             np.save(file_embed,embedding)
-        if overwrite or not exists_embed:
-            np.save(file_ctime,clusttimes)
     else:
         print("LOADING EMBED")
         embedding = np.load(file_embed)
         #clusttimes = np.load(file_ctime)     
-        clusttimes = None   
-
 
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
@@ -297,7 +245,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
         classifier = None
 
     #   sum and extract class averages
-    n_clusters, category_list = count_categories(categories)
+    n_clusters, category_list = utils.count_categories(categories)
     classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
 
     if force_clust or not exists_classes:
@@ -319,7 +267,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     "---------------------------"
     )
 
-    return categories, classavg, embedding, clusttimes, classifier
+    return categories, classavg, embedding
 
 
 #-----------------------------------

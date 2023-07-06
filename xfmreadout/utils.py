@@ -307,3 +307,75 @@ def map_unroll(maps):
     dims=maps[:,:,0].shape
 
     return data, dims
+
+def norm_channel(in_array, new_max=255):
+    """
+    normalise an array from 0 to new_max
+    ie. map to 0-255 for visualisation
+
+    returns an p.uint16 array
+    """
+    in_array = in_array-np.min(in_array)
+    in_array = (in_array/np.max(in_array))    
+    in_array = np.ndarray.astype(in_array*new_max,np.uint16)
+    return in_array    
+
+def norm_channel_float(in_array, new_max=1.0):
+    """
+    normalise an array from 0 to new_max
+    ie. map to 0-255 for visualisation
+
+    returns an p.uint16 array
+    """
+    in_array = in_array-np.min(in_array)
+    in_array = (in_array/np.max(in_array))    
+    in_array = np.ndarray.astype(in_array*new_max,np.float32)
+    return in_array  
+
+def count_categories(categories):
+    """
+    return the total number of categories, including negative values
+    """
+    min_cat = np.min(categories)
+    max_cat = np.max(categories)
+    
+    cat_list = range(min_cat, max_cat)
+
+    num_cats = max_cat - min_cat + 1
+
+    return num_cats, cat_list
+
+def get_centroid(embedding):
+    """
+    finds the centroid of a 2D array
+    """    
+    if len(embedding.shape) != 2:
+        raise ValueError("invalid dimensionality for embedding, expected shape == [X, Y]")
+
+    npx = embedding.shape[0]
+
+    result = np.zeros(embedding.shape[1], dtype=np.float32)
+
+    for i in range(embedding.shape[1]):
+        result[i] = np.sum(embedding[:, i])
+
+    result = result/npx
+
+    return result
+
+def compile_centroids(embedding, categories):
+    """
+    finds the centroid of each cluster, given an embedding and a categorised array
+    """
+
+    if embedding.shape[0] != categories.shape[0]:
+        raise ValueError("Embedding and category list have different number of pixels")
+
+    ncats, category_list = count_categories(categories)
+
+    centroids=np.zeros((ncats, embedding.shape[1]), dtype=np.float32)
+
+    for i in category_list:
+        centroids[i] = get_centroid(embedding[categories==i])    
+
+    return centroids
