@@ -371,11 +371,12 @@ def compile_centroids(embedding, categories):
     if embedding.shape[0] != categories.shape[0]:
         raise ValueError("Embedding and category list have different number of pixels")
 
-    ncats, category_list = count_categories(categories)
+    n_clusters, category_list = count_categories(categories)
 
-    centroids=np.zeros((ncats, embedding.shape[1]), dtype=np.float32)
+    centroids=np.zeros((n_clusters, embedding.shape[1]), dtype=np.float32)
 
-    for i in category_list:
-        centroids[i] = get_centroid(embedding[categories==i])    
+    for i in range(n_clusters):
+        icat=category_list[i]
+        centroids[i] = get_centroid(embedding[categories==icat])    
 
     return centroids

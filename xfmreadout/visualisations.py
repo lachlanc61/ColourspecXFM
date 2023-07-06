@@ -2,6 +2,8 @@ import copy
 import os
 import logging
 import numpy as np
+import pandas as pd
+from tabulate import tabulate
 import seaborn as sns
 import colorcet as cc
 import matplotlib.pyplot as plt
@@ -77,6 +79,29 @@ def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):
         raise ValueError(f"minimum category {cat_min} > 0")
 
     return palette
+
+def rgb_from_centroids(embedding, categories):
+    """
+    create RGB indexes based on centroids of each cluster
+    """
+
+    centroids = utils.compile_centroids(embedding, categories)
+
+    print(centroids)
+
+    centroids_rgb = np.zeros(centroids.shape, dtype=np.float32)
+
+    for i in range(centroids.shape[1]):
+        centroids_rgb[:,i] = utils.norm_channel_float(centroids[:,i],new_max=1.0)
+
+    centroids_rgb[0] = (0.5, 0.5, 0.5)
+
+    print(centroids_rgb)
+
+    return centroids_rgb
+
+    #cmap = LinearSegmentedColormap.from_list('custom', centroids_rgb, N=centroids.shape[0])
+
 
 
 def show_map(data, dims, elements, target):
@@ -177,6 +202,17 @@ def category_map ( categories, dims, palette=None ):
 
     #fig.savefig(os.path.join(EMBED_DIR,"cluster_map.png"), dpi=200)
 
+
+def table_classavg(classavg, elements):
+    """
+    display a table with class average values
+    """
+    concentration_averages = pd.DataFrame(data=classavg, columns=elements)
+    
+    print(tabulate(concentration_averages, headers='keys', tablefmt='psql'))
+
+    return
+
 def category_avgs(categories, elements, classavg, palette=None ):
     """
         display category spectra
@@ -190,15 +226,14 @@ def category_avgs(categories, elements, classavg, palette=None ):
 
     cmap = colors.ListedColormap(palette)
 
-    ncats=np.max(categories)
-
-    elids=range(len(elements))
+    n_clusters, category_list = utils.count_categories(categories)
 
     #ax.set_yscale('log')
 
-    for i in range(ncats-1):
-        ax.plot(elements, classavg[i,:], linewidth=1)
-
+    for i in range(n_clusters):
+        icat=category_list[i]
+        colour=cmap(i)
+        ax.plot(elements, classavg[icat,:], linewidth=1, color=colour)
 
     fig.show()
 
@@ -324,23 +359,6 @@ def seaborn_kdecontours(embedding, categories):
     #plt.savefig('kde_tr_fill.png', transparent=True)
     plt.show()
 
-def rgb_from_centroids(embedding, categories):
-    """
-    create RGB indexes based on centroids of each cluster
-    """
-
-    centroids = utils.compile_centroids(embedding, categories)
-
-    centroids_rgb = np.zeros(centroids.shape, dtype=np.float32)
-
-    for i in range(centroids.shape[1]):
-        centroids_rgb[:,i] = utils.norm_channel_float(centroids[:,i],new_max=1.0)
-
-    centroids_rgb[0] = (0.5, 0.5, 0.5)
-
-    return centroids_rgb
-
-    #cmap = LinearSegmentedColormap.from_list('custom', centroids_rgb, N=centroids.shape[0])
 
 
 def plot_clusters(categories, classavg, embedding, dims, output_directory="."):

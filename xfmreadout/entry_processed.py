@@ -2,8 +2,7 @@ import time
 import sys
 import os
 import numpy as np
-import pandas as pd
-from tabulate import tabulate
+
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -70,9 +69,7 @@ def read_processed(args_in):
 
     vis.plot_clusters(categories, classavg, embedding, dims, output_directory=output_directory)
 
-    concentration_averages = pd.DataFrame(data=classavg, columns=elements)
-
-    print(tabulate(concentration_averages, headers='keys', tablefmt='psql'))
+    vis.table_classavg(classavg, elements)
 
     return
 

@@ -182,11 +182,11 @@ def calc_classavg(data, categories, category_list, n_channels):
         raise ValueError("cluster count mismatch")
 
     for i in range(n_clusters):
-        #category_list:
-        data_subset=data[categories==category_list[i]]
+        icat=category_list[i]
+        data_subset=data[categories==icat]
         pxincat = data_subset.shape[0]  #no. pixels in category i
         print(f"cluster {i}, count: {pxincat}") #DEBUG
-        result[category_list[i],:]=(np.sum(data_subset,axis=0))/pxincat
+        result[icat,:]=(np.sum(data_subset,axis=0))/pxincat
     return result
 
 def clustplt(embedding, categories, mapx, clusttimes):
