@@ -382,9 +382,10 @@ def plot_clusters(categories, classavg, embedding, dims, output_directory="."):
 
     fig_cat_map = category_map(categories, dims, palette=palette)
     fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
-
-    fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
-    fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
+    
+    if embedding.shape[1] == 3:
+        fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
+        fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
 
     return palette
 
