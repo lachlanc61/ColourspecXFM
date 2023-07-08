@@ -1,8 +1,0 @@
-hello
-world
-i 
-am
-testing
-a multiprocess
-function 
-ok
