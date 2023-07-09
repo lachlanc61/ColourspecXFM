@@ -110,8 +110,10 @@ def show_map(data, dims, elements, target):
     """
     img = utils.get_map(data, dims, elements, target)
 
+    idx = utils.findelement(elements, target)
+
     print(f"ELEMENT MAP: {target}")
-    print(f"{target}, max: {np.max(img):.2f}, 98: {np.quantile(img,0.98):.2f}, avg: {np.average(img):.2f}")
+    print(f"({idx}), {target}, max: {np.max(img):.2f}, 98: {np.quantile(img,0.98):.2f}, avg: {np.average(img):.2f}")
 
     fig = plt.figure(figsize=(12,6))
 

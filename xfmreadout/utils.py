@@ -8,9 +8,9 @@ import psutil
 import numpy as np
 import matplotlib.pyplot as plt
 
-
+from scipy import ndimage
 from copy import deepcopy
-
+from math import sqrt
 
 from scipy.stats import norm
 
@@ -282,6 +282,7 @@ def get_map(data, dims, elements, target: str):
 
     img=map_roll(data[:,idx], dims)
 
+    #DEBUG
     return img
 
 

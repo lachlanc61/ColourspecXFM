@@ -207,25 +207,40 @@ def data_normalise_to_sd(data, sd, elements):
     divide by ratio if < 1
     """
     SD_MULTIPLE = 2
-    DIRECT_MAPS = ["Compton", "sum", "Back"]
+    DIRECT_MAPS = ["Compton", "sum", "Back", "Mo"]
     result = np.ndarray(data.shape, dtype=np.float32)
 
     #iterate through all elements
     for i in range(data.shape[1]):
-        avg_sd = np.average(sd[:,i])
+
         avg_data = np.average(data[:,i])
-        ratio=avg_sd*SD_MULTIPLE/avg_data
-        print(f"{elements[i]} -- data: {avg_data}, var: {avg_sd}, ratio: {ratio}")
+        q99_data = np.quantile(data[:,i],0.999)
+        max_data = np.max(data[:,i])
 
-        if elements[i] not in DIRECT_MAPS:
-            if ratio >= 1:
-                result[:,i] = data[:,i]/ratio
+        avg_sd = np.average(sd[:,i])
+        q10_sd = np.quantile(sd[:,i],0.1)*2
+
+        print(f"{elements[i]} -- data: {avg_data:.3f}, data(max): {max_data:.3f}, sd(10): {q10_sd:.3f}, newmax: {max_data-q10_sd*2:.3f}")
+        #print(f"{elements[i]} -- sd: {avg_sd:.3f}, sd(25): {np.quantile(sd[:,i],0.25):.3f}, sd(max): {np.max(sd[:,i]):.3f}, sd(min): {np.min(sd[:,i]):.3f}, ratio: {ratio:.3f}")
+
+#        print(f"{elements[i]} -- data: {avg_data:.3f}, data(98): {q99_data:.3f}, , data(max): {max_data:.3f}, ratio: {ratio:.3f}")
+#        print(f"{elements[i]} -- sd: {avg_sd:.3f}, sd(25): {np.quantile(sd[:,i],0.25):.3f}, sd(max): {np.max(sd[:,i]):.3f}, sd(min): {np.min(sd[:,i]):.3f}, ratio: {ratio:.3f}")
+        #result[:,i] = data[:,i]-q10_sd
+        if False:
+            subtracted = data[:,i]-q10_sd
+            result[:,i] = subtracted.clip(0)
+
+        if True:   #alternate method
+            ratio=avg_sd*SD_MULTIPLE/avg_data   #default            
+            if elements[i] not in DIRECT_MAPS:
+                #result[:,i] = data[:,i]-q10_sd
+                if ratio >= 1:
+                    result[:,i] = data[:,i]/ratio
+                else:
+                    result[:,i] = data[:,i]
+                result[:,i] = np.where(result[:,i]<0, 0, result[:,i])
             else:
-                result[:,i] = data[:,i]
-            result[:,i] = np.where(result[:,i]<0, 0, result[:,i])
-
-        else:
-            result[:,i] = data[:,i]/np.max(data[:,i])
+                result[:,i] = data[:,i]/np.max(data[:,i])
 
     return result
 
@@ -263,19 +278,19 @@ def data_crop(data, dims, x_min=0, x_max=9999, y_min=0, y_max=9999):
     return ret_data, ret_dims
 
 
-def extract_data(image_directory, files, variance=False):
+def extract_data(image_directory, files, is_variance=False):
     """
     get data from list of tiffs
 
-    kwark to specify whether reading variance or maps
+    kwarg to specify whether reading variance or maps
     """
 
     filepaths = [os.path.join(image_directory, file) for file in files ] 
 
     maps = maps_load(filepaths)
 
-    if not variance:
-        maps = maps_cleanup(maps)
+    #if not is_variance:
+    maps = maps_cleanup(maps)
 
     data, dims = utils.map_unroll(maps)
 
@@ -318,7 +333,7 @@ def compile(image_directory):
     if variance_found:
         print("-----------------")
         print(f"READING VARIANCE DATA")
-        var_data, var_dims = extract_data(image_directory, files_variance, variance=True)
+        var_data, var_dims = extract_data(image_directory, files_variance, is_variance=True)
         sd_data = variance_to_std(var_data)
         sd_data = ppm_to_wt(sd_data)
         sd_dims = var_dims
