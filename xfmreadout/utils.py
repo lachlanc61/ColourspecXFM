@@ -305,7 +305,7 @@ def map_unroll(maps):
 
     data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
 
-    dims=maps[:,:,0].shape
+    dims=maps.shape[:2]
 
     return data, dims
 
@@ -361,6 +361,23 @@ def get_centroid(embedding):
         result[i] = np.sum(embedding[:, i])
 
     result = result/npx
+
+    return result
+
+def mean_within_quantile(data, qmin=0.0, qmax=1.0):
+    """
+    calculate the mean across the values between two quantiles
+    """
+
+    qlo = np.quantile(data,qmin)
+
+    qhi = np.quantile(data,qmax)
+
+    mask = np.where(np.logical_and(data >= qlo, data <= qhi ), True, False)
+
+    subset = data[mask]
+
+    result = np.mean(subset)
 
     return result
 

@@ -200,29 +200,89 @@ def data_normalise(data, elements):
     return data
 
 
-def data_normalise_to_sd(data, sd, elements):
+def printqvals(data, element, qval):
+        avg_data = np.average(data)
+        max_data = np.max(data)
+        qmean = utils.mean_within_quantile(data, qmin=qval)
+        qnum = np.quantile(data,qval)
+
+        print(f"{element} -- data: {avg_data:.3f}, data(max): {max_data:.3f}, qmean: {qmean:.3f}, qnum: {qnum:.3f}")
+
+        return
+
+def printsdvals(data, element, qval):
+        avg_data = np.average(data)
+        max_data = np.max(data)
+        qmean = utils.mean_within_quantile(data, qmin=qval-0.25, qmax=qval)
+        qnum = np.quantile(data,qval)
+
+        print(f"{element} -- sd: {avg_data:.3f}, sd(max): {max_data:.3f}, qmean: {qmean:.3f}, qnum: {qnum:.3f}")
+
+        return
+
+
+def calc_quantiles(data, sd, multiplier):
+    DATA_QUANTILE=0.999
+    SD_QUANTILE_MIN=0.25
+    SD_QUANTILE_MAX=0.5
+
+    max_data = np.max(data)
+    q99_data = utils.mean_within_quantile(data, qmin=DATA_QUANTILE)
+
+    q2_sd = utils.mean_within_quantile(sd, qmin=SD_QUANTILE_MIN, qmax=SD_QUANTILE_MAX)
+
+    ratio = q99_data / (q2_sd*multiplier)
+
+    ratio = (q2_sd*multiplier) / q99_data
+
+    return ratio, q99_data, q2_sd
+
+
+def data_normalise_to_sd(data, sd, dims):
     """
     normalise data against standard deviation
     
     use ratio of average_sd * 2 : average_conc
     divide by ratio if < 1
     """
-    SD_MULTIPLE = 2
+    SD_MULTIPLIER = 2
     DIRECT_MAPS = ["Compton", "sum", "Back", "Mo"]
+
+    print("data0",data[:,0].shape)
+    print("datafull",data.shape)    
+
     result = np.ndarray(data.shape, dtype=np.float32)
+    result_sd = np.ndarray(sd.shape, dtype=np.float32)
 
     #iterate through all elements
     for i in range(data.shape[1]):
 
-        avg_data = np.average(data[:,i])
-        q99_data = np.quantile(data[:,i],0.999)
-        max_data = np.max(data[:,i])
+        data__ = np.copy(data[:,i])
+        print("data_pre",data__.shape)          
+        sd__ = np.copy(sd[:,i])
 
-        avg_sd = np.average(sd[:,i])
-        q10_sd = np.quantile(sd[:,i],0.1)*2
+        ratio, q2_sd, q99_data = calc_quantiles(data__, sd__, SD_MULTIPLIER)
 
-        print(f"{elements[i]} -- data: {avg_data:.3f}, data(max): {max_data:.3f}, sd(10): {q10_sd:.3f}, newmax: {max_data-q10_sd*2:.3f}")
-        #print(f"{elements[i]} -- sd: {avg_sd:.3f}, sd(25): {np.quantile(sd[:,i],0.25):.3f}, sd(max): {np.max(sd[:,i]):.3f}, sd(min): {np.min(sd[:,i]):.3f}, ratio: {ratio:.3f}")
+        #print(f"{ELEMENT} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, max: {max_data:.3f}")
+
+        j=0
+        while ratio >= 1:
+            print(f"Gaussian averaging, cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
+            data__, sd__ = imgops.apply_gaussianblur(data__, sd__, dims, 1)
+            #BUGHERE: this is adding a dimension to data__
+            print("data_g",data__.shape)            
+            data__ = data__/4
+            sd__ = sd__/4
+
+            ratio, q2_sd, q99_data = calc_quantiles(data__, sd__, SD_MULTIPLIER)
+            j+=1
+
+        print("data_",data__.shape)
+        print("data",result[:,i].shape)
+
+
+        result[:,i] = data__
+        result_sd[:,i] = sd__
 
 #        print(f"{elements[i]} -- data: {avg_data:.3f}, data(98): {q99_data:.3f}, , data(max): {max_data:.3f}, ratio: {ratio:.3f}")
 #        print(f"{elements[i]} -- sd: {avg_sd:.3f}, sd(25): {np.quantile(sd[:,i],0.25):.3f}, sd(max): {np.max(sd[:,i]):.3f}, sd(min): {np.min(sd[:,i]):.3f}, ratio: {ratio:.3f}")
@@ -238,7 +298,7 @@ def data_normalise_to_sd(data, sd, elements):
             subtracted = data[:,i]-q10_sd
             result[:,i] = subtracted.clip(0)
 
-        if True:   #alternate method
+        if False:   #alternate method
             ratio=avg_sd*SD_MULTIPLE/avg_data   #default            
             if elements[i] not in DIRECT_MAPS:
                 #result[:,i] = data[:,i]-q10_sd
@@ -250,7 +310,7 @@ def data_normalise_to_sd(data, sd, elements):
             else:
                 result[:,i] = data[:,i]/np.max(data[:,i])
 
-    return result
+    return result, result_sd
 
 
 def variance_to_std(data):
@@ -356,7 +416,7 @@ def compile(image_directory):
         sd_data = ppm_to_wt(sd_data)
         sd_dims = var_dims
 
-        data = data_normalise_to_sd(data, sd_data, elements)
+        data = data_normalise_to_sd(data, sd_data, dims)
     else:
         data = data_normalise(data, elements)
 

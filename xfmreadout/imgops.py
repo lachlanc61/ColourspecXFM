@@ -15,7 +15,7 @@ def data_gaussianblur(data, dims, kernelsize: int):
 
     updated_map = ndimage.gaussian_filter(map, kernelsize, mode='mirror')
 
-    updated_data = utils.map_unroll(updated_map)
+    updated_data, ___ = utils.map_unroll(updated_map)
 
     return updated_data
 
@@ -35,7 +35,8 @@ def data_resize(data, dims, zoom_factor, order=1):
     else:
         raise ValueError(f"invalid number of axes for map shape: {map.shape}, expected len() = 1-3")
     
-    updated_map = ndimage.zoom(map,  zoom, order=order)
+    updated_map = ndimage.zoom(map,  zoom, order=order)     #BUGHERE ndimage is adding a dimension
+                                                            #ie. (999,) to (999,1)
         #order 1 = bilinear, 2 = bicubic
     
     updated_data, updated_dims = utils.map_unroll(updated_map)
