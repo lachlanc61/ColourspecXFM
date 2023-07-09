@@ -6,6 +6,7 @@ from PIL import Image
 
 import xfmreadout.clustering as clustering
 import xfmreadout.utils as utils
+import xfmreadout.imgops as imgops
 
 FORCE = True
 AUTOSAVE = True
@@ -226,6 +227,13 @@ def data_normalise_to_sd(data, sd, elements):
 #        print(f"{elements[i]} -- data: {avg_data:.3f}, data(98): {q99_data:.3f}, , data(max): {max_data:.3f}, ratio: {ratio:.3f}")
 #        print(f"{elements[i]} -- sd: {avg_sd:.3f}, sd(25): {np.quantile(sd[:,i],0.25):.3f}, sd(max): {np.max(sd[:,i]):.3f}, sd(min): {np.min(sd[:,i]):.3f}, ratio: {ratio:.3f}")
         #result[:,i] = data[:,i]-q10_sd
+        """
+        TO DO:
+            for each map:
+                while ratio of sd to data above threshold
+                   apply gaussian blur, improve sd
+        """
+        
         if False:
             subtracted = data[:,i]-q10_sd
             result[:,i] = subtracted.clip(0)
@@ -334,6 +342,16 @@ def compile(image_directory):
         print("-----------------")
         print(f"READING VARIANCE DATA")
         var_data, var_dims = extract_data(image_directory, files_variance, is_variance=True)
+
+        var_scale = dims[0] / var_dims[0]
+        if not var_scale == (dims[1] / var_dims[1]):
+            raise ValueError(f"inconsistent scale factor between x and y, for {dims} vs {var_dims} ")
+        
+        var_data, var_dims = imgops.data_resize(var_data, var_dims, var_scale)
+
+        if not dims == var_dims:
+            raise ValueError(f"mismatch between dimensions of data and rescaled variance, {dims} vs {var_dims} ")
+
         sd_data = variance_to_std(var_data)
         sd_data = ppm_to_wt(sd_data)
         sd_dims = var_dims
