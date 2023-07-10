@@ -204,7 +204,30 @@ def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_
 
     return 
 
-def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True, sqrt=True):
+
+def get_classavg(raw_data, categories, output_dir, force=False, overwrite=True):
+
+    file_classes=os.path.join(output_dir,"classavg.npy")
+    exists_classes = os.path.isfile(file_classes)
+
+    totalpx = raw_data.shape[0]
+    n_channels = raw_data.shape[1]
+
+    #   sum and extract class averages
+    n_clusters, category_list = utils.count_categories(categories)
+    classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
+
+    if force or not exists_classes:
+        classavg=calc_classavg(raw_data, categories, category_list, n_channels) 
+        if overwrite or not exists_classes:
+            np.save(file_classes,classavg)
+    else:
+        classavg = np.load(file_classes)
+    
+    return classavg
+
+
+def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True):
 
     if force_embed:
         force_clust = True
@@ -222,12 +245,6 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
 
     totalpx = data.shape[0]
     n_channels = data.shape[1]
-
-    if sqrt:
-        raw_data=np.copy(data)
-        data=np.sqrt(data)
-    else:
-        raw_data=data
 
     #   produce reduced-dim embedding per reducer
     if force_embed or not exists_embed:
@@ -251,17 +268,6 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
         categories = np.load(file_cats)
         classifier = None
 
-    #   sum and extract class averages
-    n_clusters, category_list = utils.count_categories(categories)
-    classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
-
-    if force_clust or not exists_classes:
-        classavg=calc_classavg(raw_data, categories, category_list, n_channels) 
-        if overwrite or not exists_classes:
-            np.save(file_classes,classavg)
-    else:
-        classavg = np.load(file_classes)
-
     #complete the timer
     runtime = time.time() - starttime
 
@@ -274,7 +280,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     "---------------------------"
     )
 
-    return categories, classavg, embedding
+    return categories, embedding
 
 
 #-----------------------------------

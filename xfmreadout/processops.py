@@ -3,6 +3,7 @@ import re
 import numpy as np
 import periodictable as pt
 from PIL import Image
+from math import sqrt
 
 import xfmreadout.clustering as clustering
 import xfmreadout.utils as utils
@@ -20,7 +21,7 @@ Z_CUTOFFS=[11, 55, 37, 73]       #K min, K max, L min, M min
 
 MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si', 'Cl', 'sum', 'Back', 'Mo', 'MoL', 'Compton', 'S']
 MODIFY_NORMS = [ 0.005, 0.01, 0.025, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0 ]
-BASEFACTOR=1/100000 #ppm to wt%
+BASEFACTOR=1/10000 #ppm to wt%
 
 def get_elements(files):
     """
@@ -341,6 +342,26 @@ def data_crop(data, dims, x_min=0, x_max=9999, y_min=0, y_max=9999):
 
     return ret_data, ret_dims
 
+def calc_weights(data, weights, do_sqrt=True):
+    if not weights.shape[0] == data.shape[1]:
+        raise ValueError(f"shape mistmatch between weights {weights.shape} and data {data.shape}")
+
+    for i in range(data.shape[1]):
+        max_ = np.max(data[:,i])
+        if do_sqrt:
+            weights[i] = weights[i]*sqrt(max_)/max_
+        else:
+            weights[i] = weights[i]
+        
+    return weights
+
+def apply_weights(data, weights):
+    result = np.zeros(data.shape)
+
+    for i in range(data.shape[1]):
+        result[:,i] = data[:,i]*weights[i]
+    
+    return result
 
 def extract_data(image_directory, files, is_variance=False):
     """
@@ -353,7 +374,6 @@ def extract_data(image_directory, files, is_variance=False):
 
     maps = maps_load(filepaths)
 
-    #if not is_variance:
     maps = maps_cleanup(maps)
 
     data, dims = utils.map_unroll(maps)

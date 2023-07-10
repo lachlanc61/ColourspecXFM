@@ -92,8 +92,10 @@ def read_raw(args_in):
         rgbarray = None
     #perform clustering
     if args.classify_spectra:
-        pixelseries.categories, pixelseries.classavg, embedding, clusttimes, classifier = clustering.run( pixelseries.flattened, dirs.embeddings, force_embed=args.force, overwrite=config['OVERWRITE_EXPORTS'] )
+        pixelseries.categories, embedding = clustering.run( pixelseries.flattened, dirs.embeddings, force_embed=args.force, force_clust=args.force, overwrite=config['OVERWRITE_EXPORTS'] )
         
+        pixelseries.classavg = clustering.get_classavg( pixelseries.flattened, pixelseries.categories, dirs.embeddings, force=args.force, overwrite=config['OVERWRITE_EXPORTS'])
+
         palette = vis.plot_clusters(pixelseries.categories, pixelseries.classavg, embedding, pixelseries.dimensions)
 #        clustering.complete(pixelseries.categories, pixelseries.classavg, embedding, clusttimes, xfmap.energy, xfmap.xres, xfmap.yres, config['nclust'], dirs.plots)
         #colour.plot_colourmap_explainer(pixelseries.energy, pixelseries.classavg[1:1], pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, dirs)

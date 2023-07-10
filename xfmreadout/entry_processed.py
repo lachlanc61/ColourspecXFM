@@ -60,14 +60,24 @@ def read_processed(args_in):
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
     
-    elements, data, dims, sd_data, sd_dims = processops.compile(image_directory)
+    elements, data, dims, sd, sd_dims = processops.compile(image_directory)
 
     data, dims = processops.data_crop(data, dims, args.x_coords[0], args.x_coords[1], args.y_coords[0], args.y_coords[1])
+    sd, sd_dims = processops.data_crop(sd, sd_dims, args.x_coords[0], args.x_coords[1], args.y_coords[0], args.y_coords[1])
+
+    weights = np.ones(data.shape[1], dtype=np.float32)
+    weights = processops.calc_weights(data, weights, do_sqrt=False) #weights unchanged
+
+    data_ = processops.apply_weights(data, weights)
+    data_ = np.sqrt(data_)
 
     overwrite = ( args.force or args.force_clustering )
-    categories, classavg, embedding = clustering.run(data, image_directory, sqrt=True, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
 
-    vis.plot_clusters(categories, classavg, embedding, dims, output_directory=output_directory)
+    categories, embedding = clustering.run(data_, image_directory, force_embed=FORCE_EMBED, force_clust=FORCE_CLUST, overwrite=OVERWRITE)
+
+    classavg = clustering.get_classavg(data, categories, image_directory, force=FORCE_CLUST, overwrite=OVERWRITE)
+
+    palette = vis.plot_clusters(categories, classavg, embedding, dims, output_directory=output_directory)
 
     vis.table_classavg(classavg, elements)
 
