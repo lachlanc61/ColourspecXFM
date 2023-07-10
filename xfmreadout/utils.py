@@ -303,9 +303,14 @@ def map_unroll(maps):
     returns dataset and dimensions
     """
 
-    data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
-
-    dims=maps.shape[:2]
+    if len(maps.shape) == 3:
+        data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
+        dims=maps.shape[:2]
+    elif len(maps.shape) == 2:
+        data=maps.reshape(maps.shape[0]*maps.shape[1])
+        dims=maps.shape[:2]        
+    else:
+        raise ValueError(f"unexpected dimensions for {map}")
 
     return data, dims
 

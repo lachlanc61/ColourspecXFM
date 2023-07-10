@@ -11,11 +11,12 @@ def data_gaussianblur(data, dims, kernelsize: int):
     """
     applies a gaussian blur to a map according to kernel size (in pixels, = sd param) 
     """
+
     map = utils.map_roll(data, dims)
 
     updated_map = ndimage.gaussian_filter(map, kernelsize, mode='mirror')
 
-    updated_data, ___ = utils.map_unroll(updated_map)
+    updated_data, dims__ = utils.map_unroll(updated_map)
 
     return updated_data
 

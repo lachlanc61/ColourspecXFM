@@ -238,7 +238,7 @@ def calc_quantiles(data, sd, multiplier):
     return ratio, q99_data, q2_sd
 
 
-def data_normalise_to_sd(data, sd, dims):
+def data_normalise_to_sd(data, sd, dims, elements):
     """
     normalise data against standard deviation
     
@@ -246,6 +246,7 @@ def data_normalise_to_sd(data, sd, dims):
     divide by ratio if < 1
     """
     SD_MULTIPLIER = 2
+    DEWEIGHT_FACTOR = 1
     DIRECT_MAPS = ["Compton", "sum", "Back", "Mo"]
 
     print("data0",data[:,0].shape)
@@ -256,30 +257,25 @@ def data_normalise_to_sd(data, sd, dims):
 
     #iterate through all elements
     for i in range(data.shape[1]):
-
+        
         data__ = np.copy(data[:,i])
-        print("data_pre",data__.shape)          
         sd__ = np.copy(sd[:,i])
 
         ratio, q2_sd, q99_data = calc_quantiles(data__, sd__, SD_MULTIPLIER)
 
-        #print(f"{ELEMENT} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, max: {max_data:.3f}")
+        print(f"{elements[i]} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, max: {np.max(data__):.3f}")
 
         j=0
         while ratio >= 1:
             print(f"Gaussian averaging, cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
             data__, sd__ = imgops.apply_gaussianblur(data__, sd__, dims, 1)
-            #BUGHERE: this is adding a dimension to data__
-            print("data_g",data__.shape)            
-            data__ = data__/4
-            sd__ = sd__/4
+
+            #deweight element for each gaussian applied
+            data__ = data__/DEWEIGHT_FACTOR
+            sd__ = sd__/DEWEIGHT_FACTOR
 
             ratio, q2_sd, q99_data = calc_quantiles(data__, sd__, SD_MULTIPLIER)
             j+=1
-
-        print("data_",data__.shape)
-        print("data",result[:,i].shape)
-
 
         result[:,i] = data__
         result_sd[:,i] = sd__
@@ -416,7 +412,7 @@ def compile(image_directory):
         sd_data = ppm_to_wt(sd_data)
         sd_dims = var_dims
 
-        data = data_normalise_to_sd(data, sd_data, dims)
+        data, sd_data = data_normalise_to_sd(data, sd_data, dims, elements)
     else:
         data = data_normalise(data, elements)
 
