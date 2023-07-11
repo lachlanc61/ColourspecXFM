@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 def shuffle_palette(palette):
     """
     shuffles palette into N blocks of spaced sequential colours
-        breaks up a sequential colour sequence
+        ie. breaks up a sequential colour sequence
     """
 
     NREPEATS=3
@@ -61,6 +61,9 @@ def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):
     elif num_cats <=12:
         cmapname="Set3"
         shuffle=False
+    else:
+        cmapname=cc.glasbey_light
+        shuffle=False        
 
     if cat_min < 0:
         palette=sns.color_palette(cmapname,num_cats-1)
@@ -360,7 +363,6 @@ def seaborn_kdecontours(embedding, categories):
     ax = sns.despine(ax=None, left=True, bottom=True)
     #plt.savefig('kde_tr_fill.png', transparent=True)
     plt.show()
-
 
 
 def plot_clusters(categories, classavg, embedding, dims, output_directory="."):

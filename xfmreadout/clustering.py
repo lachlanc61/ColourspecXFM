@@ -4,6 +4,7 @@ import re
 import hdbscan
 import numpy as np
 import umap.umap_ as umap
+import pacmap
 
 from sklearn import decomposition
 from sklearn.cluster import KMeans
@@ -50,6 +51,10 @@ REDUCERS = [
         "min_dist": 0.1, 
         "low_memory": UMAP_LOW_MEM, 
         "verbose": True}),
+
+    (pacmap.PaCMAP, {"n_components":2,
+        "n_neighbors": None,
+        "verbose": True }),
 ]
 
 CLASSIFIERS = [
@@ -134,8 +139,11 @@ def multireduce(data, target_components=FINAL_COMPONENTS):
         reducer, embedding = reduce(__embedding, "UMAP", target_components)        
 
     else:
-        #go ahead with UMAP
-        reducer, embedding = reduce(data, "UMAP", target_components)
+        if True:
+            #go ahead with UMAP
+            reducer, embedding = reduce(data, "UMAP", target_components)
+        #go ahead with PaCMAP
+        #reducer, embedding = reduce(data, "PaCMAP", target_components)
 
     return reducer, embedding
 
