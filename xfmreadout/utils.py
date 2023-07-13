@@ -286,15 +286,20 @@ def get_map(data, dims, elements, target: str):
     return img
 
 
-def map_roll(indata, dims):
+def map_roll(indata, dims, single=False):
     """
     restores map from linear data + map dimensions
+
+    data (n, chan)
+    OR
+    data (x, y)
     """
     print(indata.shape)
-    if np.shape(indata.shape)[0] == 2:
-        return indata.reshape(dims[0], dims[1], -1)
-    else:
+    #if np.shape(indata.shape)[0] == 2:
+    if single == True:
         return indata.reshape(dims[0], -1)
+    else:        
+        return indata.reshape(dims[0], dims[1], -1)
     
 def map_unroll(maps):
     """

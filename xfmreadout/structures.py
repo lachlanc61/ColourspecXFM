@@ -258,3 +258,18 @@ class PixelSeries:
         print("loaded successfully", config['export_filename']) 
 
         return self
+
+
+class DataSeries:
+    def __init__(self, datastack, dimensions):
+        self.data = datastack
+        self.dimensions = dimensions
+
+    def apply_label(self, labels):
+        #check sizes
+        self.labels = labels
+    
+    def unroll(self):   
+        pass
+
+

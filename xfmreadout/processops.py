@@ -156,20 +156,27 @@ def maps_cleanup(maps):
     """
     discard empty rows at end of map
     """
-    empty_begin=0
-    empty_last=0
+    EMPTY_DEFAULT=99999
+    empty_begin=EMPTY_DEFAULT
+    empty_end=EMPTY_DEFAULT
     for i in range(maps.shape[0]):
         row_maxcounts=np.max(maps[i,:,:])
         if row_maxcounts == 0:
-            if empty_begin == 0:
+            if empty_begin == EMPTY_DEFAULT:
                 empty_begin=i
-                empty_last=i
+                empty_end=i
                 print(f"WARNING: found empty row at {i} of {maps.shape[0]-1}")
-            elif empty_last == (i-1):
-                empty_last = i
+            elif empty_end == (i-1):
+                empty_end = i
             else:
-                empty_last = i
+                empty_end = i
                 print(f"WARNING: DISCONTIGUOUS EMPTY ROW at {i}")
+        else:
+            #if maxcount > 0 but empty_begin has been assigned, reset both empties
+            if not empty_begin == EMPTY_DEFAULT:
+                print(f"WARNING: block of data after empty rows from {empty_begin} to {empty_end}, resetting")
+                empty_begin=EMPTY_DEFAULT
+                empty_end=EMPTY_DEFAULT
 
     maps=maps[0:empty_begin,:,:]
     print(f"Revised shape: {maps.shape}")
@@ -419,14 +426,18 @@ def compile(image_directory):
         print(f"READING VARIANCE DATA")
         var_data, var_dims = extract_data(image_directory, files_variance, is_variance=True)
 
-        var_scale = dims[0] / var_dims[0]
-        if not var_scale == (dims[1] / var_dims[1]):
-            raise ValueError(f"inconsistent scale factor between x and y, for {dims} vs {var_dims} ")
+        var_scale = dims[1] / var_dims[1]   #use x dimensions as y will vary with crop
+        if not var_scale == (dims[0] / var_dims[0]):
+            print(f"WARNING: inconsistent scale factor between x and y, for {dims} vs {var_dims} ")
         
         var_data, var_dims = imgops.data_resize(var_data, var_dims, var_scale)
 
-        if not dims == var_dims:
-            raise ValueError(f"mismatch between dimensions of data and rescaled variance, {dims} vs {var_dims} ")
+        #check dimensions; crop if y differs, raise error if x differs
+        if var_dims[0] > dims[0]:
+            print(f"WARNING: Y dimensions differ between data and variance ({dims} vs {var_dims}), cropping variance")            
+            var_data = data_crop(var_data, dims, y_max=dims[0])
+        if var_dims[1] > dims[1]:
+            raise ValueError(f"mismatch between X dimensions of data and rescaled variance, {dims} vs {var_dims} ")
 
         sd_data = variance_to_std(var_data)
         sd_data = ppm_to_wt(sd_data)

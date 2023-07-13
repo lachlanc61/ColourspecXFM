@@ -9,10 +9,14 @@ import xfmreadout.utils as utils
 
 def data_gaussianblur(data, dims, kernelsize: int):
     """
-    applies a gaussian blur to a map according to kernel size (in pixels, = sd param) 
+    applies a gaussian blur to a single map according to kernel size (in pixels, = sd param) 
     """
 
-    map = utils.map_roll(data, dims)
+    """
+    BUGHERE: MAP ROLL CANT DIFFERENTIATE X,Y from N, chan
+    """
+
+    map = utils.map_roll(data, dims, single=True)
 
     updated_map = ndimage.gaussian_filter(map, kernelsize, mode='mirror')
 
@@ -24,6 +28,7 @@ def data_gaussianblur(data, dims, kernelsize: int):
 def data_resize(data, dims, zoom_factor, order=1):
     """
     resizes a map 
+
     """
     map = utils.map_roll(data, dims)
 
@@ -62,9 +67,11 @@ def apply_gaussianblur(data, sd_data, dims, kernelsize: int):
 
 def apply_resize(data, sd_data, dims, zoom_factor):
     """
-    resizes a map 
+    resizes a map / sd pair
+
+    DECPRECATED
     """    
-    if zoom_factor <= 1:
+    if zoom_factor < 1:    #downsampling
         order = 1   #bicubic
         error_factor = sqrt(4^order)
     else:
