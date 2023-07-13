@@ -3,6 +3,7 @@ import numpy as np
 
 import xfmreadout.bufferops as bufferops
 import xfmreadout.dtops as dtops
+import xfmreadout.utils as utils
 
 #CLASSES
 class Xfmap:
@@ -260,16 +261,120 @@ class PixelSeries:
         return self
 
 
-class DataSeries:
-    def __init__(self, datastack, dimensions):
-        self.data = datastack
-        self.dimensions = dimensions
+def data_unroll(maps):
+    """
+    reshape map (x, y, counts) to data (i, counts)
 
-    def apply_label(self, labels):
-        #check sizes
-        self.labels = labels
-    
-    def unroll(self):   
+    returns dataset and dimensions
+    """
+
+    if len(maps.shape) == 3:
+        data=maps.reshape(maps.shape[0]*maps.shape[1],-1)
+        dims=maps.shape[:2]
+    elif len(maps.shape) == 2:
+        data=maps.reshape(maps.shape[0]*maps.shape[1])
+        dims=maps.shape[:2]        
+    else:
+        raise ValueError(f"unexpected dimensions for {map}")
+
+    return data, dims    
+
+
+class DataSet:
+    def __init__(self, dataseries, sd_series):
         pass
+
+class DataSeries:
+    def __init__(self, datastack, dimensions=None, labels=[] ):
+        """
+        linked pair of 1D dataset and 2D image stack that are views of each other
+        """    
+            
+        self.data, self.dimensions = self.import_by_shape(datastack, dimensions=dimensions)
+
+        #TO DO: check C-contiguous and copy to new dataset if not
+
+        #check if labels are correct shape
+        if not labels == []:
+            self.labels = self.apply_labels(labels)
+        else:
+            self.labels= []
+        
+        #assign a 2D view for image-based operations
+        self.maps = self.data.reshape(dimensions[0], dimensions[1], -1)
+
+        self.check()
+
+    def check(self):
+        """
+        basic checks on dataset    
+        """
+        if not len(self.data.shape) == 2:
+            raise ValueError("invalid data shape")
+        
+        if not len(self.maps.shape) == 3:
+            raise ValueError("invalid maps shape")
+        
+        if not self.data.shape[1] == self.maps.shape[2]:
+            raise ValueError("mismatch between data and map sizes")
+        
+        if not self.data.shape[0] == self.maps.shape[0]*self.maps.shape[1]:
+            raise ValueError("mismatch between data and map shapes")
+        
+        if not self.dimensions == self.maps.shape[0],self.maps.shape[1]:
+            raise ValueError("mismatch between dimensions and map shape")
+        
+        if not ( self.labels == [] or self.data.shape[1] == len(self.labels) ):
+            raise ValueError("mismatch between data and label shapes")
+        return
+
+    def import_by_shape(self, datastack, dimensions=None):
+        """
+        ingest an array and extract data, dimensions and map
+
+        array can be either 3D Y,X,NCHAN or 2D N, NCHAN   
+        """
+        #if dimensions not given, proceed as Y,X,CHAN map
+        if dimensions == None:
+            #assume it is a map
+            if len(datastack.shape) == 3:
+                data_ = datastack.reshape(datastack.shape[0]*datastack.shape[1],-1)
+                dimensions_ = (datastack.shape[0], datastack.shape[1])
+            elif len(datastack.shape) == 2:  
+                raise ValueError("2D dataset with no dimensions given")
+            else:
+                raise ValueError("Invalid dimensions for data")
+            
+        #if dimensions match 2D data, proceed as Y,X,CHAN map with explicit dims
+        elif len(datastack.shape) == 2 and datastack.shape == dimensions:
+            data_ = datastack
+            dimensions_ = dimensions
+
+        #if data and dimensions are both 2D, proceed as N,CHAN dataset
+        elif len(dimensions) == 2 and len(datastack.shape) == 2:
+            data_ = datastack
+            dimensions_ = dimensions      
+        else:
+            raise ValueError(f"Unexpected shapes for data {datastack.shape} and dimensions {dimensions}")
+
+        return data_, dimensions_
+
+    def apply_labels(self, labels):
+        """
+        check and apply a set of labels    
+        """
+        if len(labels) == self.data.shape[1]:
+            self.labels = labels
+        else:
+            raise ValueError("Mismatch between label and data dimensions")
+    
+    def crop(self, xrange=(0, 9999), yrange=(0, 9999)):
+        """
+        crop maps in 2D and adjustcorresponding 1D view
+        """
+        self.maps = self.maps[yrange[0]:yrange[1], xrange[0], xrange[1],:]
+        self.dimensions = (self.maps.shape[0], self.maps.shape[1])
+        self.data = self.maps.reshape(self.maps.shape[0]*self.maps.shape[1],-1)
+        return self
 
 
