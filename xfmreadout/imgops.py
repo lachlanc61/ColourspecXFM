@@ -7,31 +7,28 @@ from math import sqrt
 
 import xfmreadout.utils as utils
 
-def data_gaussianblur(data, dims, kernelsize: int):
+def gaussianblur(img, kernelsize: int):
     """
-    applies a gaussian blur to a single map according to kernel size (in pixels, = sd param) 
-    """
-
-    """
-    BUGHERE: MAP ROLL CANT DIFFERENTIATE X,Y from N, chan
+    applies a gaussian blur to a single image according to kernel size (in pixels, = sd param) 
     """
 
-    map = utils.map_roll(data, dims, single=True)
+    img_ = ndimage.gaussian_filter(map, kernelsize, mode='mirror')
 
-    updated_map = ndimage.gaussian_filter(map, kernelsize, mode='mirror')
-
-    updated_data, dims__ = utils.map_unroll(updated_map)
-
-    return updated_data
+    return img_
 
 
-def data_resize(data, dims, zoom_factor, order=1):
+def img_resize(img, zoom_factor, order=1):
+
+    img_ = ndimage.zoom(map,  zoom_factor, order=order) 
+
+    return img_
+
+def apply_resize(img, sd_img, zoom_factor, order=1):
     """
     resizes a map 
 
     """
-    map = utils.map_roll(data, dims)
-
+    
     #if multiple channels are present (ie. X, Y, NCHAN)
     #   do not resize along channel axis
     if len(map.shape) == 3:
@@ -41,8 +38,7 @@ def data_resize(data, dims, zoom_factor, order=1):
     else:
         raise ValueError(f"invalid number of axes for map shape: {map.shape}, expected len() = 1-3")
     
-    updated_map = ndimage.zoom(map,  zoom, order=order)     #BUGHERE ndimage is adding a dimension
-                                                            #ie. (999,) to (999,1)
+    updated_map = ndimage.zoom(map,  zoom, order=order)     
         #order 1 = bilinear, 2 = bicubic
     
     updated_data, updated_dims = utils.map_unroll(updated_map)
@@ -50,19 +46,19 @@ def data_resize(data, dims, zoom_factor, order=1):
     return updated_data, updated_dims
 
 
-def apply_gaussianblur(data, sd_data, dims, kernelsize: int):
+def apply_gaussian(img, kernelsize: int, sd_img=None, ):
     """
-    applies a gaussian blur to a map according to kernel size (in pixels, = sd param) 
+    applies a gaussian blur
 
     updates error maps
     """
-    updated_data = data_gaussianblur(data, dims, kernelsize)
+    img_ = gaussianblur(img, kernelsize)
 
-    error_factor = sqrt(4^kernelsize)
+    error_factor = sqrt(4^kernelsize)   #rough, not really correct calc
 
-    updated_sd = sd_data/error_factor   #rough calc
+    sd_ = sd_img/error_factor   
 
-    return updated_data, updated_sd
+    return img_, sd_
 
 
 def apply_resize(data, sd_data, dims, zoom_factor):

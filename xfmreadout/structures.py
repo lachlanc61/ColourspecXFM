@@ -280,9 +280,7 @@ def data_unroll(maps):
     return data, dims    
 
 
-class DataSet:
-    def __init__(self, dataseries, sd_series):
-        pass
+
 
 class DataSeries:
     def __init__(self, datastack, dimensions=None, labels=[] ):
@@ -301,7 +299,7 @@ class DataSeries:
             self.labels= []
         
         #assign a 2D view for image-based operations
-        self.maps = self.data.reshape(dimensions[0], dimensions[1], -1)
+        self.mapview = self.data.reshape(dimensions[0], dimensions[1], -1)
 
         self.check()
 
@@ -312,17 +310,17 @@ class DataSeries:
         if not len(self.data.shape) == 2:
             raise ValueError("invalid data shape")
         
-        if not len(self.maps.shape) == 3:
+        if not len(self.mapview.shape) == 3:
             raise ValueError("invalid maps shape")
         
-        if not self.data.shape[1] == self.maps.shape[2]:
-            raise ValueError("mismatch between data and map sizes")
+        if not self.data.shape[1] == self.mapview.shape[2]:
+            raise ValueError("mismatch between data and map channels")
         
-        if not self.data.shape[0] == self.maps.shape[0]*self.maps.shape[1]:
+        if not self.data.shape[0] == self.mapview.shape[0]*self.mapview.shape[1]:
             raise ValueError("mismatch between data and map shapes")
         
-        if not self.dimensions == self.maps.shape[0],self.maps.shape[1]:
-            raise ValueError("mismatch between dimensions and map shape")
+        if not self.dimensions == (self.mapview.shape[0], self.mapview.shape[1]):
+            raise ValueError("mismatch between specified dimensions and map shape")
         
         if not ( self.labels == [] or self.data.shape[1] == len(self.labels) ):
             raise ValueError("mismatch between data and label shapes")
@@ -330,30 +328,31 @@ class DataSeries:
 
     def import_by_shape(self, datastack, dimensions=None):
         """
-        ingest an array and extract data, dimensions and map
+        ingest an array and extract data and dimensions
 
-        array can be either 3D Y,X,NCHAN or 2D N, NCHAN   
+        array can be either 3D Y,X,NCHAN or 2D N, NCHAN
+
+        unrolled dimensions must be given for 2D map   
         """
-        #if dimensions not given, proceed as Y,X,CHAN map
-        if dimensions == None:
-            #assume it is a map
-            if len(datastack.shape) == 3:
-                data_ = datastack.reshape(datastack.shape[0]*datastack.shape[1],-1)
-                dimensions_ = (datastack.shape[0], datastack.shape[1])
-            elif len(datastack.shape) == 2:  
-                raise ValueError("2D dataset with no dimensions given")
-            else:
-                raise ValueError("Invalid dimensions for data")
-            
-        #if dimensions match 2D data, proceed as Y,X,CHAN map with explicit dims
-        elif len(datastack.shape) == 2 and datastack.shape == dimensions:
+
+        #if 2D data and 2 dimensions given, proceed as N,CHAN map with explicit dims
+        if len(dimensions) == 2 and len(datastack.shape) == 2:
             data_ = datastack
             dimensions_ = dimensions
+        
+        #if 3D data given with matching dimensions, proceed as Y,X,CHAN map with explicit dims
+        elif len(datastack.shape) == 3 and dimensions == (self.datastack.shape[0], self.datastack.shape[1]):
+            data_ = datastack.reshape(datastack.shape[0]*datastack.shape[1],-1)
+            dimensions_ = dimensions
 
-        #if data and dimensions are both 2D, proceed as N,CHAN dataset
-        elif len(dimensions) == 2 and len(datastack.shape) == 2:
-            data_ = datastack
-            dimensions_ = dimensions      
+        #if 3D data given without dimensions, proceed as Y,X,CHAN map and derive dimensions
+        elif dimensions == None and len(datastack.shape) == 3:
+            dimensions_ = (datastack.shape[0], datastack.shape[1])
+            data_ = datastack.reshape(datastack.shape[0]*datastack.shape[1],-1)
+
+        #fail cases:
+        elif dimensions == None and not len(datastack.shape) == 3:  
+            raise ValueError("2D dataset provided without explicit map dimensions")          
         else:
             raise ValueError(f"Unexpected shapes for data {datastack.shape} and dimensions {dimensions}")
 
@@ -372,9 +371,49 @@ class DataSeries:
         """
         crop maps in 2D and adjustcorresponding 1D view
         """
-        self.maps = self.maps[yrange[0]:yrange[1], xrange[0], xrange[1],:]
-        self.dimensions = (self.maps.shape[0], self.maps.shape[1])
-        self.data = self.maps.reshape(self.maps.shape[0]*self.maps.shape[1],-1)
+        self.maps = self.mapview[yrange[0]:yrange[1], xrange[0]:xrange[1], :]
+        self.dimensions = (self.mapview.shape[0], self.mapview.shape[1])
+        self.data = self.mapview.reshape(self.mapview.shape[0]*self.mapview.shape[1],-1)
         return self
 
+#meta-class with set of DataSeries
+class DataSet:
+    def __init__(self, dataseries: DataSeries, se:DataSeries=None):
+        self.d = dataseries
+        self.dimensions = dataseries.dimensions
 
+        if se == None:
+           self.se = DataSeries(np.sqrt(dataseries.data), dataseries.dimensions) 
+        else:
+            self.se = se
+
+        self.check()
+
+    def check(self):
+        if not self.d.data.shape == self.se.data.shape:
+            raise ValueError("shape mismatch between data and serr")        
+        
+        if not self.d.dimensions == self.se.dimensions:
+            raise ValueError("stored dimension mismatch between data and serr")  
+
+    #  TO DO extend crop, zoom etc to crop data + errors
+
+#meta-class with extended DataSeries
+#data can be accessed directly as self.data, self.mapview etc
+#error accessible next layer down as self.se.data
+class DataStatsSeries(DataSeries):
+    def __init__(self, datastack, dimensions=None, labels=[], se:np.ndarray=None ):
+        
+        #apply all attrs/methods from DataSeries
+        super().__init__(datastack, dimensions=dimensions, labels=labels)
+        
+        #add errors as second, nested DataSeries
+        if se == None:
+            self.se = DataSeries(np.sqrt(self.data), self.dimensions) 
+        elif se.shape == self.data.shape:
+            self.se = DataSeries(se, self.dimensions) 
+        else:
+            raise ValueError("mismatch between data and stderror dimensions")
+        print(self.data)
+
+    #  TO DO must extend crop, zoom etc to crop error as well...
