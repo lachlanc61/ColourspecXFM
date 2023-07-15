@@ -15,15 +15,15 @@ def test_dataseries_mapview():
     DIMENSIONS=(40,10)
     array = np.zeros(SHAPE, dtype=np.float32)
 
-    ds = structures.DataSeries(array, dimensions=DIMENSIONS)
+    data = structures.DataSeries(array, dimensions=DIMENSIONS)
 
-    ds.data[25,1] = 1.0
+    data.d[25,1] = 1.0
 
-    assert ds.mapview[2,5,1] == 1.0
+    assert data.mapview[2,5,1] == 1.0
 
-    ds.mapview[2,5,2] = 1.0
+    data.mapview[2,5,2] = 1.0
 
-    assert ds.data[25,2] == 1.0    
+    assert data.d[25,2] == 1.0    
 
 
 def test_dataseries_crop():
@@ -33,14 +33,41 @@ def test_dataseries_crop():
     YCROP=(0,20)
 
     array = np.zeros(SHAPE, dtype=np.float32)
-    ds = structures.DataSeries(array, dimensions=DIMENSIONS)
+    data = structures.DataSeries(array, dimensions=DIMENSIONS)
 
-    ds.crop(xrange=XCROP, yrange=YCROP)    
+    data.crop(xrange=XCROP, yrange=YCROP)    
 
-    ds.mapview[1,1,2]=2.0
+    data.mapview[1,1,2]=2.0
 
-    assert ds.data[DIMENSIONS[1]+1,2] == 2.0
+    assert data.d[DIMENSIONS[1]+1,2] == 2.0
 
-    ds.data[DIMENSIONS[1]+1,3] = 2.0
+    data.d[DIMENSIONS[1]+1,3] = 2.0
 
-    assert ds.mapview[1,1,3] == 2.0
+    assert data.mapview[1,1,3] == 2.0
+
+
+def test_dataset_create():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+
+    array = np.random.randint(0, 100, SHAPE)
+    data = structures.DataSeries(array, dimensions=DIMENSIONS)
+
+    ds = structures.DataSet(data)
+
+    assert np.allclose(ds.data.d, array)
+
+
+def test_dataset_create_with_stderr():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+
+    array_1 = np.random.randint(0, 100, SHAPE)
+    array_2 = np.random.randint(0, 100, SHAPE/2)    #TODO cant divide tuple
+
+    data = structures.DataSeries(array_1, dimensions=DIMENSIONS)
+    stderr = structures.DataSeries(array_2, dimensions=DIMENSIONS/2)    
+
+    ds = structures.DataSet(data, stderr)
+
+    assert np.allclose(ds.data.d, array_1)    

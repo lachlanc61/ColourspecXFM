@@ -31,14 +31,14 @@ def apply_resize(img, sd_img, zoom_factor, order=1):
     
     #if multiple channels are present (ie. X, Y, NCHAN)
     #   do not resize along channel axis
-    if len(map.shape) == 3:
+    if len(img.shape) == 3:
         zoom = (zoom_factor, zoom_factor, 1)
-    elif len(map.shape) <= 2:
+    elif len(img.shape) <= 2:
         zoom = zoom_factor
     else:
-        raise ValueError(f"invalid number of axes for map shape: {map.shape}, expected len() = 1-3")
+        raise ValueError(f"invalid number of axes for map shape: {img.shape}, expected len() = 1-3")
     
-    updated_map = ndimage.zoom(map,  zoom, order=order)     
+    updated_map = ndimage.zoom(img,  zoom, order=order)     
         #order 1 = bilinear, 2 = bicubic
     
     updated_data, updated_dims = utils.map_unroll(updated_map)
