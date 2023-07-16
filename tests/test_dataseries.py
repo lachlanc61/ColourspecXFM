@@ -61,12 +61,16 @@ def test_dataset_create():
 def test_dataset_create_with_stderr():
     SHAPE=(400,20)
     DIMENSIONS=(40,10)
+    dimensions_half=(int(DIMENSIONS[0]/2),int(DIMENSIONS[1]/2))
+    shape_half=(dimensions_half[0]*dimensions_half[1],SHAPE[1])
 
-    array_1 = np.random.randint(0, 100, SHAPE)
-    array_2 = np.random.randint(0, 100, SHAPE/2)    #TODO cant divide tuple
+    array_1 = np.random.randint(0, 100, shape_half) 
+    array_2 = np.random.randint(0, 100, dimensions_half) 
+
+    assert 0
 
     data = structures.DataSeries(array_1, dimensions=DIMENSIONS)
-    stderr = structures.DataSeries(array_2, dimensions=DIMENSIONS/2)    
+    stderr = structures.DataSeries(array_2, dimensions=(int(DIMENSIONS[0]/2),int(DIMENSIONS[1]/2)))    
 
     ds = structures.DataSet(data, stderr)
 
