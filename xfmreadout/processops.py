@@ -289,32 +289,6 @@ def data_normalise_to_sd(data, sd, dims, elements):
         result[:,i] = data__
         result_sd[:,i] = sd__
 
-#        print(f"{elements[i]} -- data: {avg_data:.3f}, data(98): {q99_data:.3f}, , data(max): {max_data:.3f}, ratio: {ratio:.3f}")
-#        print(f"{elements[i]} -- sd: {avg_sd:.3f}, sd(25): {np.quantile(sd[:,i],0.25):.3f}, sd(max): {np.max(sd[:,i]):.3f}, sd(min): {np.min(sd[:,i]):.3f}, ratio: {ratio:.3f}")
-        #result[:,i] = data[:,i]-q10_sd
-        """
-        TO DO:
-            for each map:
-                while ratio of sd to data above threshold
-                   apply gaussian blur, improve sd
-        """
-        
-        if False:
-            subtracted = data[:,i]-q10_sd
-            result[:,i] = subtracted.clip(0)
-
-        if False:   #alternate method
-            ratio=avg_sd*SD_MULTIPLE/avg_data   #default            
-            if elements[i] not in DIRECT_MAPS:
-                #result[:,i] = data[:,i]-q10_sd
-                if ratio >= 1:
-                    result[:,i] = data[:,i]/ratio
-                else:
-                    result[:,i] = data[:,i]
-                result[:,i] = np.where(result[:,i]<0, 0, result[:,i])
-            else:
-                result[:,i] = data[:,i]/np.max(data[:,i])
-
     return result, result_sd
 
 
@@ -433,39 +407,24 @@ def compile(image_directory):
 
         ds = structures.DataSet(dataseries, se=seseries, labels=elements)
 
-        #cut all this - in DataSet now
-        if False:
-            var_scale = dims[1] / var_dims[1]   #use x dimensions as y will vary with crop
-            if not var_scale == (dims[0] / var_dims[0]):
-                print(f"WARNING: inconsistent scale factor between x and y, for {dims} vs {var_dims} ")
-            
-            var_data, var_dims = imgops.data_resize(var_data, var_dims, var_scale)
-
-            #check dimensions; crop if y differs, raise error if x differs
-            if var_dims[0] > dims[0]:
-                print(f"WARNING: Y dimensions differ between data and variance ({dims} vs {var_dims}), cropping variance")            
-                var_data = data_crop(var_data, dims, y_max=dims[0])
-            if var_dims[1] > dims[1]:
-                raise ValueError(f"mismatch between X dimensions of data and rescaled variance, {dims} vs {var_dims} ")
-
-
-            sd_data = ppm_to_wt(sd_data)
-            sd_dims = var_dims
-
+        """
+        TO-DO: image data is usually float, raw data is int
+        currently failing because DataSet expects int
+            really need to handle both of these
+        """
         ds.downsample_by_se()
 
         #data, sd_data = data_normalise_to_sd(data, sd_data, dims, elements)
     else:
-        data = data_normalise(data, elements)
+        ds = structures.DataSet(dataseries, labels=elements)
 
     print("-----------------")
-    print(f"Final shape: {data.shape}")
+    print(f"Final shape: {ds.data.shape}")
 
     print("-----------------")
     print(f"Element values:")    
     for i in range(len(elements)):
-        print(f"{elements[i]}, max: {np.max(data[:,i]):.2f}, 98: {np.quantile(data[:,i],0.98):.2f}, avg: {np.average(data[:,i]):.2f}")
+        print(f"{elements[i]}, max: {np.max(ds.data.d[:,i]):.2f}, 98: {np.quantile(ds.data.d[:,i],0.98):.2f}, avg: {np.average(ds.data.d[:,i]):.2f}")
     print("-----------------")
 
-
-    return elements, data, dims, sd_data, sd_dims
+    return ds

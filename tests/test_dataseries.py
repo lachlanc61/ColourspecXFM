@@ -159,5 +159,45 @@ def test_dataset_downsample_by_se():
 
     assert ds.check()
 
+
+def test_dataset_downsample_without_se():
+    """
+    check behaviour if no stderror given
+
+    downsample_by_se should compelte but leave unchanged
+    """
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+
+    array_d = np.random.randint(0, 100, SHAPE)          #int
+
+    #assert 0
+    data = structures.DataSeries(array_d, dimensions=DIMENSIONS)
+
+    #assert 0
+    ds = structures.DataSet(data)
+    expected = ds.data.d
+
+    ds.downsample_by_se()
+
+    assert ds.check()
+    assert np.allclose(ds.data.d, expected)
+
 #    assert ds.data.d.shape == ds.se.d.shape
 #    assert ds.data.dimensions == ds.se.dimensions
+
+def test_pxset_create():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+
+    array_d = np.random.randint(0, 100, SHAPE)
+    array_se = np.random.uniform(0.0, 10.0, SHAPE)
+
+    data = structures.DataSeries(array_d, dimensions=DIMENSIONS)
+    stderr = structures.DataSeries(array_se, dimensions=DIMENSIONS)    
+
+    ds = structures.DataSet(data, stderr)
+
+    px = structures.PixelSet(ds)
+
+    assert px.check()

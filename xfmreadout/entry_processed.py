@@ -39,7 +39,6 @@ def entry_processed():
     """
     entrypoint wrapper getting args from sys
     """
-
     args_in = sys.argv[1:]  #NB: exclude 0 == script name
     read_processed(args_in)
 
@@ -64,26 +63,26 @@ def read_processed(args_in):
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
     
-    elements, data, dims, sd, sd_dims = processops.compile(image_directory)
+    ds = processops.compile(image_directory)
 
-    data, dims = processops.data_crop(data, dims, args.x_coords[0], args.x_coords[1], args.y_coords[0], args.y_coords[1])
-    sd, sd_dims = processops.data_crop(sd, sd_dims, args.x_coords[0], args.x_coords[1], args.y_coords[0], args.y_coords[1])
+    ds.crop((args.x_coords[0], args.x_coords[1]), (args.y_coords[0], args.y_coords[1]))
 
-    weights = np.ones(data.shape[1], dtype=np.float32)
-    weights = processops.calc_weights(data, weights, do_sqrt=False) #weights unchanged
+    pxs = structures.PixelSeries(ds)
 
-    data_ = processops.apply_weights(data, weights)
+    pxs.modify_weights(do_sqrt=False)
+
+    data_ = pxs.weighted
     data_ = np.sqrt(data_)
 
     overwrite = ( args.force or args.force_clustering )
 
-    categories, embedding = clustering.run(data_, image_directory, force_embed=FORCE_EMBED, force_clust=FORCE_CLUST, overwrite=OVERWRITE)
+    categories, embedding = clustering.run(data_, image_directory, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
 
-    classavg = clustering.get_classavg(data, categories, image_directory, force=FORCE_CLUST, overwrite=OVERWRITE)
+    classavg = clustering.get_classavg(pxs.data.d, categories, image_directory, force=args.force_clustering, overwrite=overwrite)
 
-    palette = vis.plot_clusters(categories, classavg, embedding, dims, output_directory=output_directory)
+    palette = vis.plot_clusters(categories, classavg, embedding, pxs.data.dimensions, output_directory=output_directory)
 
-    vis.table_classavg(classavg, elements)
+    vis.table_classavg(classavg, pxs.labels)
 
     return
 

@@ -95,7 +95,7 @@ def calc_quantiles(data, sd, multiplier):
 
     q2_sd = utils.mean_within_quantile(sd, qmin=SD_QUANTILE_MIN, qmax=SD_QUANTILE_MAX)
 
-    ratio = q99_data / (q2_sd*multiplier)
+    #ratio = q99_data / (q2_sd*multiplier)
 
     ratio = (q2_sd*multiplier) / q99_data
 
