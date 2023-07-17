@@ -400,7 +400,7 @@ class DataSet:
 
     handles crop, zoom etc functions while maintaining error statistics
     """
-    def __init__(self, data, stderrseries=None, labels=[]):
+    def __init__(self, data, se=None, labels=[]):
 
         #data handling
         if not isinstance(data, DataSeries):
@@ -418,13 +418,13 @@ class DataSet:
             self.labels= []
 
         #stderr handling
-        if stderrseries == None:
+        if se == None:
             self.se = DataSeries(np.sqrt(self.data.d), self.data.dimensions) 
         else:
-            if not isinstance(stderrseries, DataSeries):
-                stderrseries = DataSeries(stderrseries)
+            if not isinstance(se, DataSeries):
+                stderrseries = DataSeries(se)
 
-            self.se = stderrseries
+            self.se = se
             if not self.se.dimensions == self.data.dimensions:
                 self.match_se_to_data()
 

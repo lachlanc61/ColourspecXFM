@@ -45,7 +45,6 @@ def test_dataseries_crop():
 
     assert data.mapview[1,1,3] == 2.0
 
-
 def test_dataset_create():
     SHAPE=(400,20)
     DIMENSIONS=(40,10)
@@ -57,21 +56,78 @@ def test_dataset_create():
 
     assert np.allclose(ds.data.d, array)
 
-
-def test_dataset_create_with_stderr():
+def test_dataset_create_stderr():
     SHAPE=(400,20)
     DIMENSIONS=(40,10)
-    dimensions_half=(int(DIMENSIONS[0]/2),int(DIMENSIONS[1]/2))
-    shape_half=(dimensions_half[0]*dimensions_half[1],SHAPE[1])
+
+    array_1 = np.random.randint(0, 100, SHAPE)
+    array_2 = np.random.randint(0, 10, SHAPE)
+
+    data = structures.DataSeries(array_1, dimensions=DIMENSIONS)
+    stderr = structures.DataSeries(array_2, dimensions=DIMENSIONS)    
+
+    ds = structures.DataSet(data, stderr)
+
+    assert np.allclose(ds.data.d, array_1)
+    assert np.allclose(ds.se.d, array_2)
+
+
+def test_dataset_create_stderr_smaller():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+    se_dimensions=(int(DIMENSIONS[0]/2),int(DIMENSIONS[1]/2))
+    se_shape=(se_dimensions[0]*se_dimensions[1],SHAPE[1])
 
     array_1 = np.random.randint(0, 100, SHAPE) 
-    array_2 = np.random.randint(0, 100, shape_half) 
+    array_2 = np.random.randint(0, 100, se_shape) 
 
     #assert 0
     data = structures.DataSeries(array_1, dimensions=DIMENSIONS)
-    stderr = structures.DataSeries(array_2, dimensions=dimensions_half)    
+    stderr = structures.DataSeries(array_2, dimensions=se_dimensions)    
 
     #assert 0
     ds = structures.DataSet(data, stderr)
 
     assert np.allclose(ds.data.d, array_1)    
+    assert ds.data.d.shape == ds.se.d.shape
+    assert ds.data.dimensions == ds.se.dimensions
+
+def test_dataset_create_stderr_larger():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+    se_dimensions=(int(DIMENSIONS[0]*2),int(DIMENSIONS[1]*2))
+    se_shape=(se_dimensions[0]*se_dimensions[1],SHAPE[1])
+
+    array_1 = np.random.randint(0, 100, SHAPE) 
+    array_2 = np.random.randint(0, 100, se_shape) 
+
+    #assert 0
+    data = structures.DataSeries(array_1, dimensions=DIMENSIONS)
+    stderr = structures.DataSeries(array_2, dimensions=se_dimensions)    
+
+    #assert 0
+    ds = structures.DataSet(data, stderr)
+
+    assert np.allclose(ds.data.d, array_1)    
+    assert ds.data.d.shape == ds.se.d.shape
+    assert ds.data.dimensions == ds.se.dimensions
+
+def test_dataset_create_stderr_diffaxes():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+    se_dimensions=(int(DIMENSIONS[0]/2),int(DIMENSIONS[1]/3))   #different scalars
+    se_shape=(se_dimensions[0]*se_dimensions[1],SHAPE[1])
+
+    array_1 = np.random.randint(0, 100, SHAPE) 
+    array_2 = np.random.randint(0, 100, se_shape) 
+
+    #assert 0
+    data = structures.DataSeries(array_1, dimensions=DIMENSIONS)
+    stderr = structures.DataSeries(array_2, dimensions=se_dimensions)    
+
+    #assert 0
+    ds = structures.DataSet(data, stderr)
+
+    assert np.allclose(ds.data.d, array_1)    
+    assert ds.data.d.shape == ds.se.d.shape
+    assert ds.data.dimensions == ds.se.dimensions
