@@ -11,8 +11,7 @@ def gaussianblur(img, kernelsize: int):
     """
     applies a gaussian blur to a single image according to kernel size (in pixels, = sd param) 
     """
-
-    img_ = ndimage.gaussian_filter(map, kernelsize, mode='mirror')
+    img_ = ndimage.gaussian_filter(img, kernelsize, mode='mirror')
 
     return img_
 
@@ -46,19 +45,23 @@ def apply_resize(img, sd_img, zoom_factor, order=1):
     return updated_data, updated_dims
 
 
-def apply_gaussian(img, kernelsize: int, sd_img=None, ):
+def apply_gaussian(img, kernelsize: int, se_=None ):
     """
     applies a gaussian blur
 
     updates error maps
     """
+    if not len(img.shape) == 2:
+        raise ValueError("Expected a 2D image of shape Y,X")
+
     img_ = gaussianblur(img, kernelsize)
 
     error_factor = sqrt(4^kernelsize)   #rough, not really correct calc
 
-    sd_ = sd_img/error_factor   
+    if se_ is not None:
+        se_ = se_/error_factor   
 
-    return img_, sd_
+    return img_, se_
 
 
 def apply_resize(data, sd_data, dims, zoom_factor):
@@ -81,3 +84,19 @@ def apply_resize(data, sd_data, dims, zoom_factor):
     return updated_data, updated_sd, updated_dims
 
 
+
+def calc_quantiles(data, sd, multiplier):
+    DATA_QUANTILE=0.999
+    SD_QUANTILE_MIN=0.25
+    SD_QUANTILE_MAX=0.5
+
+    max_data = np.max(data)
+    q99_data = utils.mean_within_quantile(data, qmin=DATA_QUANTILE)
+
+    q2_sd = utils.mean_within_quantile(sd, qmin=SD_QUANTILE_MIN, qmax=SD_QUANTILE_MAX)
+
+    ratio = q99_data / (q2_sd*multiplier)
+
+    ratio = (q2_sd*multiplier) / q99_data
+
+    return ratio, q99_data, q2_sd

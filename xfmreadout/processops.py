@@ -8,6 +8,7 @@ from math import sqrt
 import xfmreadout.clustering as clustering
 import xfmreadout.utils as utils
 import xfmreadout.imgops as imgops
+import xfmreadout.structures as structures
 
 FORCE = True
 AUTOSAVE = True
@@ -419,31 +420,41 @@ def compile(image_directory):
     print("-----------------")    
     print(f"READING MAP DATA")
     data, dims = extract_data(image_directory, files_maps)
-    data = ppm_to_wt(data)
+    #data = ppm_to_wt(data)  #cut this
+
+    dataseries = structures.DataSeries(data, dims)
 
     if variance_found:
         print("-----------------")
         print(f"READING VARIANCE DATA")
-        var_data, var_dims = extract_data(image_directory, files_variance, is_variance=True)
+        var_data, se_dims = extract_data(image_directory, files_variance, is_variance=True)
+        se_data = variance_to_std(var_data)
+        seseries = structures.DataSeries(se_data, se_dims)
 
-        var_scale = dims[1] / var_dims[1]   #use x dimensions as y will vary with crop
-        if not var_scale == (dims[0] / var_dims[0]):
-            print(f"WARNING: inconsistent scale factor between x and y, for {dims} vs {var_dims} ")
-        
-        var_data, var_dims = imgops.data_resize(var_data, var_dims, var_scale)
+        ds = structures.DataSet(dataseries, se=seseries, labels=elements)
 
-        #check dimensions; crop if y differs, raise error if x differs
-        if var_dims[0] > dims[0]:
-            print(f"WARNING: Y dimensions differ between data and variance ({dims} vs {var_dims}), cropping variance")            
-            var_data = data_crop(var_data, dims, y_max=dims[0])
-        if var_dims[1] > dims[1]:
-            raise ValueError(f"mismatch between X dimensions of data and rescaled variance, {dims} vs {var_dims} ")
+        #cut all this - in DataSet now
+        if False:
+            var_scale = dims[1] / var_dims[1]   #use x dimensions as y will vary with crop
+            if not var_scale == (dims[0] / var_dims[0]):
+                print(f"WARNING: inconsistent scale factor between x and y, for {dims} vs {var_dims} ")
+            
+            var_data, var_dims = imgops.data_resize(var_data, var_dims, var_scale)
 
-        sd_data = variance_to_std(var_data)
-        sd_data = ppm_to_wt(sd_data)
-        sd_dims = var_dims
+            #check dimensions; crop if y differs, raise error if x differs
+            if var_dims[0] > dims[0]:
+                print(f"WARNING: Y dimensions differ between data and variance ({dims} vs {var_dims}), cropping variance")            
+                var_data = data_crop(var_data, dims, y_max=dims[0])
+            if var_dims[1] > dims[1]:
+                raise ValueError(f"mismatch between X dimensions of data and rescaled variance, {dims} vs {var_dims} ")
 
-        data, sd_data = data_normalise_to_sd(data, sd_data, dims, elements)
+
+            sd_data = ppm_to_wt(sd_data)
+            sd_dims = var_dims
+
+        ds.downsample_by_se()
+
+        #data, sd_data = data_normalise_to_sd(data, sd_data, dims, elements)
     else:
         data = data_normalise(data, elements)
 

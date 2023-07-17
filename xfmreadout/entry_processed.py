@@ -46,8 +46,6 @@ def entry_processed():
     return
 
 
-
-
 def read_processed(args_in):
     """
     read exported tiffs from geopixe

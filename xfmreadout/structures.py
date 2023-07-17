@@ -4,6 +4,7 @@ from scipy import ndimage
 
 import xfmreadout.bufferops as bufferops
 import xfmreadout.dtops as dtops
+import xfmreadout.imgops as imgops
 import xfmreadout.utils as utils
 
 
@@ -284,7 +285,7 @@ def data_unroll(maps):
 
 
 class DataSeries:
-    def __init__(self, data: 'np.ndarray', dimensions=None ):
+    def __init__(self, data: 'np.ndarray', dimensions=None):
         """
         linked pair of 1D dataset and 2D image stack that are views of each other
         """    
@@ -292,10 +293,11 @@ class DataSeries:
         self.d, self.dimensions = self.import_by_shape(data, dimensions=dimensions)
 
         #TO DO: check C-contiguous and copy to new dataset if not
-
-       
+      
         #assign a 2D view for image-based operations
         self.mapview = self.mapview_from_data(self.d, self.dimensions)
+
+        self.dtype = self.d.dtype
 
         self.check()
 
@@ -303,6 +305,10 @@ class DataSeries:
         """
         basic checks on dataset    
         """
+
+        if not np.issubdtype(self.d.dtype, np.number):
+            raise ValueError("data for DataSeries must be numeric")
+
         if not len(self.d.shape) == 2:
             raise ValueError("invalid data shape")
         
@@ -320,7 +326,8 @@ class DataSeries:
         
         if not np.may_share_memory(self.d, self.mapview):
             raise ValueError("dataseries data and mapview have become disconnected")
-        return
+        
+        return True
 
     def import_by_shape(self, data, dimensions=None):
         """
@@ -330,6 +337,9 @@ class DataSeries:
 
         unrolled dimensions must be given for 2D map   
         """
+
+        if not np.issubdtype(data.dtype, np.number):
+            raise ValueError("data for DataSeries must be numeric")
 
         #if 2D data and 2 dimensions given, proceed as N,CHAN map with explicit dims
         if len(data.shape) == 2 and len(dimensions) == 2:
@@ -396,11 +406,11 @@ class DataSeries:
 #meta-class with set of DataSeries
 class DataSet:
     """
-    meta-class with paired objects for data, error
+    meta-class with paired objects for data (int), error (float)
 
     handles crop, zoom etc functions while maintaining error statistics
     """
-    def __init__(self, data, se=None, labels=[]):
+    def __init__(self, data, se=None, labels=[], guess_se=True):
 
         #data handling
         if not isinstance(data, DataSeries):
@@ -409,6 +419,9 @@ class DataSet:
         self.data = data
         self.dimensions = data.dimensions
         self.nchan = data.d.shape[1]
+
+        if not np.issubdtype(self.data.d.dtype, np.integer):
+            raise ValueError('creating a DataSet requires data of type integer')
 
         #label handling
         #   check shape of labels, if given
@@ -419,12 +432,22 @@ class DataSet:
 
         #stderr handling
         if se == None:
-            self.se = DataSeries(np.sqrt(self.data.d), self.data.dimensions) 
+            #TO-DO:
+            #   may need to adjust this function so se can be truly null
+            #   otherwise big datasets without errors will create a huge array of useless zeros in memory 
+            if guess_se==True:  
+                self.se = DataSeries(np.sqrt(self.data.d), self.data.dimensions) 
+            else:
+                self.se = DataSeries(np.zeros(self.data.d.shape, dtype=np.float32), self.data.dimensions) 
         else:
-            if not isinstance(se, DataSeries):
-                stderrseries = DataSeries(se)
+            if isinstance(se, DataSeries):
+                self.se = se
+            else:
+                self.se = DataSeries(se)
 
-            self.se = se
+            if not np.issubdtype(self.se.d.dtype, np.floating):
+                self.se = DataSeries(se.d.astype(np.float32))
+
             if not self.se.dimensions == self.data.dimensions:
                 self.match_se_to_data()
 
@@ -473,6 +496,15 @@ class DataSet:
         if not ( self.labels == [] or self.data.d.shape[1] == len(self.labels) ):
             raise ValueError("mismatch between data and label shapes")
 
+        if not np.issubdtype(self.data.d.dtype, np.integer):
+            raise ValueError("data DataSeries must be integer")  
+
+        if not np.issubdtype(self.se.d.dtype, np.floating):
+            raise ValueError("stderr DataSeries must be float")    
+        
+        self.data.check()
+        self.se.check()
+
         return True
     
     def apply_labels(self, labels):
@@ -480,11 +512,9 @@ class DataSet:
         check and apply a set of labels    
         """
         if len(labels) == self.data.d.shape[1]:
-            labels_ = labels
+            self.labels = labels
         else:
             raise ValueError("Mismatch between provided labels and data dimensions")
-
-        return labels_
 
     def resize(self, zoom_factor):
         """
@@ -504,17 +534,41 @@ class DataSet:
         self.check()
 
 
+    def downsample_by_se(self, deweight=False):
+
+        SD_MULTIPLIER = 2
+        DEWEIGHT_FACTOR = 1
+        NON_ELEMENT_MAPS = ["Compton", "sum", "Back", "Mo"]    #to-do recognise Mo/Rh from anode and ignore selectively
+
+        self.check()
 
 
+        for i in range(self.data.d.shape[1]):
 
+            img__ = np.ndarray.copy(self.data.mapview[:,:,i])
+            se__ = np.ndarray.copy(self.se.mapview[:,:,i])
 
+            ratio, q2_sd, q99_data = imgops.calc_quantiles(img__, se__, SD_MULTIPLIER)
 
+            j=0
+            while ratio >= 1:
+                print(f"averaging channel {i}, cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
+                img__, se__ = imgops.apply_gaussian(img__, 1, se__)
 
+                if deweight:
+                    #deweight channel for each gaussian applied
+                    img__ = img__/DEWEIGHT_FACTOR
+                    se__ = se__/DEWEIGHT_FACTOR
 
+                    img__ = np.rint(img__)
 
+                ratio, q2_sd, q99_data = imgops.calc_quantiles(img__, se__, SD_MULTIPLIER)
+                j+=1
 
+            self.data.mapview[:,:,i] = img__
+            self.se.mapview[:,:,i] = se__
 
-
+        self.check()
 
 #meta-class with extended DataSeries
 #data can be accessed directly as self.data, self.mapview etc
