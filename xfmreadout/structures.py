@@ -368,6 +368,17 @@ class DataSeries:
 
         return data_, dimensions_
 
+    def ingest_from_data():
+        """
+        TO-DO need methods to ingest new data from both data and map without recreating object
+        
+        basically import_by_shape
+        
+        eg. dataseries.d = somenp
+        """
+        pass
+
+
     def data_from_mapview(self, mapview):
         """
         reshape mapview into data and return with original dimensions
@@ -462,6 +473,7 @@ class DataSet:
                     self.match_se_to_data()
 
         self.check()
+
 
     def match_se_to_data(self, scale_axis=1):
         yfactor = self.data.dimensions[0] / self.se.dimensions[0]
