@@ -431,8 +431,8 @@ class DataSet:
         self.check()
 
     def match_se_to_data(self, scale_axis=1):
-        yfactor = self.se.dimensions[0] / self.data.dimensions[0]
-        xfactor = self.se.dimensions[1] / self.data.dimensions[1]
+        yfactor = self.data.dimensions[0] / self.se.dimensions[0]
+        xfactor = self.data.dimensions[1] / self.se.dimensions[1]
         if not yfactor == xfactor:
             print(f"WARNING: different ratios for x and y, scaling on axis {scale_axis}, other will be cropped")
 

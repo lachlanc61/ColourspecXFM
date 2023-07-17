@@ -11,6 +11,7 @@ import xfmreadout.argops as argops
 import xfmreadout.clustering as clustering
 import xfmreadout.visualisations as vis
 import xfmreadout.processops as processops
+import xfmreadout.structures as structures
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -33,14 +34,35 @@ PACKAGE_CONFIG='xfmreadout/config.yaml'
 #INITIALISE
 #-----------------------------------
 
+
 def entry_processed():
     """
     entrypoint wrapper getting args from sys
     """
+    if True:
+        SHAPE=(400,20)
+        DIMENSIONS=(40,10)
+        dimensions_half=(int(DIMENSIONS[0]/2),int(DIMENSIONS[1]/2))
+        shape_half=(dimensions_half[0]*dimensions_half[1],SHAPE[1])
+
+        array_1 = np.random.randint(0, 100, SHAPE) 
+        array_2 = np.random.randint(0, 100, shape_half) 
+
+        #assert 0
+        data = structures.DataSeries(array_1, dimensions=DIMENSIONS)
+        stderr = structures.DataSeries(array_2, dimensions=dimensions_half)    
+
+        #assert 0
+        ds = structures.DataSet(data, stderr)
+
+
     args_in = sys.argv[1:]  #NB: exclude 0 == script name
     read_processed(args_in)
 
     return
+
+
+
 
 def read_processed(args_in):
     """
