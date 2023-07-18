@@ -1,6 +1,7 @@
 import pytest
 import sys, os
 import numpy as np
+import xfmreadout.utils as utils
 
 TEST_DIR=os.path.realpath(os.path.dirname(__file__))
 BASE_DIR=os.path.dirname(TEST_DIR)
@@ -201,3 +202,53 @@ def test_pxset_create():
     px = structures.PixelSet(ds)
 
     assert px.check()
+
+
+def test_smartcast_ok():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+    MIN=0
+    MAX=100
+    rng = np.random.default_rng()
+
+    dtype_list = [ np.float32, np.float64, np.int16, np.int32, np.int64, np.uint16, np.uint32, np.uint64 ]
+
+    for dtype_origin in dtype_list:
+        if np.issubdtype(dtype_origin, np.floating):
+            array_origin = rng.random(SHAPE, dtype=dtype_origin)*MAX
+        else:
+            array_origin = rng.integers(MIN, MAX, SHAPE, dtype=dtype_origin)
+
+        for dtype_new in dtype_list:
+            array_new = utils.smartcast(array_origin, dtype_new)
+
+            assert(np.allclose(array_new, array_origin, atol=1))
+
+def test_dataseries_assign():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+    MIN=0
+    MAX=1000
+    rng = np.random.default_rng()
+
+    dtype_list = [ np.float32, np.float64, np.int16, np.int32, np.int64, np.uint16, np.uint32, np.uint64 ]
+
+    for dtype_origin in dtype_list:
+
+        if np.issubdtype(dtype_origin, np.floating):
+            array_origin = rng.random(SHAPE, dtype=dtype_origin)*MAX
+        else:
+            array_origin = rng.integers(MIN, MAX, SHAPE, dtype=dtype_origin)
+
+        for dtype_new in dtype_list:
+            data = structures.DataSeries(array_origin, dimensions=DIMENSIONS)
+
+            if np.issubdtype(dtype_new, np.floating):
+                array_new = rng.random(SHAPE, dtype=dtype_new)*MAX
+            else:
+                array_new = rng.integers(MIN, MAX, SHAPE, dtype=dtype_new)
+
+                data.assign(array_new)
+
+            assert data.check()
+            assert(np.allclose(data.d, array_origin, atol=1))

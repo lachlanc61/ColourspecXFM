@@ -235,7 +235,7 @@ def get_classavg(raw_data, categories, output_dir, force=False, overwrite=True):
     return classavg
 
 
-def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True):
+def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True, target_components=3):
 
     if force_embed:
         force_clust = True
@@ -257,7 +257,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     #   produce reduced-dim embedding per reducer
     if force_embed or not exists_embed:
         print("CALCULATING EMBED")
-        reducer, embedding = multireduce(data, target_components=3)
+        reducer, embedding = multireduce(data, target_components=target_components)
         if overwrite or not exists_embed:
             np.save(file_embed,embedding)
     else:

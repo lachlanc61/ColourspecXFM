@@ -83,6 +83,39 @@ def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):
 
     return palette
 
+
+def cluster_colourmap(embedding, categories):
+    """
+    create a colourmap clustered onto an embedding
+    """
+    GREY=( 0.5, 0.5, 0.5 )
+
+    cat_min=np.min(categories)
+    cat_max=np.max(categories)
+    num_cats=cat_max-cat_min+1
+    num_colours = num_cats*3
+
+    palette = sns.color_palette(cc.glasbey_light,num_colours)
+
+    colours = np.array(palette, dtype=np.float32)
+
+    # produce 2D embedding for visualisation
+    ___, colour_embedding = clustering.reduce(colours, "UMAP", target_components=2) 
+    
+    """
+    TO DO: normalise onto embedding scale
+    """
+    centroids = utils.compile_centroids(embedding, categories)
+
+    """
+    TO DO:
+    assign embedding points to colours
+    """
+
+
+
+
+
 def rgb_from_centroids(embedding, categories):
     """
     create RGB indexes based on centroids of each cluster

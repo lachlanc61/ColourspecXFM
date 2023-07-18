@@ -408,3 +408,36 @@ def compile_centroids(embedding, categories):
         centroids[i] = get_centroid(embedding[categories==icat])    
 
     return centroids
+
+
+def smartcast(data, target_dtype):
+    """
+    convert data to target_dtype
+    handling safe casts and rounding for int->float
+    """
+    if not (np.issubdtype(target_dtype, np.number) and np.issubdtype(data.dtype, np.number)):
+        raise ValueError("Both dtypes must be numeric")
+
+    if target_dtype == data.dtype:
+        data_ = data
+    
+    if np.issubdtype(data.dtype, np.integer) and np.issubdtype(target_dtype, np.integer):
+        data_ = data.astype(target_dtype)
+
+    elif np.issubdtype(data.dtype, np.floating) and np.issubdtype(target_dtype, np.floating):
+        data_ = data.astype(target_dtype)
+
+    elif np.issubdtype(data.dtype, np.floating) and np.issubdtype(target_dtype, np.integer):
+        data_ = np.rint(data)
+        data_ = data.astype(target_dtype)
+
+    elif np.issubdtype(data.dtype, np.integer) and np.issubdtype(target_dtype, np.floating):
+        data_ = data.astype(target_dtype)     
+    else:
+        "unexpected combination of dtypes - perhaps one or both are complex"
+
+    if not np.allclose(data, data_, atol=1):
+        raise ValueError("some values differ by >= 1.0 after cast")
+
+    
+    return data_

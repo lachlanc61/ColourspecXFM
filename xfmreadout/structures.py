@@ -368,16 +368,32 @@ class DataSeries:
 
         return data_, dimensions_
 
-    def ingest_from_data():
+    def assign(self, data: 'np.ndarray'):
         """
-        TO-DO need methods to ingest new data from both data and map without recreating object
+        Ingests data into self.d without reallocating memory
         
-        basically import_by_shape
+        Preserves mapview
         
-        eg. dataseries.d = somenp
+        data must be correct shape
         """
-        pass
+        if self.dtype == data.dtype:       
+            data_ = data
+        else:
+            data_ = utils.smartcast(data, self.dtype)
 
+        if len(data_.shape) == 2:
+            if not self.d.shape == data_.shape:
+                raise ValueError(f"incompatible shapes {self.d.shape} vs {data_.shape}")
+            
+            self.d[:,:] = data_
+
+        elif len(data_.shape) == 3:
+            if not self.mapview.shape == data_.shape:
+                raise ValueError(f"incompatible shapes {self.mapview.shape} vs {data_.shape}")
+                   
+            self.mapview[:,:,:] = data_
+
+        self.check()
 
     def data_from_mapview(self, mapview):
         """
