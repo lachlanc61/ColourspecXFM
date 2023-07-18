@@ -368,7 +368,7 @@ class DataSeries:
 
         return data_, dimensions_
 
-    def assign(self, data: 'np.ndarray'):
+    def fill_from(self, data: 'np.ndarray'):
         """
         Ingests data into self.d without reallocating memory
         
@@ -376,22 +376,58 @@ class DataSeries:
         
         data must be correct shape
         """
-        if self.dtype == data.dtype:       
+        if self.dtype == data.dtype:
             data_ = data
         else:
             data_ = utils.smartcast(data, self.dtype)
 
         if len(data_.shape) == 2:
-            if not self.d.shape == data_.shape:
+            if self.d.shape == data_.shape:
+                self.d[:,:] = data_
+            else:
                 raise ValueError(f"incompatible shapes {self.d.shape} vs {data_.shape}")
-            
-            self.d[:,:] = data_
-
+       
         elif len(data_.shape) == 3:
-            if not self.mapview.shape == data_.shape:
+            if self.mapview.shape == data_.shape:
+                self.mapview[:,:,:] = data_
+            else:
                 raise ValueError(f"incompatible shapes {self.mapview.shape} vs {data_.shape}")
-                   
-            self.mapview[:,:,:] = data_
+        else:
+            raise ValueError(f"unexpected dimensionality for ingested array")
+
+        self.check()
+    
+    def set_to(self, data: 'np.ndarray'):
+        """
+        reassigns self.d to point to new data
+
+        functionally similar to creating new DataSeries
+        checks shapes/dimensions match
+
+        """
+        data_ = data
+
+        if len(data_.shape) == 2:
+            if self.d.shape == data_.shape:
+                self.d = data_
+                self.mapview = self.mapview_from_data(data_, self.dimensions)
+            else:
+                raise ValueError(f"incompatible shapes {self.d.shape} vs {data_.shape}")
+ 
+        elif len(data_.shape) == 3:
+            if self.mapview.shape == data_.shape:
+                self.mapview = data_
+                self.d, dimensions_ = self.data_from_mapview(data_)
+
+                if not dimensions_ == self.dimensions:
+                    raise ValueError(f"reassigning with different dimensions {self.dimensions} vs {dimensions_}")
+                    
+            else:
+                raise ValueError(f"incompatible shapes {self.mapview.shape} vs {data_.shape}")
+        else:
+            raise ValueError(f"unexpected dimensionality for array being assigned")
+
+        self.dtype = self.d.dtype        
 
         self.check()
 
@@ -430,7 +466,7 @@ class DataSeries:
 
         zoom_params = (zoom_factor, zoom_factor, 1) #do not resize on axis 3 (= channels)
 
-        self.mapview = ndimage.zoom(self.mapview,  zoom_params, order=order) 
+        self.mapview = ndimage.zoom(self.mapview,  zoom_params, order=order)    #retains dtype
         self.d, self.dimensions = self.data_from_mapview(self.mapview)
         self.shape = self.d.shape
 
@@ -446,7 +482,8 @@ class DataSet:
     """
     def __init__(self, data, se=None, labels=[], guess_se=True):
 
-        if isinstance(data, DataSet):
+        if isinstance(data, DataSet):   #can be initialised from instance of own class
+                                        #needed for super PixelSet
             self = data
         else:
             #data handling
@@ -457,13 +494,13 @@ class DataSet:
             self.dimensions = data.dimensions
             self.nchan = self.data.d.shape[1]
 
-            if not np.issubdtype(self.data.d.dtype, np.integer):
-                raise ValueError('creating a DataSet requires data of type integer')
+            if not np.issubdtype(self.data.d.dtype, np.number):
+                raise ValueError('creating a DataSet requires numerical data')
 
             #label handling
             #   check shape of labels, if given
             if not labels == []:
-                self.labels = self.apply_labels(labels)
+                self.apply_labels(labels)
             else:
                 self.labels= []
 
@@ -480,10 +517,16 @@ class DataSet:
                 if isinstance(se, DataSeries):
                     self.se = se
                 else:
-                    self.se = DataSeries(se)
+                    if len(se.shape) == 3:
+                        self.se = DataSeries(se)
+                    else:
+                        if se.shape == self.data.shape:
+                            self.se = DataSeries(se, dimensions=self.data.dimensions)
+                        else:
+                            raise ValueError('standard error must be 3D map ie. (Y, X, N) OR match data dimensions')
 
-                if not np.issubdtype(self.se.d.dtype, np.floating):
-                    self.se = DataSeries(se.d.astype(np.float32))
+                if not np.issubdtype(self.se.d.dtype, np.number):
+                    raise ValueError('standard error must be numerical')
 
                 if not self.se.dimensions == self.data.dimensions:
                     self.match_se_to_data()
@@ -534,11 +577,11 @@ class DataSet:
         if not ( self.labels == [] or self.data.d.shape[1] == len(self.labels) ):
             raise ValueError("mismatch between data and label shapes")
 
-        if not np.issubdtype(self.data.d.dtype, np.integer):
-            raise ValueError("data DataSeries must be integer")  
+        if not np.issubdtype(self.data.d.dtype, np.number):
+            raise ValueError("data DataSeries must be numerical")  
 
-        if not np.issubdtype(self.se.d.dtype, np.floating):
-            raise ValueError("stderr DataSeries must be float")    
+        if not np.issubdtype(self.se.d.dtype, np.number):
+            raise ValueError("stderr DataSeries must be numerical")    
         
         self.data.check()
         self.se.check()
@@ -567,7 +610,8 @@ class DataSet:
 
         self.data.zoom(zoom_factor, order=order)
         self.se.zoom(zoom_factor, order=order)
-        self.se.d = self.se.d/error_factor  #estimate
+
+        self.se.set_to(self.se.d/error_factor)  #estimate
 
         self.check()
 
@@ -587,39 +631,53 @@ class DataSet:
 
         self.check()
 
+        if not np.issubdtype(self.data.d.dtype, np.floating):
+            print("WARNING: dtype changing to float")
+
+        mapview_ = np.zeros(self.data.mapview.shape, dtype=np.float32)
+        se_map_ = np.zeros(self.se.mapview.shape, dtype=np.float32)
+
         if np.max(self.se.d) == 0:
             print("WARNING: downsampling without valid data for errors - data will be left unchanged")
         else:
             for i in range(self.data.d.shape[1]):
 
-                img__ = np.ndarray.copy(self.data.mapview[:,:,i])
-                se__ = np.ndarray.copy(self.se.mapview[:,:,i])
+                img_ = np.ndarray.copy(self.data.mapview[:,:,i])
+                se_ = np.ndarray.copy(self.se.mapview[:,:,i])
 
-                ratio, q2_sd, q99_data = imgops.calc_quantiles(img__, se__, SD_MULTIPLIER)
+                ratio, q2_sd, q99_data = imgops.calc_quantiles(img_, se_, SD_MULTIPLIER)
 
                 j=0
                 while ratio >= 1:
                     print(f"averaging channel {i}, cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
-                    img__, se__ = imgops.apply_gaussian(img__, 1, se__)
+                    img_, se_ = imgops.apply_gaussian(img_, 1, se_)
 
                     if deweight:
                         #deweight channel for each gaussian applied
-                        img__ = img__/DEWEIGHT_FACTOR
-                        se__ = se__/DEWEIGHT_FACTOR
+                        img_ = img_/DEWEIGHT_FACTOR
+                        se_ = se_/DEWEIGHT_FACTOR
 
-                        img__ = np.rint(img__)
+                        img_ = np.rint(img_)
 
-                    ratio, q2_sd, q99_data = imgops.calc_quantiles(img__, se__, SD_MULTIPLIER)
+                    ratio, q2_sd, q99_data = imgops.calc_quantiles(img_, se_, SD_MULTIPLIER)
                     j+=1
 
-                self.data.mapview[:,:,i] = img__
-                self.se.mapview[:,:,i] = se__
+                mapview_[:,:,i] = img_
+                se_map_[:,:,i] = se_
+
+        self.data.set_to(mapview_)
+        self.se.set_to(se_map_)
 
         self.check()
 
 
 
 class PixelSet(DataSet):
+    """
+    superclass of DataSet with additional methods/attrs
+
+    inherits manually via setattrs, permits creation from instance of subclass
+    """
     def __init__(self, dataset):
         super(PixelSet, self).__init__(dataset)
         for attr in dir(dataset):
@@ -627,7 +685,8 @@ class PixelSet(DataSet):
                 setattr(self, attr, getattr(dataset, attr))
 
         self.weights = np.ones(dataset.data.d.shape[1], dtype=np.float32)
-    
+        self.weighted = None
+
     def modify_weights(self, do_sqrt=True):
         if not self.weights.shape[0] == self.data.shape[1]:
                 raise ValueError(f"shape mistmatch between weights {self.weights.shape} and data {self.data.shape}")
@@ -639,10 +698,10 @@ class PixelSet(DataSet):
             else:
                 self.weights[i] = self.weights[i]            
     
-    def weighted(self):
+    def apply_weights(self):
         result = np.zeros(self.data.shape)
 
         for i in range(self.data.shape[1]):
             result[:,i] = self.data.d[:,i]*self.weights[i]
         
-        return result
+        self.weighted = DataSeries(result, self.data.dimensions)

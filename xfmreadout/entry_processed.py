@@ -67,16 +67,16 @@ def read_processed(args_in):
 
     ds.crop((args.x_coords[0], args.x_coords[1]), (args.y_coords[0], args.y_coords[1]))
 
-    pxs = structures.PixelSeries(ds)
+    pxs = structures.PixelSet(ds)
 
     pxs.modify_weights(do_sqrt=False)
 
-    data_ = pxs.weighted
-    data_ = np.sqrt(data_)
+    pxs.apply_weights()
+    pxs.weighted.set_to(np.sqrt(pxs.weighted.d))
 
     overwrite = ( args.force or args.force_clustering )
 
-    categories, embedding = clustering.run(data_, image_directory, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
+    categories, embedding = clustering.run(pxs.weighted.d, image_directory, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
 
     classavg = clustering.get_classavg(pxs.data.d, categories, image_directory, force=args.force_clustering, overwrite=overwrite)
 
