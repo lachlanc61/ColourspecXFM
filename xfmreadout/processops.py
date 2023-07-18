@@ -185,30 +185,6 @@ def maps_cleanup(maps):
     return maps
 
 
-def data_normalise(data, elements):
-    """
-    attempt to normalise data in absence of variance stats
-    
-    using pre-set list of approx. normalisation factors
-
-    likely requires hand-tuning for each map
-    """
-    #iterate through all elements
-    for i in range(data.shape[1]):
-        factor=BASEFACTOR
-
-        #check if element in MODIFY_LIST
-        #   then norm to MODIFY_FACTOR
-        for idx, sname in enumerate(MODIFY_LIST):
-            if elements[i] == sname:
-                factor=MODIFY_NORMS[idx]/np.max(data[:,i])
-                print(f"--- scaling {sname} to {MODIFY_NORMS[idx]}")
-
-        data[:,i]=(data[:,i]*factor)
-
-    return data
-
-
 def printqvals(data, element, qval):
         avg_data = np.average(data)
         max_data = np.max(data)
@@ -247,51 +223,6 @@ def calc_quantiles(data, sd, multiplier):
     return ratio, q99_data, q2_sd
 
 
-def data_normalise_to_sd(data, sd, dims, elements):
-    """
-    normalise data against standard deviation
-    
-    use ratio of average_sd * 2 : average_conc
-    divide by ratio if < 1
-    """
-    SD_MULTIPLIER = 2
-    DEWEIGHT_FACTOR = 1
-    DIRECT_MAPS = ["Compton", "sum", "Back", "Mo"]
-
-    print("data0",data[:,0].shape)
-    print("datafull",data.shape)    
-
-    result = np.ndarray(data.shape, dtype=np.float32)
-    result_sd = np.ndarray(sd.shape, dtype=np.float32)
-
-    #iterate through all elements
-    for i in range(data.shape[1]):
-        
-        data__ = np.copy(data[:,i])
-        sd__ = np.copy(sd[:,i])
-
-        ratio, q2_sd, q99_data = calc_quantiles(data__, sd__, SD_MULTIPLIER)
-
-        print(f"{elements[i]} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, max: {np.max(data__):.3f}")
-
-        j=0
-        while ratio >= 1:
-            print(f"Gaussian averaging, cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
-            data__, sd__ = imgops.apply_gaussianblur(data__, sd__, dims, 1)
-
-            #deweight element for each gaussian applied
-            data__ = data__/DEWEIGHT_FACTOR
-            sd__ = sd__/DEWEIGHT_FACTOR
-
-            ratio, q2_sd, q99_data = calc_quantiles(data__, sd__, SD_MULTIPLIER)
-            j+=1
-
-        result[:,i] = data__
-        result_sd[:,i] = sd__
-
-    return result, result_sd
-
-
 def variance_to_std(data):
     """
     convert variance stats to standard deviations via sqrt
@@ -305,24 +236,6 @@ def ppm_to_wt(data):
     """
     result = data*BASEFACTOR
     return result
-
-def data_crop(data, dims, x_min=0, x_max=9999, y_min=0, y_max=9999):
-    """
-    crop map to designated size
-    """     
-    maps = utils.map_roll(data, dims)
-
-    print(f"Pre-crop shape: {maps.shape}")
-
-    maps=maps[y_min:y_max,x_min:x_max,:]        #will likely fail if default out of range
-
-    dims=maps[:,:,0].shape
-
-    print(f"Cropped shape: {maps.shape}")
-
-    ret_data, ret_dims = utils.map_unroll(maps)
-
-    return ret_data, ret_dims
 
 def calc_weights(data, weights, do_sqrt=True):
     if not weights.shape[0] == data.shape[1]:
@@ -394,7 +307,6 @@ def compile(image_directory):
     print("-----------------")    
     print(f"READING MAP DATA")
     data, dims = extract_data(image_directory, files_maps)
-    #data = ppm_to_wt(data)  #cut this
 
     dataseries = structures.DataSeries(data, dims)
 
@@ -414,7 +326,6 @@ def compile(image_directory):
         """
         ds.downsample_by_se()
 
-        #data, sd_data = data_normalise_to_sd(data, sd_data, dims, elements)
     else:
         ds = structures.DataSet(dataseries, labels=elements)
 
