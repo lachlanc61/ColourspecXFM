@@ -5,9 +5,11 @@ import hdbscan
 import numpy as np
 import umap.umap_ as umap
 import pacmap
+import pickle
 
 from sklearn import decomposition
 from sklearn.cluster import KMeans
+from sklearn.neighbors import KernelDensity
 
 import xfmreadout.utils as utils
 
@@ -213,6 +215,54 @@ def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_
     return 
 
 
+class KdeMap():
+    def __init__(self, embedding, n=100):
+        self.kde = KernelDensity(kernel='gaussian')
+        self.n = n
+
+        print("Fitting KDE")
+        self.kde.fit(embedding)
+
+        xy_, self.X, self.Y = self.get_grid(embedding, self.n)
+
+        self.dimensions = self.X.shape
+
+        print("Creating KDE")
+        self.Z = self.kde.score_samples(xy_)
+
+        self.Z = np.exp(self.Z)
+        self.Z = self.Z.reshape(self.X.shape)    
+
+    def get_grid(self, embedding, n=100):
+        ey = embedding[:,0]
+        ex = embedding[:,1]
+
+        y = np.linspace(np.min(ey)-round(np.max(ey)/10), np.max(ey)+round(np.max(ey)/10), n)
+        x = np.linspace(np.min(ex)-round(np.max(ex)/10), np.max(ex)+round(np.max(ex)/10), n)
+
+        X, Y = np.meshgrid(x, y)
+
+        xy = np.vstack([Y.ravel(), X.ravel()]).T
+
+        pass
+
+        return xy, X, Y        
+
+def get_linspace(embedding, n=100):
+    ey = embedding[:,0]
+    ex = embedding[:,1]
+
+    y = np.linspace(np.min(ey), np.max(ey), n)
+    x = np.linspace(np.min(ex), np.max(ex), n)
+
+    X, Y = np.meshgrid(x, y)
+
+    xy = np.vstack([Y.ravel(), X.ravel()]).T
+
+    pass
+
+    return xy
+
 def get_classavg(raw_data, categories, output_dir, force=False, overwrite=True):
 
     file_classes=os.path.join(output_dir,"classavg.npy")
@@ -246,10 +296,12 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     file_embed=os.path.join(output_dir,f"embedding_{target_components}d.npy")
     file_cats=os.path.join(output_dir,"categories.npy")
     file_classes=os.path.join(output_dir,"classavg.npy")
+    file_kde=os.path.join(output_dir,f"kde_{target_components}d.pickle")
 
     exists_embed = os.path.isfile(file_embed)
     exists_cats = os.path.isfile(file_cats)
     exists_classes = os.path.isfile(file_classes)
+    exists_kde = os.path.isfile(file_kde)
 
     totalpx = data.shape[0]
     n_channels = data.shape[1]
@@ -277,6 +329,19 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
         categories = np.load(file_cats)
         classifier = None
 
+    #   calculate kde from embedding
+    if force_clust or not exists_kde:
+        print("CALCULATING KDE")        
+        kde = KdeMap(embedding, n=100)
+        if overwrite or not exists_kde:
+            print("Pickling KDE") 
+            pickle.dump(kde, open(file_kde, "wb"))
+    else:
+        print("LOADING KDE")
+        kde = pickle.load(open(file_kde, "rb"))
+
+
+
     #complete the timer
     runtime = time.time() - starttime
 
@@ -289,7 +354,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     "---------------------------"
     )
 
-    return categories, embedding
+    return categories, embedding, kde
 
 
 #-----------------------------------

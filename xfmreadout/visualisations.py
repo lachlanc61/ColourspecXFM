@@ -7,6 +7,7 @@ from tabulate import tabulate
 import seaborn as sns
 import colorcet as cc
 import matplotlib.pyplot as plt
+import pickle
 
 from sklearn.neighbors import KernelDensity
 from mpl_toolkits.mplot3d import Axes3D
@@ -336,7 +337,7 @@ def seaborn_embedplot(embedding, categories, palette=None):
     fig = embed_plot.fig
 
     #plt.savefig('embedplot.png', transparent=True)
-    plt.show()
+    #plt.show()
 
     return fig
 
@@ -390,42 +391,24 @@ def seaborn_kdecontours(embedding, categories):
     plt.show()
 
 
-def contours_3d(embedding):
+def contours_3d(kde):
 
-    kde = KernelDensity(kernel='gaussian')
-
-    "Fitting KDE"
-    kde.fit(embedding)
-
-    ex = embedding[:,0]
-    ey = embedding[:,1]
-
-    x = np.linspace(np.min(ex), np.max(ex), 100)
-    y = np.linspace(np.min(ex), np.max(ex), 100)
-
-    X, Y = np.meshgrid(x, y)
-
-    xy = np.vstack([Y.ravel(), X.ravel()]).T
-
-    xy.shape
-
-    "Creating KDE"
-    Z = kde.score_samples(xy)
-
-    Z_work = np.exp(Z)
-    Z_work = Z_work.reshape(X.shape)    
+    Z_local = np.copy(kde.Z)
+    #Z_local = np.exp(Z_local)
 
     #Make a 3D plot
-    fig = plt.figure()
+    fig = plt.figure(figsize=(int(1600/60),int(800/60)))
     ax = fig.add_subplot(projection='3d')
-    ax.plot_surface(X, Y, Z_work,cmap='viridis',linewidth=0)
+    ax.plot_surface(kde.X, kde.Y, Z_local,cmap='viridis',linewidth=0)
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
 
-    return
+    plt.show()
 
-def plot_clusters(categories, classavg, embedding, dims, output_directory="."):
+    return fig
+
+def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="."):
     """
     display all plots for clusters
     
@@ -450,6 +433,10 @@ def plot_clusters(categories, classavg, embedding, dims, output_directory="."):
     
     fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
     fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
+
+    fig_contours = contours_3d(kde)
+
+    plt.show()
 
     return palette
 

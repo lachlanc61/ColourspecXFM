@@ -76,15 +76,15 @@ def read_processed(args_in):
 
     overwrite = ( args.force or args.force_clustering )
 
-    categories, embedding = clustering.run(pxs.weighted.d, image_directory, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
+    categories, embedding, kde = clustering.run(pxs.weighted.d, image_directory, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
 
     classavg = clustering.get_classavg(pxs.data.d, categories, image_directory, force=args.force_clustering, overwrite=overwrite)
 
-    palette = vis.plot_clusters(categories, classavg, embedding, pxs.data.dimensions, output_directory=output_directory)
+    palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory)
 
     vis.table_classavg(classavg, pxs.labels)
 
-    vis.contours_3d(embedding)
+    #vis.contours_3d(embedding)
 
     return pxs, embedding, categories, classavg, palette
 
