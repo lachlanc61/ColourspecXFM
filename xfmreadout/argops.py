@@ -239,6 +239,8 @@ def checkargs_processed(args, config):
     if (args.y_coords[0] >= args.x_coords[1]):
         raise ValueError("First y_coordinate must be < second y_coordinate")
 
+    if args.n_components <= 0 or args.n_components >= 100:
+        raise ValueError("Invalid number of components, (expected 1 < n < 100)")
 
     return args
 
@@ -284,6 +286,13 @@ def readargs_processed(args_in, config):
         "Crop the exported map to these coordinates",
         nargs='+', 
         type=int, 
+    )
+
+    argparser.add_argument(
+        '-n', "--n-components", 
+        help="Number of components for reduction",
+        type=int, 
+        default=int(3)
     )
 
     argparser.add_argument(

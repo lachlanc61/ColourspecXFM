@@ -76,7 +76,7 @@ def read_processed(args_in):
 
     overwrite = ( args.force or args.force_clustering )
 
-    categories, embedding = clustering.run(pxs.weighted.d, image_directory, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
+    categories, embedding = clustering.run(pxs.weighted.d, image_directory, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite)
 
     classavg = clustering.get_classavg(pxs.data.d, categories, image_directory, force=args.force_clustering, overwrite=overwrite)
 
@@ -84,7 +84,9 @@ def read_processed(args_in):
 
     vis.table_classavg(classavg, pxs.labels)
 
-    return
+    vis.contours_3d(embedding)
+
+    return pxs, embedding, categories, classavg, palette
 
 if __name__ == '__main__':
  

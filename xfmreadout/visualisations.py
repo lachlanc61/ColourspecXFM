@@ -8,6 +8,9 @@ import seaborn as sns
 import colorcet as cc
 import matplotlib.pyplot as plt
 
+from sklearn.neighbors import KernelDensity
+from mpl_toolkits.mplot3d import Axes3D
+
 from matplotlib import colors
 from PIL import Image
 
@@ -123,16 +126,12 @@ def rgb_from_centroids(embedding, categories):
 
     centroids = utils.compile_centroids(embedding, categories)
 
-    print(centroids)
-
     centroids_rgb = np.zeros(centroids.shape, dtype=np.float32)
 
     for i in range(centroids.shape[1]):
         centroids_rgb[:,i] = utils.norm_channel_float(centroids[:,i],new_max=1.0)
 
     centroids_rgb[0] = (0.5, 0.5, 0.5)
-
-    print(centroids_rgb)
 
     return centroids_rgb
 
@@ -215,7 +214,6 @@ def category_map ( categories, dims, palette=None ):
     ax = fig.add_subplot(111)
 
     ncats=np.max(categories)+2
-    print(ncats)
 
     #axcm=cm.get_cmap(KCMAPS[0], ncats)
 
@@ -227,9 +225,6 @@ def category_map ( categories, dims, palette=None ):
     cmap = colors.ListedColormap(palette)
 
     catmap=utils.map_roll(categories+1,dims)
-
-    print(np.min(categories))
-    print(np.min(catmap))
 
     ax.tick_params(axis='both', which='major', labelsize=16)
 
@@ -284,9 +279,6 @@ def category_boxplots(data, categories, elements):
 
     ncats=np.max(categories)+1
     catlist=range(ncats)
-
-    print(categories.shape)
-    print(data.shape)
 
     boxdata=np.zeros((ncats,len(elements),categories.shape[1]))
 
@@ -398,6 +390,41 @@ def seaborn_kdecontours(embedding, categories):
     plt.show()
 
 
+def contours_3d(embedding):
+
+    kde = KernelDensity(kernel='gaussian')
+
+    "Fitting KDE"
+    kde.fit(embedding)
+
+    ex = embedding[:,0]
+    ey = embedding[:,1]
+
+    x = np.linspace(np.min(ex), np.max(ex), 100)
+    y = np.linspace(np.min(ex), np.max(ex), 100)
+
+    X, Y = np.meshgrid(x, y)
+
+    xy = np.vstack([Y.ravel(), X.ravel()]).T
+
+    xy.shape
+
+    "Creating KDE"
+    Z = kde.score_samples(xy)
+
+    Z_work = np.exp(Z)
+    Z_work = Z_work.reshape(X.shape)    
+
+    #Make a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot_surface(X, Y, Z_work,cmap='viridis',linewidth=0)
+    ax.set_xlabel('X axis')
+    ax.set_ylabel('Y axis')
+    ax.set_zlabel('Z axis')
+
+    return
+
 def plot_clusters(categories, classavg, embedding, dims, output_directory="."):
     """
     display all plots for clusters
@@ -407,6 +434,7 @@ def plot_clusters(categories, classavg, embedding, dims, output_directory="."):
     if embedding.shape[1] == 2:
         #generate the palette from the categories, independent of distance
         palette=build_palette(categories)
+        embedding_2d = embedding
     else:
         #use the 3D embedding to colour the categories based on distance
         fig_embed_map = embedding_map(embedding, dims)
@@ -420,9 +448,8 @@ def plot_clusters(categories, classavg, embedding, dims, output_directory="."):
     fig_cat_map = category_map(categories, dims, palette=palette)
     fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
     
-    if embedding.shape[1] == 3:
-        fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
-        fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
+    fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
+    fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
 
     return palette
 

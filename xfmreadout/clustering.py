@@ -243,7 +243,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     #start a timer
     starttime = time.time() 
 
-    file_embed=os.path.join(output_dir,"embedding.npy")
+    file_embed=os.path.join(output_dir,f"embedding_{target_components}d.npy")
     file_cats=os.path.join(output_dir,"categories.npy")
     file_classes=os.path.join(output_dir,"classavg.npy")
 
@@ -256,23 +256,24 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
 
     #   produce reduced-dim embedding per reducer
     if force_embed or not exists_embed:
-        print("CALCULATING EMBED")
+        print("CALCULATING EMBEDDING")
         reducer, embedding = multireduce(data, target_components=target_components)
+        force_clust = True
         if overwrite or not exists_embed:
             np.save(file_embed,embedding)
     else:
-        print("LOADING EMBED")
+        print("LOADING EMBEDDING")
         embedding = np.load(file_embed)
         #clusttimes = np.load(file_ctime)     
 
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
-        print("CALCULATING CATS")        
+        print("CALCULATING CLASSIFICATION")        
         classifier, categories = classify(embedding)
         if overwrite or not exists_cats:
             np.save(file_cats,categories)
     else:
-        print("LOADING CATS")
+        print("LOADING CLASSIFICATION")
         categories = np.load(file_cats)
         classifier = None
 
