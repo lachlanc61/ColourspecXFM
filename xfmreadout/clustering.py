@@ -234,15 +234,15 @@ class KdeMap():
         self.Z = self.Z.reshape(self.X.shape)    
 
     def get_grid(self, embedding, n=100):
-        ey = embedding[:,0]
-        ex = embedding[:,1]
+        ex = embedding[:,0]
+        ey = embedding[:,1]
 
         y = np.linspace(np.min(ey)-round(np.max(ey)/10), np.max(ey)+round(np.max(ey)/10), n)
         x = np.linspace(np.min(ex)-round(np.max(ex)/10), np.max(ex)+round(np.max(ex)/10), n)
 
         X, Y = np.meshgrid(x, y)
 
-        xy = np.vstack([Y.ravel(), X.ravel()]).T
+        xy = np.vstack([X.ravel(), Y.ravel()]).T
 
         pass
 

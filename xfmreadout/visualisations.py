@@ -333,6 +333,8 @@ def seaborn_embedplot(embedding, categories, palette=None):
 
     #xlim=[-3,3], ylim=[-3,3],
 
+    embed_plot.set_axis_labels('x', 'y', fontsize=16)
+
     sns.despine(ax=None, left=True, bottom=True)
     fig = embed_plot.fig
 
@@ -400,9 +402,9 @@ def contours_3d(kde):
     fig = plt.figure(figsize=(int(1600/60),int(800/60)))
     ax = fig.add_subplot(projection='3d')
     ax.plot_surface(kde.X, kde.Y, Z_local,cmap='viridis',linewidth=0)
-    ax.set_xlabel('X axis')
-    ax.set_ylabel('Y axis')
-    ax.set_zlabel('Z axis')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
 
     plt.show()
 
