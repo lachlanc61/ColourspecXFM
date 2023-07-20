@@ -19,28 +19,13 @@ import xfmreadout.utils as utils
 #REDUCERS
 FINAL_COMPONENTS=2
 UMAP_PRECOMPONENTS=11
-
-UMAP_LOW_MEM=True
-UMAP_VERBOSE=True
-
+MIN_SEPARATION=0.1
 
 #CLASSIFIERS:
 EST_N_CLUSTERS=30
 
-#DEFAULTS
-DBSCAN_E=0.5   #epsilon: do not separate clusters closer than this value - refer umap min_dist
-DBSCAN_CSIZE=200    #minimum cluster size
-DBSCAN_MINSAMPLES=100   #minimum samples - larger = more conservative, more unclustered points
-DBSCAN_METHOD="eom"
-
-#BEST
-DBSCAN_E=0.1   #epsilon: do not separate clusters closer than this value - refer umap min_dist
-DBSCAN_CSIZE=1000  #minimum cluster size
-DBSCAN_MINSAMPLES=500   #minimum samples - larger = more conservative, more unclustered points
-DBSCAN_METHOD="leaf"
-
-#KMEANS
-KMEANS_CLUSTERS=10
+DEFAULT_KDE_POINTS=201  #odd number apparently speeds up rendering via mpl.plot_surface
+#DEFAULT_KDE_POINTS=101  #odd number apparently speeds up rendering via mpl.plot_surface
 
 #-----------------------------------
 #GROUPS
@@ -50,8 +35,8 @@ REDUCERS = [
 
     (umap.UMAP, {"n_components":2, 
         "n_neighbors": 30,  #300 
-        "min_dist": 0.1, 
-        "low_memory": UMAP_LOW_MEM, 
+        "min_dist": MIN_SEPARATION, 
+        "low_memory": True, 
         "verbose": True}),
 
     (pacmap.PaCMAP, {"n_components":2,
@@ -61,15 +46,15 @@ REDUCERS = [
 
 CLASSIFIERS = [
     (KMeans, {"init":"random", 
-        "n_clusters": KMEANS_CLUSTERS, 
-        "n_init": KMEANS_CLUSTERS, 
+        "n_clusters": 10, 
+        "n_init": 10, 
         "max_iter": 300, 
         "random_state": 42 }),
 
-    (hdbscan.HDBSCAN, {"min_cluster_size": DBSCAN_CSIZE,
-        "min_samples": DBSCAN_MINSAMPLES,
-        "cluster_selection_epsilon": DBSCAN_E, 
-        "cluster_selection_method": DBSCAN_METHOD,    
+    (hdbscan.HDBSCAN, {"min_cluster_size": 1000,
+        "min_samples": 500,
+        "cluster_selection_epsilon": MIN_SEPARATION, 
+        "cluster_selection_method": "leaf",     #alt: "eom"
         "gen_min_span_tree": True }),
 ]
 
@@ -144,8 +129,9 @@ def multireduce(data, target_components=FINAL_COMPONENTS):
         if True:
             #go ahead with UMAP
             reducer, embedding = reduce(data, "UMAP", target_components)
-        #go ahead with PaCMAP
-        #reducer, embedding = reduce(data, "PaCMAP", target_components)
+        if False:
+            #go ahead with PaCMAP
+            reducer, embedding = reduce(data, "PaCMAP", target_components)
 
     return reducer, embedding
 
@@ -199,69 +185,36 @@ def calc_classavg(data, categories, category_list, n_channels):
         result[icat,:]=(np.sum(data_subset,axis=0))/pxincat
     return result
 
-def clustplt(embedding, categories, mapx, clusttimes):
-    pass
-
-
-
-
-def complete(categories, classavg, embedding, clusttimes, energy, mapx, mapy, n_clusters, dirs ):
-       
-    fig = clustplt(embedding, categories, mapx, clusttimes)
-
-    #save and show
-    fig.savefig(os.path.join(dirs.plots, 'clusters.png'), dpi=150)
-
-    return 
-
 
 class KdeMap():
-    def __init__(self, embedding, n=100):
-        self.kde = KernelDensity(kernel='gaussian')
+    def __init__(self, embedding, n=DEFAULT_KDE_POINTS):
+        self.kde = KernelDensity(kernel='gaussian',bandwidth=MIN_SEPARATION*2)
         self.n = n
 
         print("Fitting KDE")
         self.kde.fit(embedding)
 
-        xy_, self.X, self.Y = self.get_grid(embedding, self.n)
-
-        self.dimensions = self.X.shape
-
         print("Creating KDE")
+        xy_, self.X, self.Y = get_linspace(embedding, self.n)        
+        self.dimensions = self.X.shape
         self.Z = self.kde.score_samples(xy_)
 
         self.Z = np.exp(self.Z)
         self.Z = self.Z.reshape(self.X.shape)    
 
-    def get_grid(self, embedding, n=100):
-        ex = embedding[:,0]
-        ey = embedding[:,1]
 
-        y = np.linspace(np.min(ey)-round(np.max(ey)/10), np.max(ey)+round(np.max(ey)/10), n)
-        x = np.linspace(np.min(ex)-round(np.max(ex)/10), np.max(ex)+round(np.max(ex)/10), n)
+def get_linspace(embedding, n=DEFAULT_KDE_POINTS):
+    ex = embedding[:,0]
+    ey = embedding[:,1]
 
-        X, Y = np.meshgrid(x, y)
-
-        xy = np.vstack([X.ravel(), Y.ravel()]).T
-
-        pass
-
-        return xy, X, Y        
-
-def get_linspace(embedding, n=100):
-    ey = embedding[:,0]
-    ex = embedding[:,1]
-
-    y = np.linspace(np.min(ey), np.max(ey), n)
-    x = np.linspace(np.min(ex), np.max(ex), n)
+    x = np.linspace(np.min(ex)-round(np.max(ex)/10), np.max(ex)+round(np.max(ex)/10), n)
+    y = np.linspace(np.min(ey)-round(np.max(ey)/10), np.max(ey)+round(np.max(ey)/10), n)
 
     X, Y = np.meshgrid(x, y)
 
-    xy = np.vstack([Y.ravel(), X.ravel()]).T
+    xy = np.vstack([X.ravel(), Y.ravel(),]).T
 
-    pass
-
-    return xy
+    return xy, X, Y  
 
 def get_classavg(raw_data, categories, output_dir, force=False, overwrite=True):
 
@@ -318,6 +271,18 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
         embedding = np.load(file_embed)
         #clusttimes = np.load(file_ctime)     
 
+    #   calculate kde from embedding
+    if force_clust or not exists_kde:
+        print(f"CALCULATING KDE with n={DEFAULT_KDE_POINTS}")        
+        kde = KdeMap(embedding, n=DEFAULT_KDE_POINTS)
+        if overwrite or not exists_kde:
+            print("Pickling KDE") 
+            pickle.dump(kde, open(file_kde, "wb"))
+    else:
+        print("LOADING KDE")
+        kde = pickle.load(open(file_kde, "rb"))
+
+
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
         print("CALCULATING CLASSIFICATION")        
@@ -329,16 +294,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
         categories = np.load(file_cats)
         classifier = None
 
-    #   calculate kde from embedding
-    if force_clust or not exists_kde:
-        print("CALCULATING KDE")        
-        kde = KdeMap(embedding, n=100)
-        if overwrite or not exists_kde:
-            print("Pickling KDE") 
-            pickle.dump(kde, open(file_kde, "wb"))
-    else:
-        print("LOADING KDE")
-        kde = pickle.load(open(file_kde, "rb"))
+
 
 
 

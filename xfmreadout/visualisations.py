@@ -393,20 +393,21 @@ def seaborn_kdecontours(embedding, categories):
     plt.show()
 
 
+DPI=60
+
 def contours_3d(kde):
 
     Z_local = np.copy(kde.Z)
-    #Z_local = np.exp(Z_local)
+    Z_local[Z_local < 0.00001] = -0.0005
+    #Z_local = np.log(Z_local)
 
     #Make a 3D plot
-    fig = plt.figure(figsize=(int(1600/60),int(800/60)))
+    fig = plt.figure(figsize=(int(1600/DPI),int(800/DPI)))
     ax = fig.add_subplot(projection='3d')
-    ax.plot_surface(kde.X, kde.Y, Z_local,cmap='viridis',linewidth=0)
+    ax.plot_surface(kde.X, kde.Y, Z_local,cmap='viridis',rstride=3,cstride=3,linewidth=0, antialiased=False)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-
-    plt.show()
 
     return fig
 
