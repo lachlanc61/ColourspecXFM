@@ -292,7 +292,7 @@ def readargs_processed(args_in, config):
         '-n', "--n-components", 
         help="Number of components for reduction",
         type=int, 
-        default=int(3)
+        default=int(2)
     )
 
     argparser.add_argument(

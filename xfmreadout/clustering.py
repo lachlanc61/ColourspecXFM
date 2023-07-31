@@ -22,9 +22,9 @@ UMAP_PRECOMPONENTS=11
 MIN_SEPARATION=0.1
 
 #CLASSIFIERS:
-EST_N_CLUSTERS=30
+EST_N_CLUSTERS=300
 
-DEFAULT_KDE_POINTS=201  #odd number apparently speeds up rendering via mpl.plot_surface
+DEFAULT_KDE_POINTS=301  #odd number apparently speeds up rendering via mpl.plot_surface
 #DEFAULT_KDE_POINTS=101  #odd number apparently speeds up rendering via mpl.plot_surface
 
 #-----------------------------------
@@ -53,10 +53,20 @@ CLASSIFIERS = [
 
     (hdbscan.HDBSCAN, {"min_cluster_size": 1000,
         "min_samples": 500,
-        "cluster_selection_epsilon": MIN_SEPARATION, 
+        "alpha": 1.0,
+        "cluster_selection_epsilon": 0.2, 
         "cluster_selection_method": "leaf",     #alt: "eom"
         "gen_min_span_tree": True }),
 ]
+
+"""
+    (hdbscan.HDBSCAN, {"min_cluster_size": 1000,    #6000
+        "min_samples": 500,
+        "alpha": 1.0,
+        "cluster_selection_epsilon": MIN_SEPARATION, 
+        "cluster_selection_method": "leaf",     #alt: "eom"
+        "gen_min_span_tree": True }),
+"""
 
 
 #-----------------------------------
@@ -136,20 +146,31 @@ def multireduce(data, target_components=FINAL_COMPONENTS):
     return reducer, embedding
 
 
-def classify(embedding):
+def classify(embedding, majors_only=False):
     """
     performs classification on embedding to produce final clusters
 
     args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
+    USE="HDBSCAN"
+
+    if majors_only:
+        cluster_factor=50
+    else:
+        cluster_factor=300
 
     print("RUNNING CLASSIFIER")
     classifier_list = CLASSIFIERS
 
-    operator, args = find_operator(classifier_list, "HDBSCAN")
-
-    args["min_cluster_size"]=round(embedding.shape[0]/EST_N_CLUSTERS)
+    if USE=="HDBSCAN":
+        operator, args = find_operator(classifier_list, USE)
+        args["min_cluster_size"]=round(embedding.shape[0]/cluster_factor)
+        print(f"min cluster size: {embedding.shape[0]/cluster_factor}")
+    
+    elif USE=="DBSCAN":
+        operator, args = find_operator(classifier_list, USE)
+        args["min_cluster_size"]=round(embedding.shape[0]/cluster_factor)        
 
     classifier = operator(**args)
     embedding = classifier.fit(embedding)
@@ -188,7 +209,7 @@ def calc_classavg(data, categories, category_list, n_channels):
 
 class KdeMap():
     def __init__(self, embedding, n=DEFAULT_KDE_POINTS):
-        self.kde = KernelDensity(kernel='gaussian',bandwidth=MIN_SEPARATION*2)
+        self.kde = KernelDensity(kernel='gaussian',bandwidth=MIN_SEPARATION*3)
         self.n = n
 
         print("Fitting KDE")
@@ -201,6 +222,7 @@ class KdeMap():
 
         self.Z = np.exp(self.Z)
         self.Z = self.Z.reshape(self.X.shape)    
+        print("KDE complete")
 
 
 def get_linspace(embedding, n=DEFAULT_KDE_POINTS):
@@ -272,16 +294,18 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
         #clusttimes = np.load(file_ctime)     
 
     #   calculate kde from embedding
-    if force_clust or not exists_kde:
-        print(f"CALCULATING KDE with n={DEFAULT_KDE_POINTS}")        
-        kde = KdeMap(embedding, n=DEFAULT_KDE_POINTS)
-        if overwrite or not exists_kde:
-            print("Pickling KDE") 
-            pickle.dump(kde, open(file_kde, "wb"))
+    if target_components == 2:
+        if force_embed or not exists_kde:
+            print(f"CALCULATING KDE with n={DEFAULT_KDE_POINTS}")        
+            kde = KdeMap(embedding, n=DEFAULT_KDE_POINTS)
+            if overwrite or not exists_kde:
+                print("Pickling KDE") 
+                pickle.dump(kde, open(file_kde, "wb"))
+        else:
+            print("LOADING KDE")
+            kde = pickle.load(open(file_kde, "rb"))
     else:
-        print("LOADING KDE")
-        kde = pickle.load(open(file_kde, "rb"))
-
+        kde = None
 
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
