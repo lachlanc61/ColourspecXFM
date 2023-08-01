@@ -119,7 +119,6 @@ def cluster_colourmap(embedding, categories):
 
 
 
-
 def rgb_from_centroids(embedding, categories):
     """
     create RGB indexes based on centroids of each cluster
@@ -206,19 +205,14 @@ def embedding_map(embedding, dims):
 
 def category_map ( categories, dims, palette=None ):
     """
-        display categories as map image
+        display categories as map image, with axes
     """
-
-    #KCMAPS=["tab10"]    #colourmaps for kmeans
 
     fig = plt.figure(figsize=(24,12))
     ax = fig.add_subplot(111)
 
     ncats=np.max(categories)+2
 
-    #axcm=cm.get_cmap(KCMAPS[0], ncats)
-
-    #cmap=axcm(range(ncats))
     if palette is None:
         log.warning(f"palette not given, building from categories")
         palette=build_palette(categories)
@@ -229,12 +223,39 @@ def category_map ( categories, dims, palette=None ):
 
     ax.tick_params(axis='both', which='major', labelsize=16)
 
-    #show this category image
     ax.imshow(catmap, cmap=cmap)
 
     return fig
 
-    #fig.savefig(os.path.join(EMBED_DIR,"cluster_map.png"), dpi=200)
+
+def category_map_direct( categories, dims, palette=None ):
+    """
+        display categories as whole map image
+    """
+
+    DPI=96
+
+    fig = plt.figure(figsize=(dims[1]/DPI,dims[0]/DPI), dpi=DPI, frameon=False)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    
+    ncats=np.max(categories)+2
+
+    if palette is None:
+        log.warning(f"palette not given, building from categories")
+        palette=build_palette(categories)
+
+    cmap = colors.ListedColormap(palette)
+
+    catmap=utils.map_roll(categories+1,dims)
+
+    print("creating direct category map")
+
+    ax.imshow(catmap, cmap=cmap, aspect='auto')
+
+    return fig
+
 
 
 def table_classavg(classavg, elements):
@@ -393,7 +414,7 @@ def seaborn_kdecontours(embedding, categories):
     plt.show()
 
 
-DPI=60
+DPI=96
 
 def contours_3d(kde):
 
@@ -416,8 +437,11 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
     display all plots for clusters
     
     """
+    
+    print("plotting") 
 
     if embedding.shape[1] == 2:
+        print("using 2d embedding") 
         #generate the palette from the categories, independent of distance
         palette=build_palette(categories)
         embedding_2d = embedding
@@ -427,19 +451,28 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
         fig_embed_map.savefig(os.path.join(output_directory,'embed_map.png'), transparent=False)  
 
         # produce 2D embedding for visualisation
+        print("creating 2d embedding")
         ___, embedding_2d = clustering.reduce(embedding, "PCA", target_components=2) 
         colour_array=rgb_from_centroids(embedding, categories)
         palette=sns.color_palette(colour_array)
 
-    fig_cat_map = category_map(categories, dims, palette=palette)
-    fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
-    
+    if False:
+        print("saving map with margins")        
+        fig_cat_map = category_map(categories, dims, palette=palette)
+        fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
+    else:
+        print("creating category map")
+        fig_cat_map = category_map_direct(categories, dims, palette=palette)
+        fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)  
+
+    print("creating embedplot")    
     fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
     fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
+    
+    if False:
+        fig_contours = contours_3d(kde)
 
-    fig_contours = contours_3d(kde)
-
-    plt.show()
+    #plt.show()
 
     return palette
 

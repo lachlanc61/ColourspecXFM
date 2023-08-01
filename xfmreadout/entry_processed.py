@@ -88,6 +88,7 @@ def read_processed(args_in):
 
     return pxs, embedding, categories, classavg, palette
 
+
 if __name__ == '__main__':
  
     entry_processed()
