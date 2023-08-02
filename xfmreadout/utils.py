@@ -410,6 +410,59 @@ def compile_centroids(embedding, categories):
     return centroids
 
 
+def get_closest_points(embedding, points):
+    """
+    selects X,Y points from 2D embedding that are closest to each X,Y in points
+
+    returns numpy array of integer indexes corresponding to points in embedding         
+    """
+
+    if not ( len(points.shape) == 2 and len(embedding.shape) == 2):
+        raise ValueError("both arrays must be 2D")
+
+    indices = np.zeros(points.shape[0], dtype=np.int32)
+
+    for i in range(points.shape[0]):
+        matrix = embedding-points[i,:]
+        dist = matrix[:,0]**2 + matrix[:,1]**2
+
+        j=0
+        partn = np.partition(dist, j)[j]
+        result = int(np.where(dist==partn)[0][0])
+
+        while result in indices:
+            partn = np.partition(dist, j)[j]
+            result = int(np.where(dist==partn)[0][0])
+            j+=1
+
+        indices[i] = result
+
+    return indices
+
+
+def norm_onto_2d(input, target):
+    """
+    normalise one 2D array of values onto the other, by axis
+    """
+
+    if not ( len(input.shape) == 2 and len(target.shape) == 2):
+        raise ValueError("both arrays must be 2D")
+
+    target__ = np.copy(target)
+    result = np.copy(input)
+
+    for i in range(target.shape[1]):
+        target__[:,i] = target__[:,i]-np.min(target[:,i])
+
+        result[:,i] = np.copy(input[:,i])
+        result[:,i] = result[:,i]-np.min(result[:,i])   
+
+        result[:,i] = result[:,i]/np.max(result[:,i])
+        result[:,i] = result[:,i]*np.max(target__[:,i])
+        result[:,i] = result[:,i]+np.min(target[:,i])
+
+    return result
+
 def smartcast(data, target_dtype):
     """
     convert data to target_dtype

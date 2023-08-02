@@ -302,6 +302,12 @@ def readargs_processed(args_in, config):
     )
 
     argparser.add_argument(
+        "-k", "--kde", 
+        help="Visualise kde",
+        action='store_true', 
+    )
+
+    argparser.add_argument(
         "-fc", "--force-clustering", 
         help="Force recalculation of clusters - overridden by --force",
         action='store_true', 

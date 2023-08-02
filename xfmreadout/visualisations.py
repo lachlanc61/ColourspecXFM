@@ -9,6 +9,7 @@ import colorcet as cc
 import matplotlib.pyplot as plt
 import pickle
 
+from sklearn.preprocessing import normalize
 from sklearn.neighbors import KernelDensity
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -17,6 +18,8 @@ from PIL import Image
 
 import xfmreadout.utils as utils
 import xfmreadout.clustering as clustering
+import xfmreadout.colours as colours
+
 
 
 REDUCER=1
@@ -24,97 +27,31 @@ REDUCER=1
 logging.basicConfig(format='%(message)s')
 log = logging.getLogger(__name__)
 
+def plot_colour_embedding(embedding, palette_category_list, palette):
 
-def shuffle_palette(palette):
-    """
-    shuffles palette into N blocks of spaced sequential colours
-        ie. breaks up a sequential colour sequence
-    """
+    #palette_category_list = np.arange(0,new_palette_embedding.shape[0])
 
-    NREPEATS=3
+    x=embedding.T[0]
+    y=embedding.T[1]
 
-    mod = int(np.floor(len(palette)/(len(palette)/NREPEATS)))
+    ### scatter plot with marginal axes
+    sns.set_style('white')
 
-    newpalette=copy.deepcopy(palette)
+    embed_plot = sns.jointplot(x=x, y=y,
+                hue=palette_category_list, palette=palette,
+                lw=0,
+                joint_kws = dict(alpha=1.0),
+                height=12, ratio=6
+                )
 
-    for j in range(mod):
-        for i in range(len(palette)):
-            if i%mod == j:
-                newpalette.append(palette[i])
+    embed_plot.set_axis_labels('x', 'y', fontsize=16)
 
-    del newpalette[0:len(palette)]
+    embed_plot.ax_joint.legend_.remove()
 
-    return newpalette
+    sns.despine(ax=None, left=True, bottom=True)
+    fig = embed_plot.fig
 
-def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):
-    """
-    generates a categorical palette based on size
-        includes sequential shuffling for large category nos. 
-        applies grey to unassigned/negative
-    """
-
-    GREY=( 0.5, 0.5, 0.5 )
-
-    cat_min=np.min(categories)
-    cat_max=np.max(categories)
-    num_cats=cat_max-cat_min+1
-
-    if num_cats <= 10:
-        cmapname="deep"
-        shuffle=False
-    elif num_cats <=12:
-        cmapname="Set3"
-        shuffle=False
-    else:
-        cmapname=cc.glasbey_light
-        shuffle=False        
-
-    if cat_min < 0:
-        palette=sns.color_palette(cmapname,num_cats-1)
-
-        if shuffle == True:
-            palette=shuffle_palette(palette)
-
-        palette.insert( 0, GREY )
-
-    elif cat_min == 0:
-        palette=sns.color_palette(cmapname,num_cats)
-
-        if shuffle == True:
-            palette=shuffle_palette(palette)
-    else:
-        raise ValueError(f"minimum category {cat_min} > 0")
-
-    return palette
-
-
-def cluster_colourmap(embedding, categories):
-    """
-    create a colourmap clustered onto an embedding
-    """
-    GREY=( 0.5, 0.5, 0.5 )
-
-    cat_min=np.min(categories)
-    cat_max=np.max(categories)
-    num_cats=cat_max-cat_min+1
-    num_colours = num_cats*3
-
-    palette = sns.color_palette(cc.glasbey_light,num_colours)
-
-    colours = np.array(palette, dtype=np.float32)
-
-    # produce 2D embedding for visualisation
-    ___, colour_embedding = clustering.reduce(colours, "UMAP", target_components=2) 
-    
-    """
-    TO DO: normalise onto embedding scale
-    """
-    centroids = utils.compile_centroids(embedding, categories)
-
-    """
-    TO DO:
-    assign embedding points to colours
-    """
+    return fig
 
 
 
@@ -215,7 +152,7 @@ def category_map ( categories, dims, palette=None ):
 
     if palette is None:
         log.warning(f"palette not given, building from categories")
-        palette=build_palette(categories)
+        palette=colours.build_palette(categories)
 
     cmap = colors.ListedColormap(palette)
 
@@ -244,7 +181,7 @@ def category_map_direct( categories, dims, palette=None ):
 
     if palette is None:
         log.warning(f"palette not given, building from categories")
-        palette=build_palette(categories)
+        palette=colours.build_palette(categories)
 
     cmap = colors.ListedColormap(palette)
 
@@ -277,7 +214,7 @@ def category_avgs(categories, elements, classavg, palette=None ):
 
     if palette is None:
         log.warning(f"palette not given, building from categories")
-        palette=build_palette(categories)
+        palette=colours.build_palette(categories)
 
     cmap = colors.ListedColormap(palette)
 
@@ -337,7 +274,7 @@ def seaborn_embedplot(embedding, categories, palette=None):
 
     if palette is None:
         log.warning(f"palette not given, building from categories")
-        palette=build_palette(categories)
+        palette=colours.build_palette(categories)
 
     x=embedding.T[0]
     y=embedding.T[1]
@@ -432,18 +369,17 @@ def contours_3d(kde):
 
     return fig
 
-def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="."):
+def plot_clusters(categories, classavg, embedding, kde, dims, output_directory=".", plot_kde=False, plot_margins=False):
     """
     display all plots for clusters
-    
     """
-    
+
     print("plotting") 
 
     if embedding.shape[1] == 2:
-        print("using 2d embedding") 
+        print("using 2d embedding x") 
         #generate the palette from the categories, independent of distance
-        palette=build_palette(categories)
+        palette=colours.build_aligned_palette(embedding, categories)
         embedding_2d = embedding
     else:
         #use the 3D embedding to colour the categories based on distance
@@ -453,10 +389,9 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
         # produce 2D embedding for visualisation
         print("creating 2d embedding")
         ___, embedding_2d = clustering.reduce(embedding, "PCA", target_components=2) 
-        colour_array=rgb_from_centroids(embedding, categories)
-        palette=sns.color_palette(colour_array)
+        palette=sns.color_palette(rgb_from_centroids(embedding, categories))
 
-    if False:
+    if plot_margins:
         print("saving map with margins")        
         fig_cat_map = category_map(categories, dims, palette=palette)
         fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
@@ -469,9 +404,9 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
     fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
     fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
     
-    if False:
+    if plot_kde and kde is not None:
         fig_contours = contours_3d(kde)
-
+    
     #plt.show()
 
     return palette

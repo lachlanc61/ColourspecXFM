@@ -80,7 +80,7 @@ def read_processed(args_in):
 
     classavg = clustering.get_classavg(pxs.data.d, categories, image_directory, force=args.force_clustering, overwrite=overwrite)
 
-    palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory)
+    palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory, plot_kde=args.kde)
 
     vis.table_classavg(classavg, pxs.labels)
 
