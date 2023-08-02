@@ -174,6 +174,8 @@ def classify(embedding, majors_only=False):
 
     categories=classifier.labels_
 
+    categories = categories.astype(np.int32)
+
     return classifier, categories
 
 def calc_classavg(data, categories, category_list, n_channels):

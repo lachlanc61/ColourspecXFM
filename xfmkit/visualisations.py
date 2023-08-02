@@ -276,7 +276,7 @@ def seaborn_embedplot(embedding, categories, palette=None):
     embed_plot = sns.jointplot(x=x, y=y,
                 hue=categories, palette=palette,
                 lw=0,
-                joint_kws = dict(alpha=0.01),
+                joint_kws = dict(alpha=0.01),           #FUTURE: scale alpha with log(n_pixels)
                 height=12, ratio=6
                 )
 
