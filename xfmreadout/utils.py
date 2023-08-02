@@ -2,15 +2,8 @@ import time
 import sys
 import os
 import yaml
-import argparse
-import psutil
 
 import numpy as np
-import matplotlib.pyplot as plt
-
-from scipy import ndimage
-from copy import deepcopy
-from math import sqrt
 
 from scipy.stats import norm
 

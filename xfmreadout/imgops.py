@@ -1,8 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 from scipy import ndimage
-from PIL import Image
 from math import sqrt
 
 import xfmreadout.utils as utils
@@ -77,7 +75,7 @@ def apply_resize(data, sd_data, dims, zoom_factor):
         order = 2   #bilinear
         error_factor = 1    #dont change error if upscaling
 
-    updated_data, updated_dims = data_resize(data, dims, zoom_factor, order=order)
+    updated_data, updated_dims = img_resize(data, zoom_factor, order=order) #previously data_resize, needs testing
   
     updated_sd = sd_data/error_factor    #rough calc
 

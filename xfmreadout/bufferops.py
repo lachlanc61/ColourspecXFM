@@ -1,6 +1,5 @@
 import struct 
 import sys
-import time
 import numpy as np
 import json
 import copy
@@ -8,7 +7,6 @@ import copy
 import multiprocessing as mp
 
 import xfmreadout.byteops as byteops
-import xfmreadout.dtops as dtops
 import xfmreadout.parser as parser
 import xfmreadout.utils as utils
 

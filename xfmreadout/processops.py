@@ -5,9 +5,7 @@ import periodictable as pt
 from PIL import Image
 from math import sqrt
 
-import xfmreadout.clustering as clustering
 import xfmreadout.utils as utils
-import xfmreadout.imgops as imgops
 import xfmreadout.structures as structures
 
 FORCE = True

@@ -1,25 +1,16 @@
-import copy
 import os
 import logging
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
 import seaborn as sns
-import colorcet as cc
 import matplotlib.pyplot as plt
-import pickle
-
-from sklearn.preprocessing import normalize
-from sklearn.neighbors import KernelDensity
-from mpl_toolkits.mplot3d import Axes3D
 
 from matplotlib import colors
-from PIL import Image
 
 import xfmreadout.utils as utils
 import xfmreadout.clustering as clustering
 import xfmreadout.colours as colours
-
 
 
 REDUCER=1

@@ -1,4 +1,3 @@
-import time
 import sys
 import os
 import numpy as np
@@ -7,14 +6,12 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import xfmreadout.utils as utils
 import xfmreadout.argops as argops
-import xfmreadout.colour as colour
+import xfmreadout.rgbspectrum as rgbspectrum
 import xfmreadout.clustering as clustering
 import xfmreadout.visualisations as vis
-import xfmreadout.structures as structures
 import xfmreadout.dtops as dtops
 import xfmreadout.parser as parser
 import xfmreadout.diagops as diagops
-import xfmreadout.processops as processops
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -84,7 +81,7 @@ def read_raw(args_in):
                 pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
 
             pixelseries.rgbarray, pixelseries.rvals, pixelseries.gvals, pixelseries.bvals \
-                = colour.calccolours(config, pixelseries, xfmap, pixelseries.flattened, dirs)       #flattened / corrected
+                = rgbspectrum.calccolours(config, pixelseries, xfmap, pixelseries.flattened, dirs)       #flattened / corrected
         
         dt_avg = dtops.dt_stats(pixelseries.dt)
      
@@ -97,8 +94,6 @@ def read_raw(args_in):
         pixelseries.classavg = clustering.get_classavg( pixelseries.flattened, pixelseries.categories, dirs.embeddings, force=args.force, overwrite=config['OVERWRITE_EXPORTS'])
 
         palette = vis.plot_clusters(pixelseries.categories, pixelseries.classavg, embedding, pixelseries.dimensions)
-#        clustering.complete(pixelseries.categories, pixelseries.classavg, embedding, clusttimes, xfmap.energy, xfmap.xres, xfmap.yres, config['nclust'], dirs.plots)
-        #colour.plot_colourmap_explainer(pixelseries.energy, pixelseries.classavg[1:1], pixelseries.rvals, pixelseries.gvals, pixelseries.bvals, dirs)
     else:
         categories = None
         classavg = None

@@ -1,14 +1,9 @@
 import numpy as np
 import os
 import sys
-#import pybaselines.smooth  #for background fitting
 
-#from colorsys import hsv_to_rgb
-
-import xfmreadout.utils as utils
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib import cm
 
 #-----------------------------------
 #MODIFIABLE CONSTANTS
