@@ -1,14 +1,14 @@
 import pytest
 import sys, os
 import numpy as np
-import xfmreadout.utils as utils
+import xfmkit.utils as utils
 
 TEST_DIR=os.path.realpath(os.path.dirname(__file__))
 BASE_DIR=os.path.dirname(TEST_DIR)
 
 sys.path.append(BASE_DIR)
 
-import xfmreadout.structures as structures
+import xfmkit.structures as structures
 
 def test_dataseries_mapview():
 

@@ -90,19 +90,19 @@ The data is read in chunks to minimise memory usage:
 - Multiple MapBuffer objects can be loaded in parallel via MapBuffer.cache() and retrieve() methods to reduce I/O delay. 
 - The active chunk is accessed via the getstream() function, which handles loading across the end of each chunk.
 - The binary data is extracted from this stream via struct.unpack
-    - see: xfmreadout/bufferops.py and xfmreadout/byteops.py
+    - see: xfmkit/bufferops.py and xfmkit/byteops.py
 
 The source and extracted datasets are handled via two custom classes:
 - The Xfmap object wraps the input dataset together with metadata derived from the JSON header.
 - The PixelSeries object holds the extracted data as a series of NumPy arrays.  
-    - see: xfmreadout/structures.py
+    - see: xfmkit/structures.py
 
 The file is parsed in three stages:
  - The file is first indexed to extract the pixel header statistics and store the location and length of each record.
  - These pre-identified indices are then used to step through the pixel records rapidly, unpacking the binary pairs into channel and count arrays.
     - Missing channels are reintroduced and the pixel data is loaded into a PixelSeries object.
  - Finally, if a modified .GeoPIXE file is to be written, the file is indexed a second time, writing modified headers and data at each record index. 
-    - see: xfmreadout/parser.py
+    - see: xfmkit/parser.py
 
 # Analytics and visualisations
 

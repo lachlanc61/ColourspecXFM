@@ -2,10 +2,10 @@ import os
 import numpy as np
 from scipy import ndimage
 
-import xfmreadout.bufferops as bufferops
-import xfmreadout.dtops as dtops
-import xfmreadout.imgops as imgops
-import xfmreadout.utils as utils
+import xfmkit.bufferops as bufferops
+import xfmkit.dtops as dtops
+import xfmkit.imgops as imgops
+import xfmkit.utils as utils
 
 from math import sqrt
 

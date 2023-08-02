@@ -6,9 +6,9 @@ import copy
 
 import multiprocessing as mp
 
-import xfmreadout.byteops as byteops
-import xfmreadout.parser as parser
-import xfmreadout.utils as utils
+import xfmkit.byteops as byteops
+import xfmkit.parser as parser
+import xfmkit.utils as utils
 
 #assign an identifier to the local namespace
 #   used to create persistent preloaded buffer

@@ -5,12 +5,12 @@ import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import xfmreadout.utils as utils
-import xfmreadout.argops as argops
-import xfmreadout.clustering as clustering
-import xfmreadout.visualisations as vis
-import xfmreadout.processops as processops
-import xfmreadout.structures as structures
+import xfmkit.utils as utils
+import xfmkit.argops as argops
+import xfmkit.clustering as clustering
+import xfmkit.visualisations as vis
+import xfmkit.processops as processops
+import xfmkit.structures as structures
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -27,7 +27,7 @@ Parses spectrum-by-pixel maps from IXRF XFM
 #-----------------------------------
 #vars
 #-----------------------------------
-PACKAGE_CONFIG='xfmreadout/config.yaml'
+PACKAGE_CONFIG='xfmkit/config.yaml'
 
 #-----------------------------------
 #INITIALISE

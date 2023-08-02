@@ -1,5 +1,5 @@
 SIFDIR=$SIFDIR
-IMAGENAME='xfmreadout_latest'
+IMAGENAME='xfmkit_latest'
 APPDIR="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE}")")")"
 
 if [[ -z "${DATADIR}" ]]; 
@@ -18,6 +18,6 @@ else
     args="$@"
 fi
 
-apptainer exec --containall --bind $binds  $SIFDIR/$IMAGENAME.sif python /repo/xfmreadout/entry_processed.py $args
+apptainer exec --containall --bind $binds  $SIFDIR/$IMAGENAME.sif python /repo/xfmkit/entry_processed.py $args
 
 #apptainer exec --containall --bind $binds  $SIFDIR/$IMAGENAME.sif bash

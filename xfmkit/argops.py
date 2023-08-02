@@ -122,7 +122,7 @@ def readargs(args_in, config):
         help="Export pixel data to .npy file"
         "will extract spectrum-per-pixel-per-detector data to .npy file-like object"
         "file can be opened with numpy.load(filepath)"
-        "to export as csv, change SAVEFMT_READABLE = True in xfmreadout/config.yaml",
+        "to export as csv, change SAVEFMT_READABLE = True in xfmkit/config.yaml",
         action='store_true',
     )
     argparser.add_argument(

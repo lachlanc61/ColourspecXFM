@@ -10,7 +10,7 @@ From: python:3.10.6
 #   apptainer doesn't seem to have an equivalent to .dockerignore 
 #   need to list everything explicitly to avoid unwanted data in the container
     ../xfmparser /app/xfmparser
-    ../xfmreadout /app/xfmreadout
+    ../xfmkit /app/xfmkit
     ../tests /app/tests    
     ../data/example_datafile.GeoPIXE /app/data/example_datafile.GeoPIXE
     ../pyproject.toml /app/

@@ -4,8 +4,8 @@ import numpy as np
 import seaborn as sns
 import colorcet as cc
 
-import xfmreadout.utils as utils
-import xfmreadout.clustering as clustering
+import xfmkit.utils as utils
+import xfmkit.clustering as clustering
 
 
 

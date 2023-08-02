@@ -1,9 +1,9 @@
 import time
 import numpy as np
 
-import xfmreadout.bufferops as bufferops
-import xfmreadout.utils as utils
-import xfmreadout.structures as structures
+import xfmkit.bufferops as bufferops
+import xfmkit.utils as utils
+import xfmkit.structures as structures
 
 import parsercore
 

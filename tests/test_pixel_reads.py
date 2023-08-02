@@ -8,12 +8,12 @@ BASE_DIR=os.path.dirname(TEST_DIR)
 DATA_DIR, ___ = os.path.splitext(__file__)
 
 
-PACKAGE_CONFIG='xfmreadout/config.yaml'
+PACKAGE_CONFIG='xfmkit/config.yaml'
 
 sys.path.append(BASE_DIR)
 
 import tests.utils_tests as ut
-import xfmreadout.bufferops as bufferops
+import xfmkit.bufferops as bufferops
 
 #get config
 with open(os.path.join(BASE_DIR, PACKAGE_CONFIG), "r") as f:

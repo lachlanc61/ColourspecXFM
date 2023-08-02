@@ -3,7 +3,7 @@ import numpy as np
 from scipy import ndimage
 from math import sqrt
 
-import xfmreadout.utils as utils
+import xfmkit.utils as utils
 
 def gaussianblur(img, kernelsize: int):
     """

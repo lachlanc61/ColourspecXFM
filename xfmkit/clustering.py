@@ -11,7 +11,7 @@ from sklearn import decomposition
 from sklearn.cluster import KMeans
 from sklearn.neighbors import KernelDensity
 
-import xfmreadout.utils as utils
+import xfmkit.utils as utils
 
 #-----------------------------------
 #CONSTANTS

@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 from matplotlib import colors
 
-import xfmreadout.utils as utils
-import xfmreadout.clustering as clustering
-import xfmreadout.colours as colours
+import xfmkit.utils as utils
+import xfmkit.clustering as clustering
+import xfmkit.colours as colours
 
 
 REDUCER=1

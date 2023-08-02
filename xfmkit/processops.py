@@ -5,8 +5,8 @@ import periodictable as pt
 from PIL import Image
 from math import sqrt
 
-import xfmreadout.utils as utils
-import xfmreadout.structures as structures
+import xfmkit.utils as utils
+import xfmkit.structures as structures
 
 FORCE = True
 AUTOSAVE = True

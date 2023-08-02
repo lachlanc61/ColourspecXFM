@@ -8,12 +8,12 @@ BASE_DIR=os.path.dirname(TEST_DIR)
 DATA_DIR_NAME="test_stream_reads"   #hardcoded for tests dependent on large datafiles
 DATA_DIR = os.path.join(TEST_DIR, DATA_DIR_NAME)  
 
-PACKAGE_CONFIG='xfmreadout/config.yaml'
+PACKAGE_CONFIG='xfmkit/config.yaml'
 
 sys.path.append(BASE_DIR)
 
 import parsercore
-import xfmreadout.bufferops as bufferops
+import xfmkit.bufferops as bufferops
 import tests.utils_tests as ut
 
 #get config

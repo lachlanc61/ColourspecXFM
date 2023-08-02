@@ -14,13 +14,13 @@ CHUNK_SIZE=5
 CONTROL_ARGS=[ "-s", str(CHUNK_SIZE),]
 CONTROL_ARGS_MULTIPROC=[ "-s", str(CHUNK_SIZE), "-m"]
 
-PACKAGE_CONFIG='xfmreadout/config.yaml'
+PACKAGE_CONFIG='xfmkit/config.yaml'
 
 sys.path.append(BASE_DIR)
 
-import xfmreadout.bufferops as bufferops
+import xfmkit.bufferops as bufferops
 import tests.utils_tests as ut
-import xfmreadout.entry_raw as entry_raw
+import xfmkit.entry_raw as entry_raw
 
 
 #get config
