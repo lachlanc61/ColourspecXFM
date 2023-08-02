@@ -21,11 +21,8 @@ FINAL_COMPONENTS=2
 UMAP_PRECOMPONENTS=11
 MIN_SEPARATION=0.1
 
-#CLASSIFIERS:
-EST_N_CLUSTERS=300
-
+#KDE
 DEFAULT_KDE_POINTS=301  #odd number apparently speeds up rendering via mpl.plot_surface
-#DEFAULT_KDE_POINTS=101  #odd number apparently speeds up rendering via mpl.plot_surface
 
 #-----------------------------------
 #GROUPS
@@ -260,7 +257,7 @@ def get_classavg(raw_data, categories, output_dir, force=False, overwrite=True):
     return classavg
 
 
-def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True, target_components=3):
+def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True, target_components=3, do_kde=False):
 
     if force_embed:
         force_clust = True
@@ -294,7 +291,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
         #clusttimes = np.load(file_ctime)     
 
     #   calculate kde from embedding
-    if target_components == 2:
+    if do_kde and target_components == 2:
         if force_embed or not exists_kde:
             print(f"CALCULATING KDE with n={DEFAULT_KDE_POINTS}")        
             kde = KdeMap(embedding, n=DEFAULT_KDE_POINTS)
