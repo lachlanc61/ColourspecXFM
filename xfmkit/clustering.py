@@ -319,6 +319,12 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     else:
         print("LOADING CLASSIFICATION")
         categories = np.load(file_cats)
+        
+        #if old category format with negative classes, update and re-save
+        if np.min(categories) == -1:
+            categories = categories+1
+            np.save(file_cats,categories)
+
         classifier = None
 
     #complete the timer
