@@ -2,9 +2,12 @@ import sys
 import os
 import numpy as np
 
+import logging
+from logging.handlers import TimedRotatingFileHandler
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+import xfmkit.config as config
 import xfmkit.utils as utils
 import xfmkit.argops as argops
 import xfmkit.clustering as clustering
@@ -36,11 +39,31 @@ PACKAGE_CONFIG='xfmkit/config.yaml'
 #-----------------------------------
 
 
+def logging_setup():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    log_file = config.get('logging', 'log_file', default = "/var/log/xfmkit.log")
+
+    filehandler = TimedRotatingFileHandler(log_file, when='midnight',backupCount=7)
+    filehandler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    filehandler.setFormatter(formatter)
+    
+    logger.addHandler(filehandler)
+
+    return logger
+
+
 def entry_processed():
     """
     entrypoint wrapper getting args from sys
     """
     args_in = sys.argv[1:]  #NB: exclude 0 == script name
+
+    logger = logging_setup()
+
     read_processed(args_in)
 
     return

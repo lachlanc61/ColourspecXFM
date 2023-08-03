@@ -5,6 +5,9 @@ import csv
 
 import xfmkit.utils as utils
 
+import logging
+logger = logging.getLogger(__name__)
+
 output_dir = "/home/lachlan/CODEBASE/xfmkit/data/processed_maps/carlos_full"
 
 

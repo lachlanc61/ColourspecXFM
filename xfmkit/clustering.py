@@ -13,6 +13,9 @@ from sklearn.neighbors import KernelDensity
 
 import xfmkit.utils as utils
 
+import logging
+logger = logging.getLogger(__name__)
+
 #-----------------------------------
 #CONSTANTS
 #-----------------------------------

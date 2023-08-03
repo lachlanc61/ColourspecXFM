@@ -2,6 +2,9 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
+import logging
+logger = logging.getLogger(__name__)
+
 cset = ['red', 'blue']
 
 def dt_stats(dt):

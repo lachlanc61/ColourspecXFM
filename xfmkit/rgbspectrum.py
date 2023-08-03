@@ -5,6 +5,9 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 
+import logging
+logger = logging.getLogger(__name__)
+
 #-----------------------------------
 #MODIFIABLE CONSTANTS
 #-----------------------------------

@@ -4,6 +4,9 @@ import scipy as sp
 import pybaselines.smooth
 import matplotlib.pyplot as plt
 
+import logging
+logger = logging.getLogger(__name__)
+
 #-----------------------------------
 #MODIFIABLE CONSTANTS
 #-----------------------------------

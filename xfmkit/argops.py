@@ -1,6 +1,9 @@
 import os
 import argparse
 import psutil
+import logging
+
+logger = logging.getLogger(__name__)
 
 def checkargs(args, config):
     """

@@ -7,6 +7,9 @@ import colorcet as cc
 import xfmkit.utils as utils
 import xfmkit.clustering as clustering
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 
 def build_palette(categories,cmapname=cc.glasbey_light,shuffle=False):

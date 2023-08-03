@@ -10,6 +10,9 @@ import xfmkit.byteops as byteops
 import xfmkit.parser as parser
 import xfmkit.utils as utils
 
+import logging
+logger = logging.getLogger(__name__)
+
 #assign an identifier to the local namespace
 #   used to create persistent preloaded buffer
 this = sys.modules[__name__]

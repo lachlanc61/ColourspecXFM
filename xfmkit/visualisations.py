@@ -11,6 +11,8 @@ import xfmkit.clustering as clustering
 import xfmkit.colours as colours
 import xfmkit.tabular as tabular
 
+import logging
+logger = logging.getLogger(__name__)
 
 REDUCER=1
 

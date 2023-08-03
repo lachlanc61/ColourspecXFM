@@ -9,6 +9,9 @@ import xfmkit.utils as utils
 
 from math import sqrt
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 #CLASSES
 class Xfmap:

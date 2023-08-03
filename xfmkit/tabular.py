@@ -1,6 +1,9 @@
 import pandas as pd
 from tabulate import tabulate
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 IGNORE_LINES=['sum','Back','Compton','Mo','MoL']
 

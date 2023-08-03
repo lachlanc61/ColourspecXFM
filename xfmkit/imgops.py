@@ -5,6 +5,9 @@ from math import sqrt
 
 import xfmkit.utils as utils
 
+import logging
+logger = logging.getLogger(__name__)
+
 def gaussianblur(img, kernelsize: int):
     """
     applies a gaussian blur to a single image according to kernel size (in pixels, = sd param) 

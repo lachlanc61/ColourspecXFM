@@ -7,6 +7,9 @@ import xfmkit.structures as structures
 
 import parsercore
 
+import logging
+logger = logging.getLogger(__name__)
+
 class MapDone(Exception): pass
 
 def endpx(pxidx, idx, buffer, xfmap, pixelseries):

@@ -7,6 +7,9 @@ import numpy as np
 
 from scipy.stats import norm
 
+import logging
+logger = logging.getLogger(__name__)
+
 class DirectoryStructure:
     """
     object holding file locations and directory structure

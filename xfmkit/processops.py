@@ -8,6 +8,9 @@ from math import sqrt
 import xfmkit.utils as utils
 import xfmkit.structures as structures
 
+import logging
+logger = logging.getLogger(__name__)
+
 FORCE = True
 AUTOSAVE = True
 
