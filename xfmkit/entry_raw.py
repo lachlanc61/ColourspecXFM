@@ -2,6 +2,9 @@ import sys
 import os
 import numpy as np
 
+import logging
+from logging.handlers import TimedRotatingFileHandler
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import xfmkit.utils as utils
@@ -12,6 +15,7 @@ import xfmkit.visualisations as vis
 import xfmkit.dtops as dtops
 import xfmkit.parser as parser
 import xfmkit.diagops as diagops
+import xfmkit.config as configuration
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -34,12 +38,34 @@ PACKAGE_CONFIG='xfmkit/config.yaml'
 #INITIALISE
 #-----------------------------------
 
+def logging_setup():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    log_file = configuration.get('logging', 'log_file', default = "/var/log/xfmkit.log")
+
+    filehandler = TimedRotatingFileHandler(log_file, when='midnight',backupCount=7)
+    filehandler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    filehandler.setFormatter(formatter)
+    
+    logger.addHandler(filehandler)
+
+    return logger
+
+
 def entry_raw():
     """
     entrypoint wrapper getting args from sys
     """
     args_in = sys.argv[1:]  #NB: exclude 0 == script name
+
+    logger = logging_setup()
+
     read_raw(args_in)
+
+
 
 def read_raw(args_in):
     """

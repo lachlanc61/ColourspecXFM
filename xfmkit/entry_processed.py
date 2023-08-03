@@ -93,10 +93,13 @@ def read_processed(args_in):
 
     pxs = structures.PixelSet(ds)
 
-    pxs.modify_weights(do_sqrt=False)
+    transform=None
+    pxs.apply_transform_via_weights(transform=transform)
 
     pxs.apply_weights()
-    pxs.weighted.set_to(np.sqrt(pxs.weighted.d))
+
+    transform='sqrt'
+    pxs.apply_transform(transform)
 
     overwrite = ( args.force or args.force_clustering )
 

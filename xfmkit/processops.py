@@ -7,22 +7,18 @@ from math import sqrt
 
 import xfmkit.utils as utils
 import xfmkit.structures as structures
+import xfmkit.config as config
 
 import logging
 logger = logging.getLogger(__name__)
 
-FORCE = True
-AUTOSAVE = True
+IGNORE_LINES=[]
+AFFECTED_LINES=['Ar', 'Mo', 'MoL']
+NON_ELEMENT_LINES=['sum','Back','Compton']
 
-EMBED_DIRNAME = "embedding"
+Z_CUTOFFS=[11, 55, 37, 73]  # cutoffs for K, L, M lines 
+                            #   K min, K max, L min, M min
 
-#IGNORE_LINES=['sum','Back','Compton','Mo','MoL']
-IGNORE_LINES=['Ar']
-CUSTOM_LINES=['sum','Back','Compton']
-Z_CUTOFFS=[11, 55, 37, 73]       #K min, K max, L min, M min
-
-MODIFY_LIST = ['Na', 'Mg', 'Al', 'Si', 'Cl', 'sum', 'Back', 'Mo', 'MoL', 'Compton', 'S']
-MODIFY_NORMS = [ 0.005, 0.01, 0.025, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0 ]
 BASEFACTOR=1/10000 #ppm to wt%
 
 def get_elements(files):
@@ -47,7 +43,7 @@ def get_elements(files):
         if ptelement.number >= Z_CUTOFFS[3]:            
             possible_lines.append(ptelement.symbol+"M")
 
-    for line in CUSTOM_LINES:
+    for line in NON_ELEMENT_LINES:
         possible_lines.append(line)
 
     for fname in files:
@@ -236,27 +232,6 @@ def ppm_to_wt(data):
     convert from ppm (as-read) to wt% 
     """
     result = data*BASEFACTOR
-    return result
-
-def calc_weights(data, weights, do_sqrt=True):
-    if not weights.shape[0] == data.shape[1]:
-        raise ValueError(f"shape mistmatch between weights {weights.shape} and data {data.shape}")
-
-    for i in range(data.shape[1]):
-        max_ = np.max(data[:,i])
-        if do_sqrt:
-            weights[i] = weights[i]*sqrt(max_)/max_
-        else:
-            weights[i] = weights[i]
-        
-    return weights
-
-def apply_weights(data, weights):
-    result = np.zeros(data.shape)
-
-    for i in range(data.shape[1]):
-        result[:,i] = data[:,i]*weights[i]
-    
     return result
 
 def extract_data(image_directory, files, is_variance=False):

@@ -8,6 +8,7 @@ import xfmkit.imgops as imgops
 import xfmkit.utils as utils
 
 from math import sqrt
+from math import log
 
 import logging
 logger = logging.getLogger(__name__)
@@ -534,6 +535,8 @@ class DataSet:
                 if not self.se.dimensions == self.data.dimensions:
                     self.match_se_to_data()
 
+            self.weights = np.ones(self.data.d.shape[1], dtype=np.float32)
+
         self.check()
 
 
@@ -629,8 +632,7 @@ class DataSet:
     def downsample_by_se(self, deweight=False):
 
         SD_MULTIPLIER = 2
-        DEWEIGHT_FACTOR = 1
-        NON_ELEMENT_MAPS = ["Compton", "sum", "Back", "Mo"]    #to-do recognise Mo/Rh from anode and ignore selectively
+        DEWEIGHT_FACTOR = 0.5
 
         self.check()
 
@@ -657,10 +659,7 @@ class DataSet:
 
                     if deweight:
                         #deweight channel for each gaussian applied
-                        img_ = img_/DEWEIGHT_FACTOR
-                        se_ = se_/DEWEIGHT_FACTOR
-
-                        img_ = np.rint(img_)
+                        self.weights[i] = self.weights[i]*DEWEIGHT_FACTOR
 
                     ratio, q2_sd, q99_data = imgops.calc_quantiles(img_, se_, SD_MULTIPLIER)
                     j+=1
@@ -687,19 +686,25 @@ class PixelSet(DataSet):
             if not attr.startswith('__'):    
                 setattr(self, attr, getattr(dataset, attr))
 
-        self.weights = np.ones(dataset.data.d.shape[1], dtype=np.float32)
         self.weighted = None
 
-    def modify_weights(self, do_sqrt=True):
+    def apply_transform_via_weights(self, transform=None):
         if not self.weights.shape[0] == self.data.shape[1]:
                 raise ValueError(f"shape mistmatch between weights {self.weights.shape} and data {self.data.shape}")
         
         for i in range(self.data.shape[1]):
             max_ = np.max(self.data.d[:,i])
-            if do_sqrt:
+
+            if transform == 'sqrt':
                 self.weights[i] = self.weights[i]*sqrt(max_)/max_
+            
+            if transform == 'log':
+                self.weights[i] = self.weights[i]*log(max_)/max_
+            
+            elif transform == None:
+                pass  
             else:
-                self.weights[i] = self.weights[i]            
+                raise ValueError(f"invalue value for transform: {transform}")         
     
     def apply_weights(self):
         result = np.zeros(self.data.shape)
@@ -708,3 +713,19 @@ class PixelSet(DataSet):
             result[:,i] = self.data.d[:,i]*self.weights[i]
         
         self.weighted = DataSeries(result, self.data.dimensions)
+
+    def apply_transform(self, transform=None):
+
+        if self.weighted == None:
+            raise ValueError("PixelSet instance.weighted not initialised")
+
+        if transform == 'sqrt':
+            self.weighted.set_to(np.sqrt(self.weighted.d))
+
+        elif transform == 'log':
+            self.weighted.set_to(np.log(self.weighted.d))          
+
+        elif transform == None:
+            pass  
+        else:
+            raise ValueError(f"invalue value for transform: {transform}")
