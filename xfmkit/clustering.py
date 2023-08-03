@@ -237,12 +237,10 @@ def get_linspace(embedding, n=DEFAULT_KDE_POINTS):
 
     return xy, X, Y  
 
-def get_classavg(raw_data, categories, output_dir, force=False, overwrite=True):
-
-    #possible bug - categories from -1 to 29 but classavg starts at 0, may drop -1
-    #   watch Ti channel (22)
+def get_classavg(raw_data, categories, output_dir, overwrite=True, labels=[]):
 
     file_classes=os.path.join(output_dir,"classavg.npy")
+    csv_classes=os.path.join(output_dir,"class_averages.csv")
     exists_classes = os.path.isfile(file_classes)
 
     totalpx = raw_data.shape[0]
@@ -250,14 +248,20 @@ def get_classavg(raw_data, categories, output_dir, force=False, overwrite=True):
 
     #   sum and extract class averages
     n_clusters, category_list = utils.count_categories(categories)
-    classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
+    classavg=np.zeros([n_clusters, n_channels], dtype=np.float32)
 
-    if force or not exists_classes:
-        classavg=calc_classavg(raw_data, categories, category_list, n_channels) 
-        if overwrite or not exists_classes:
-            np.save(file_classes,classavg)
-    else:
-        classavg = np.load(file_classes)
+    header=''
+
+    if not labels == []:
+        for i in range(raw_data.shape[1]):
+            header=header+f"{labels[i]},"
+
+    classavg=calc_classavg(raw_data, categories, category_list, n_channels)
+
+    print("WRITING CLASS AVERAGES")
+    if overwrite or not exists_classes:
+        np.save(file_classes,classavg)
+        np.savetxt(csv_classes, classavg, header=header, fmt='%.8f', delimiter=',')
     
     return classavg
 
@@ -319,7 +323,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     else:
         print("LOADING CLASSIFICATION")
         categories = np.load(file_cats)
-        
+
         #if old category format with negative classes, update and re-save
         if np.min(categories) == -1:
             categories = categories+1

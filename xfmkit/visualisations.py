@@ -173,8 +173,6 @@ def category_map_direct( categories, dims, palette=None ):
 
     catmap=utils.map_roll(categories,dims)
 
-    print("creating direct category map")
-
     ax.imshow(catmap, cmap=cmap, aspect='auto')
 
     return fig
@@ -267,9 +265,6 @@ def seaborn_embedplot(embedding, categories, palette=None, labels=[]):
     handles, __ = embed_plot.ax_joint.get_legend_handles_labels()
 
     embed_plot.ax_joint.legend(handles=handles, labels=labels, fontsize=10)
-
-    print(handles)    
-    print(labels)
 
     embed_plot.set_axis_labels('x', 'y', fontsize=16)
 

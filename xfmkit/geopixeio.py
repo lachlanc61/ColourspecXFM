@@ -27,7 +27,6 @@ def export_regions(categories, dimensions, output_directory='.'):
         filtered_ = np.where(categories_ == i)[0]
 
         #write it
-        print(f"writing {i}")
         write_region(filtered_, i, dimensions, output_directory)
 
     return
@@ -113,10 +112,6 @@ def write_region_header(f, dimensions):
     offset_line = [[ 'Offset', 0, 0 ]]
     compress_line = [[ 'Compress', 1, 1 ]]
     image_line = [[ 'Image', dimensions[1], dimensions[0] ]]
-
-    print(image_line)
-
-    print(type(image_line))
 
     f.write(REGION_HEADER)
     writer = csv.writer(f)

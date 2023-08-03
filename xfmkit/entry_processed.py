@@ -79,7 +79,7 @@ def read_processed(args_in):
 
     categories, embedding, kde = clustering.run(pxs.weighted.d, image_directory, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite, do_kde=args.kde)
 
-    classavg = clustering.get_classavg(pxs.data.d, categories, image_directory, force=args.force_clustering, overwrite=overwrite)
+    classavg = clustering.get_classavg(pxs.data.d, categories, image_directory, labels=pxs.labels)
 
     palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory, plot_kde=args.kde, labels=pxs.labels)
 
