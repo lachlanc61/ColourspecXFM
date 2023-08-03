@@ -21,6 +21,7 @@ def printout(df):
 
     return
 
+#TO-DO shifting by 1 index somewhere
 
 def get_major_list(df):
 
@@ -28,20 +29,20 @@ def get_major_list(df):
 
     labels = df.columns.values.tolist()
 
-    major_elements = []
+    class_majors = []
 
     df_=df.copy()
 
-    for i in range(len(labels)):
-        col_ = df_.iloc[i].sort_values(ascending=False)
+    for i in range(len(df.index)):
+        row_ = df_.iloc[i].sort_values(ascending=False)
 
-        col_ = col_.drop(IGNORE_LINES)
+        row_ = row_.drop(IGNORE_LINES)
 
-        majors_ = col_.index[0:N_MAJORS].tolist()
+        majors_ = row_.index[0:N_MAJORS].tolist()
 
-        major_elements.append(majors_)
+        class_majors.append(majors_)
 
-    return major_elements
+    return class_majors
 
 
 def nestlist_as_str(nested_list: list):

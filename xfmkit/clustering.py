@@ -239,6 +239,9 @@ def get_linspace(embedding, n=DEFAULT_KDE_POINTS):
 
 def get_classavg(raw_data, categories, output_dir, force=False, overwrite=True):
 
+    #possible bug - categories from -1 to 29 but classavg starts at 0, may drop -1
+    #   watch Ti channel (22)
+
     file_classes=os.path.join(output_dir,"classavg.npy")
     exists_classes = os.path.isfile(file_classes)
 
@@ -310,16 +313,13 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     if force_clust or not exists_cats:
         print("CALCULATING CLASSIFICATION")        
         classifier, categories = classify(embedding)
+        categories=categories+1
         if overwrite or not exists_cats:
             np.save(file_cats,categories)
     else:
         print("LOADING CLASSIFICATION")
         categories = np.load(file_cats)
         classifier = None
-
-
-
-
 
     #complete the timer
     runtime = time.time() - starttime

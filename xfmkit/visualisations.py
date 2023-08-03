@@ -130,7 +130,7 @@ def embedding_map(embedding, dims):
 
     return fig
 
-def category_map ( categories, dims, palette=None ):
+def category_map (categories, dims, palette=None ):
     """
         display categories as map image, with axes
     """
@@ -138,15 +138,13 @@ def category_map ( categories, dims, palette=None ):
     fig = plt.figure(figsize=(24,12))
     ax = fig.add_subplot(111)
 
-    ncats=np.max(categories)+2
-
     if palette is None:
         log.warning(f"palette not given, building from categories")
         palette=colours.build_palette(categories)
 
     cmap = colors.ListedColormap(palette)
 
-    catmap=utils.map_roll(categories+1,dims)
+    catmap=utils.map_roll(categories,dims)
 
     ax.tick_params(axis='both', which='major', labelsize=16)
 
@@ -166,8 +164,6 @@ def category_map_direct( categories, dims, palette=None ):
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
-    
-    ncats=np.max(categories)+2
 
     if palette is None:
         log.warning(f"palette not given, building from categories")
@@ -175,7 +171,7 @@ def category_map_direct( categories, dims, palette=None ):
 
     cmap = colors.ListedColormap(palette)
 
-    catmap=utils.map_roll(categories+1,dims)
+    catmap=utils.map_roll(categories,dims)
 
     print("creating direct category map")
 
