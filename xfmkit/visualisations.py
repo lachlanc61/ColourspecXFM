@@ -1,8 +1,6 @@
 import os
 import logging
 import numpy as np
-import pandas as pd
-from tabulate import tabulate
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -11,6 +9,7 @@ from matplotlib import colors
 import xfmkit.utils as utils
 import xfmkit.clustering as clustering
 import xfmkit.colours as colours
+import xfmkit.tabular as tabular
 
 
 REDUCER=1
@@ -184,18 +183,6 @@ def category_map_direct( categories, dims, palette=None ):
 
     return fig
 
-
-
-def table_classavg(classavg, elements):
-    """
-    display a table with class average values
-    """
-    concentration_averages = pd.DataFrame(data=classavg, columns=elements)
-    
-    print(tabulate(concentration_averages, headers='keys', tablefmt='psql'))
-
-    return
-
 def category_avgs(categories, elements, classavg, palette=None ):
     """
         display category spectra
@@ -258,7 +245,7 @@ def category_boxplots(data, categories, elements):
 
     return fig
 
-def seaborn_embedplot(embedding, categories, palette=None):
+def seaborn_embedplot(embedding, categories, palette=None, labels=[]):
     """
     display seaborn plot of embedding space
     """
@@ -275,20 +262,31 @@ def seaborn_embedplot(embedding, categories, palette=None):
 
     embed_plot = sns.jointplot(x=x, y=y,
                 hue=categories, palette=palette,
+                legend='full',
                 lw=0,
                 joint_kws = dict(alpha=0.01),           #FUTURE: scale alpha with log(n_pixels)
                 height=12, ratio=6
                 )
 
-    #xlim=[-3,3], ylim=[-3,3],
+    handles, __ = embed_plot.ax_joint.get_legend_handles_labels()
+
+    embed_plot.ax_joint.legend(handles=handles, labels=labels, fontsize=10)
+
+    print(handles)    
+    print(labels)
 
     embed_plot.set_axis_labels('x', 'y', fontsize=16)
 
-    sns.despine(ax=None, left=True, bottom=True)
-    fig = embed_plot.fig
+    xmin=np.min(embedding[:,0])
+    xmax=np.max(embedding[:,0])
+    if xmax < 0:
+        print("WARNING: xmax < 0, plot limits may show unexpected behaviour")
 
-    #plt.savefig('embedplot.png', transparent=True)
-    #plt.show()
+    embed_plot.ax_marg_x.set_xlim(xmin, xmax+(xmax-xmin)*0.15)
+
+    sns.despine(ax=None, left=True, bottom=True)
+
+    fig = embed_plot.fig
 
     return fig
 
@@ -360,13 +358,19 @@ def contours_3d(kde):
 
     return fig
 
-def plot_clusters(categories, classavg, embedding, kde, dims, output_directory=".", plot_kde=False, plot_margins=False):
+def plot_clusters(categories, classavg, embedding, kde, dims, output_directory=".", plot_kde=False, plot_margins=False, labels=[]):
     """
     display all plots for clusters
     """
 
-    print("plotting") 
+    if not labels == []:
+        df = tabular.get_df(classavg, labels)
+        major_list = tabular.get_major_list(df)
+        class_labels = tabular.nestlist_as_str(major_list)
+    else:
+        class_labels = []
 
+    print("plotting") 
     if embedding.shape[1] == 2:
         print("using 2d embedding x") 
         #generate the palette from the categories, independent of distance
@@ -392,12 +396,15 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
         fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)  
 
     print("creating embedplot")    
-    fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
+
+    fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette, labels=class_labels)
     fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
     
     if plot_kde and kde is not None:
         fig_contours = contours_3d(kde)
     
+    tabular.printout(df)
+
     #plt.show()
 
     return palette

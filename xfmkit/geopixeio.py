@@ -28,12 +28,11 @@ def export_regions(categories, dimensions, output_directory='.'):
 
         #write it
         print(f"writing {i}")
-        write_region(filtered_, i, dimensions)
-        break
+        write_region(filtered_, i, dimensions, output_directory)
 
     return
 
-def write_region(region, index: int, dimensions):
+def write_region(region, index: int, dimensions, output_directory='.'):
     """
     generate a region file matching geopixe expected format
 
@@ -49,8 +48,8 @@ def write_region(region, index: int, dimensions):
     - last row truncated to N%100, WITHOUT trailing comma
     """
 
-    tempfile = os.path.join(output_dir, f"regions_xfmkit-region{index}.tmp.csv")
-    outfile = os.path.join(output_dir, f"regions_xfmkit-region{index}.csv")    
+    tempfile = os.path.join(output_directory, f"regions_xfmkit-region{index}.tmp.csv")
+    outfile = os.path.join(output_directory, f"regions_xfmkit-region{index}.csv")    
 
     region_ = region.tolist()
     region_.insert(0, "Q")
@@ -121,7 +120,7 @@ def write_region_header(f, dimensions):
 
     f.write(REGION_HEADER)
     writer = csv.writer(f)
-    #TO-DO BUG these are adding a carriage return but other writerows are not, no idea why
+
     writer.writerows(image_line)
     writer.writerows(offset_line)
     writer.writerows(compress_line)
