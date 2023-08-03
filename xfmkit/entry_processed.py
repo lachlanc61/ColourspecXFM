@@ -11,6 +11,7 @@ import xfmkit.clustering as clustering
 import xfmkit.visualisations as vis
 import xfmkit.processops as processops
 import xfmkit.structures as structures
+import xfmkit.geopixeio as geopixeio
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -82,6 +83,8 @@ def read_processed(args_in):
     palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory, plot_kde=args.kde)
 
     vis.table_classavg(classavg, pxs.labels)
+
+    geopixeio.export_regions(categories, pxs.dimensions, output_directory=output_directory)
 
     #vis.contours_3d(embedding)
 
