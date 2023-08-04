@@ -3,7 +3,14 @@ import argparse
 import psutil
 import logging
 
+import xfmkit.processops as processops
+
 logger = logging.getLogger(__name__)
+
+
+WEIGHT_TRANSFORMS=["sqrt", "log"]
+DATA_TRANSFORMS=["sqrt", "log"]
+
 
 def checkargs(args, config):
     """
@@ -245,6 +252,15 @@ def checkargs_processed(args, config):
     if args.n_components <= 0 or args.n_components >= 100:
         raise ValueError("Invalid number of components, (expected 1 < n < 100)")
 
+    if not args.weight_transform in WEIGHT_TRANSFORMS and not args.weight_transform is None:
+        raise ValueError(f"Unrecognised weight transform {args.weight_transform}")
+
+    if not args.data_transform in DATA_TRANSFORMS and not args.data_transform is None:
+        raise ValueError(f"Unrecognised weight transform {args.data_transform}")
+
+    processops.check_expected_lines(args.suppress)
+    processops.check_expected_lines(args.suppress)
+
     return args
 
 def readargs_processed(args_in, config):
@@ -290,6 +306,19 @@ def readargs_processed(args_in, config):
         nargs='+', 
         type=int, 
     )
+    #----------------------------------------------------
+    #classification options
+    argparser.add_argument(
+        "-ff", "--force", 
+        help="Force recalculation of all pixels/classes",
+        action='store_true', 
+    )
+
+    argparser.add_argument(
+        "-fc", "--force-clustering", 
+        help="Force recalculation of clusters - overridden by --force",
+        action='store_true', 
+    )   
 
     argparser.add_argument(
         '-n', "--n-components", 
@@ -299,23 +328,51 @@ def readargs_processed(args_in, config):
     )
 
     argparser.add_argument(
-        "-ff", "--force", 
-        help="Force recalculation of all pixels/classes",
-        action='store_true', 
-    )
-
-    argparser.add_argument(
         "-k", "--kde", 
         help="Visualise kde",
         action='store_true', 
     )
 
-    argparser.add_argument(
-        "-fc", "--force-clustering", 
-        help="Force recalculation of clusters - overridden by --force",
-        action='store_true', 
-    )    
+    #----------------------------------------------------
+    #pre-processing options
 
+    argparser.add_argument(
+        '-tn', "--normalise", 
+        help="Normalise element images 0.0 <-> 1.0",
+        action='store_true', 
+    )
+
+    argparser.add_argument(
+        '-tw', "--weight_transform", 
+        help="Transformation to apply to weights"
+        f"recognised values: {WEIGHT_TRANSFORMS}",        
+        type=str, 
+        default=None
+    )
+
+    argparser.add_argument(
+        '-td', "--data_transform", 
+        help="Transformation to apply to data"
+        f"recognised values: {DATA_TRANSFORMS}",        
+        type=str, 
+        default=None
+    )
+
+    argparser.add_argument(
+        '-s', "--suppress", 
+        help="Element/line symbols to be de-weighted",
+        nargs='+', 
+        type=str, 
+        default=[],        
+    )
+
+    argparser.add_argument(
+        '-a', "--amplify", 
+        help="Element/line symbols to be up-weighted",
+        nargs='+', 
+        type=str, 
+        default=[],
+    )
 
     args = argparser.parse_args(args_in)
 

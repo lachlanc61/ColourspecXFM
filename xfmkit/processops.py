@@ -21,19 +21,13 @@ Z_CUTOFFS=[11, 55, 37, 73]  # cutoffs for K, L, M lines
 
 BASEFACTOR=1/10000 #ppm to wt%
 
-def get_elements(files):
+def get_possible_lines():
     """
-
-    Extract element names and corresponding files
-
-    Ignore files that do not correspond to elements
-
-    """
-    elements=[]
-    possible_lines = []
-    keepfiles=[]    
-
     #use the periodic table and known z-cutoffs to get possible lines
+    """
+    
+    possible_lines = []
+
     for ptelement in pt.elements:
         #add three versions of the line: K (unlabelled), L, M
         if ptelement.number >= Z_CUTOFFS[0] and ptelement.number <= Z_CUTOFFS[1]:
@@ -45,6 +39,29 @@ def get_elements(files):
 
     for line in NON_ELEMENT_LINES:
         possible_lines.append(line)
+    
+    return possible_lines
+
+
+def check_expected_lines(lines):
+    """
+    checks that a list of line strings are all expected elements/lines
+    """
+    for line in lines:
+        if not line in possible_lines:
+            raise ValueError(f"Unexpected line {line}, exiting")
+
+    return True
+
+def get_elements(files):
+    """
+    Extract element names and corresponding files
+
+    Ignore files that do not correspond to elements
+
+    """
+    elements=[]
+    keepfiles=[]    
 
     for fname in files:
         try:
@@ -255,7 +272,7 @@ def extract_data(image_directory, files, is_variance=False):
 
 def compile(image_directory):
     """
-    read tiffs from image directory 
+    read tiffs from GeoPIXE image directory 
     
     return corrected 2D stack, array of elements, and dimensions
     """
@@ -268,6 +285,8 @@ def compile(image_directory):
     files_all = [f for f in os.listdir(image_directory) if f.endswith('.tiff')]
 
     elements, files_maps = get_elements(files_all)
+
+    check_expected_lines(elements)
 
     files_variance = get_variance_files(elements, files_all)
     
@@ -315,3 +334,5 @@ def compile(image_directory):
     print("-----------------")
 
     return ds
+
+possible_lines = get_possible_lines()

@@ -16,6 +16,7 @@ import xfmkit.processops as processops
 import xfmkit.structures as structures
 import xfmkit.geopixeio as geopixeio
 import xfmkit.tabular as tabular
+import xfmkit.preprocessing as preprocessing
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -43,7 +44,7 @@ def logging_setup():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
-    log_file = config.get('logging', 'log_file', default = "/var/log/xfmkit.log")
+    log_file = config.get('logging', 'log_file', default = "/home/lachlan/log/xfmkit.log")
 
     filehandler = TimedRotatingFileHandler(log_file, when='midnight',backupCount=7)
     filehandler.setLevel(logging.DEBUG)
@@ -92,6 +93,8 @@ def read_processed(args_in):
     ds.crop((args.x_coords[0], args.x_coords[1]), (args.y_coords[0], args.y_coords[1]))
 
     pxs = structures.PixelSet(ds)
+
+    pxs = preprocessing(pxs, args)
 
     transform=None
     pxs.apply_transform_via_weights(transform=transform)

@@ -539,7 +539,6 @@ class DataSet:
 
         self.check()
 
-
     def match_se_to_data(self, scale_axis=1):
         yfactor = self.data.dimensions[0] / self.se.dimensions[0]
         xfactor = self.data.dimensions[1] / self.se.dimensions[1]
@@ -588,7 +587,10 @@ class DataSet:
 
         if not np.issubdtype(self.se.d.dtype, np.number):
             raise ValueError("stderr DataSeries must be numerical")    
-        
+
+        if not self.weights.shape == self.data.d.shape[1]:
+            raise ValueError("mismatch between weights and data")  
+
         self.data.check()
         self.se.check()
 
