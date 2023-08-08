@@ -16,7 +16,6 @@ import xfmkit.processops as processops
 import xfmkit.structures as structures
 import xfmkit.geopixeio as geopixeio
 import xfmkit.tabular as tabular
-import xfmkit.preprocessing as preprocessing
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -94,12 +93,12 @@ def read_processed(args_in):
 
     pxs = structures.PixelSet(ds)
 
-    pxs.process_weights(pxs, amplify_list = args.amplify, 
-                                suppress_list = args.suppress, 
-                                normalise = args.normalise, 
-                                weight_transform = args.weight_transform, 
-                                data_transform = args.data_transform 
-                                )
+    pxs.process_weights(amplify_list = args.amplify, 
+                            suppress_list = args.suppress, 
+                            normalise = args.normalise, 
+                            weight_transform = args.weight_transform, 
+                            data_transform = args.data_transform 
+                        )
 
     overwrite = ( args.force or args.force_clustering )
 

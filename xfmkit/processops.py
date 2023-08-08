@@ -314,11 +314,6 @@ def compile(image_directory):
 
         ds = structures.DataSet(dataseries, se=seseries, labels=elements)
 
-        """
-        TO-DO: image data is usually float, raw data is int
-        currently failing because DataSet expects int
-            really need to handle both of these
-        """
         ds.downsample_by_se()
 
     else:
@@ -334,5 +329,8 @@ def compile(image_directory):
     print("-----------------")
 
     return ds
+
+
+#module local variables
 
 possible_lines = get_possible_lines()

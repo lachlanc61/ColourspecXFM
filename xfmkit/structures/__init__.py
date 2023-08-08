@@ -686,7 +686,9 @@ class PixelSet(DataSet):
 
     """
 
-    from . import _preprocessing
+    #from . import _preprocessing
+
+    from ._preprocessing import process_weights
 
     def __init__(self, dataset):
 
