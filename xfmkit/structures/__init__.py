@@ -480,9 +480,11 @@ class DataSeries:
 #meta-class with set of DataSeries
 class DataSet:
     """
-    meta-class with paired objects for data (int), error (float)
+    meta-class with paired objects for data (int or float), error (float)
 
-    handles crop, zoom etc functions while maintaining error statistics
+    plus weights per channel
+
+    handles crop, zoom etc functions while maintaining error statistics and weights
     """
     def __init__(self, data, se=None, labels=[], guess_se=True):
 
@@ -497,6 +499,10 @@ class DataSet:
             self.data = data
             self.dimensions = data.dimensions
             self.nchan = self.data.d.shape[1]
+
+            #weights tracked here to allow modification with eg. downsampling
+            #   used by superclass PixelSeries
+            self.weights = np.ones(self.data.d.shape[1], dtype=np.float32)            
 
             if not np.issubdtype(self.data.d.dtype, np.number):
                 raise ValueError('creating a DataSet requires numerical data')
@@ -534,8 +540,6 @@ class DataSet:
 
                 if not self.se.dimensions == self.data.dimensions:
                     self.match_se_to_data()
-
-            self.weights = np.ones(self.data.d.shape[1], dtype=np.float32)
 
         self.check()
 
@@ -588,7 +592,7 @@ class DataSet:
         if not np.issubdtype(self.se.d.dtype, np.number):
             raise ValueError("stderr DataSeries must be numerical")    
 
-        if not self.weights.shape == self.data.d.shape[1]:
+        if not self.weights.shape[0] == self.data.d.shape[1]:
             raise ValueError("mismatch between weights and data")  
 
         self.data.check()
@@ -678,12 +682,18 @@ class DataSet:
 
 class PixelSet(DataSet):
     """
-    superclass of DataSet with additional methods/attrs
+    superclass of DataSet with additional transformed data
 
-    inherits manually via setattrs, permits creation from instance of subclass
     """
+
+    from . import _preprocessing
+
     def __init__(self, dataset):
+
+        #create from instance of subclass
         super(PixelSet, self).__init__(dataset)
+        
+        #inherit manually via setattrs
         for attr in dir(dataset):
             if not attr.startswith('__'):    
                 setattr(self, attr, getattr(dataset, attr))
@@ -706,7 +716,7 @@ class PixelSet(DataSet):
             elif transform == None:
                 pass  
             else:
-                raise ValueError(f"invalue value for transform: {transform}")         
+                raise ValueError(f"invalid value for transform: {transform}")         
     
     def apply_weights(self):
         result = np.zeros(self.data.shape)
@@ -719,7 +729,7 @@ class PixelSet(DataSet):
     def apply_transform(self, transform=None):
 
         if self.weighted == None:
-            raise ValueError("PixelSet instance.weighted not initialised")
+            raise ValueError("PixelSet self.weighted not initialised")
 
         if transform == 'sqrt':
             self.weighted.set_to(np.sqrt(self.weighted.d))

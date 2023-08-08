@@ -28,7 +28,7 @@ def mean_highest_lines(max_set, elements, n):
 
     return result
 
-def process(pixelseries, args):
+def process_weights(self, amplify_list=[], suppress_list=[], normalise=False,weight_transform=None, data_transform=None):
     """
     perform preprocess steps according to args, applying weights to data
 
@@ -37,74 +37,66 @@ def process(pixelseries, args):
     - perform data/weight transformations
     """
 
-    amplify=args.amplify
-    suppress=args.suppress
-    normalise=args.normalise
-    weight_transform=args.data_transform
-    data_transform=args.data_transform
-
     if normalise:
-        if amplify is not None \
-            or suppress is not None \
+        if not amplify_list== [] \
+            or not suppress_list == [] \
             or weight_transform is not None:
             print("WARNING: normalise with transforms may produce unexpected results")
 
     if weight_transform is not None and data_transform is not None:
         print("WARNING: performing both weight and data transformation")
 
-    max_set = np.zeros(len(pixelseries.data.d[1]))
+    max_set = np.zeros(len(self.data.d[1]))
 
-    for i, label in enumerate(pixelseries.labels):
-        max_set[i] = np.max(pixelseries.data.d[:,i])
+    for i, label in enumerate(self.labels):
+        max_set[i] = np.max(self.data.d[:,i])
 
-    smoothed_max = float(mean_highest_lines(max_set, pixelseries.labels, N_TO_AVG))
+    smoothed_max = float(mean_highest_lines(max_set, self.labels, N_TO_AVG))
 
     #normalise non-element lines to smoothed_max/10
     for target in NON_ELEMENT_LINES:
-        for i, label in enumerate(pixelseries.labels):
+        for i, label in enumerate(self.labels):
             if label == target:
-                max_=np.max(pixelseries.data.d[:,i])
+                max_=np.max(self.data.d[:,i])
                 if max_ < smoothed_max:
-                    pixelseries.weights[i] = pixelseries.weights[i]*smoothed_max/max_/10
+                    self.weights[i] = self.weights[i]*smoothed_max/max_/10
 
     #normalise high affected lines to smoothed_max/10
     for target in AFFECTED_LINES:
-        for i, label in enumerate(pixelseries.labels):
+        for i, label in enumerate(self.labels):
             if label == target:
-                max_=np.max(pixelseries.data.d[:,i])
+                max_=np.max(self.data.d[:,i])
                 if max_ > smoothed_max/10:
-                    pixelseries.weights[i] = pixelseries.weights[i]*smoothed_max/max_/10
+                    self.weights[i] = self.weights[i]*smoothed_max/max_/10
 
     #amplify targets unless already > smoothed_max
-    for target in amplify:
-        for i, label in enumerate(pixelseries.labels):
+    for target in amplify_list:
+        for i, label in enumerate(self.labels):
             if label == target:
-                max_=np.max(pixelseries.data.d[:,i])
+                max_=np.max(self.data.d[:,i])
                 if max_ < smoothed_max:
-                    pixelseries.weights[i] = pixelseries.weights[i]*AMP_FACTOR
+                    self.weights[i] = self.weights[i]*AMP_FACTOR
 
     #suppress targets
-    for target in suppress:
-        for i, label in enumerate(pixelseries.labels):
+    for target in suppress_list:
+        for i, label in enumerate(self.labels):
             if label == target:
-                max_=np.max(pixelseries.data.d[:,i])
+                max_=np.max(self.data.d[:,i])
                 if True:    #use sqrt
-                    pixelseries.weights[i] = pixelseries.weights[i]*sqrt(max_)/max_
+                    self.weights[i] = self.weights[i]*sqrt(max_)/max_
                 else:
-                    pixelseries.weights[i] = pixelseries.weights[i]/SUPPRESS_FACTOR                    
+                    self.weights[i] = self.weights[i]/SUPPRESS_FACTOR                    
 
     if normalise:
-        for i, label in enumerate(pixelseries.labels):
-            max_=np.max(pixelseries.data.d[:,i])
-            pixelseries.weights[i] = pixelseries.weights[i]/max_
+        for i, label in enumerate(self.labels):
+            max_=np.max(self.data.d[:,i])
+            self.weights[i] = self.weights[i]/max_
 
     if weight_transform is not None:
-        pixelseries.apply_transform_via_weights(transform=weight_transform)
+        self.apply_transform_via_weights(transform=weight_transform)
 
-    pixelseries.apply_weights()
+    self.apply_weights()
 
     if data_transform is not None:
-        pixelseries.apply_transform(data_transform)
-
-    return pixelseries
+        self.apply_transform(data_transform)
 
