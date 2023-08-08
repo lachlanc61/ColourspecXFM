@@ -18,15 +18,66 @@ SUPPRESS_FACTOR=10.0
 N_TO_AVG=5
 
 
-def mean_highest_lines(max_set, elements, n):
+#----------------------
+#local
+#----------------------
+def mean_highest_lines(max_set, elements, n_to_avg=N_TO_AVG):
+    """
+    get the mean of the highest N lines
+
+    excluding light, bad and non-element lines
+    """
+
 
     df = pd.DataFrame(columns=elements)
     df.loc[0]=max_set
-    df.drop(labels=LIGHT_LINES+NON_ELEMENT_LINES+AFFECTED_LINES, axis=1) 
+
+    #use a filter to avoid error if a label is not present for df.drop
+    drop_filter = df.filter(LIGHT_LINES+NON_ELEMENT_LINES+AFFECTED_LINES)
+    df.drop(drop_filter, inplace=True, axis=1) 
     sorted = df.iloc[0].sort_values(ascending=False)
-    result = sorted[0:N_TO_AVG].mean()
+    result = sorted[0:n_to_avg].mean()
 
     return result
+
+
+#----------------------
+#for import
+#----------------------
+def apply_transform_via_weights(self, transform=None):
+    if not self.weights.shape[0] == self.data.shape[1]:
+            raise ValueError(f"shape mistmatch between weights {self.weights.shape} and data {self.data.shape}")
+    
+    for i in range(self.data.shape[1]):
+        max_ = np.max(self.data.d[:,i])
+
+        if transform == 'sqrt':
+            self.weights[i] = self.weights[i]*sqrt(max_)/max_
+        
+        if transform == 'log':
+            self.weights[i] = self.weights[i]*log(max_)/max_
+        
+        elif transform == None:
+            pass  
+        else:
+            raise ValueError(f"invalid value for transform: {transform}")       
+
+def apply_transform(self, transform=None):
+
+    if self.weighted == None:
+        raise ValueError("PixelSet self.weighted not initialised")
+
+    if transform == 'sqrt':
+        self.weighted.set_to(np.sqrt(self.weighted.d))
+
+    elif transform == 'log':
+        self.weighted.set_to(np.log(self.weighted.d))          
+
+    elif transform == None:
+        pass  
+    else:
+        raise ValueError(f"invalue value for transform: {transform}")
+
 
 def process_weights(self, amplify_list=[], suppress_list=[], normalise=False,weight_transform=None, data_transform=None):
     """

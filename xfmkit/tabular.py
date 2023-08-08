@@ -39,7 +39,11 @@ def get_major_list(df):
     for i in range(len(df.index)):
         row_ = df_.iloc[i].sort_values(ascending=False)
 
-        row_ = row_.drop(IGNORE_LINES)
+        drop_filter = row_.filter(IGNORE_LINES)
+        
+        #filter method not working as row_ is not a df anymore and thus does not have labels
+        #use ignore instead of filter for now, TO-DO fix this
+        row_ = row_.drop(IGNORE_LINES, errors='ignore')
 
         majors_ = row_.index[0:N_MAJORS].tolist()
 

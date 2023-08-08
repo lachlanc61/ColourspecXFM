@@ -679,7 +679,6 @@ class DataSet:
         self.check()
 
 
-
 class PixelSet(DataSet):
     """
     superclass of DataSet with additional transformed data
@@ -688,7 +687,7 @@ class PixelSet(DataSet):
 
     #from . import _preprocessing
 
-    from ._preprocessing import process_weights
+    from ._preprocessing import process_weights, apply_transform, apply_transform_via_weights
 
     def __init__(self, dataset):
 
@@ -701,24 +700,6 @@ class PixelSet(DataSet):
                 setattr(self, attr, getattr(dataset, attr))
 
         self.weighted = None
-
-    def apply_transform_via_weights(self, transform=None):
-        if not self.weights.shape[0] == self.data.shape[1]:
-                raise ValueError(f"shape mistmatch between weights {self.weights.shape} and data {self.data.shape}")
-        
-        for i in range(self.data.shape[1]):
-            max_ = np.max(self.data.d[:,i])
-
-            if transform == 'sqrt':
-                self.weights[i] = self.weights[i]*sqrt(max_)/max_
-            
-            if transform == 'log':
-                self.weights[i] = self.weights[i]*log(max_)/max_
-            
-            elif transform == None:
-                pass  
-            else:
-                raise ValueError(f"invalid value for transform: {transform}")         
     
     def apply_weights(self):
         result = np.zeros(self.data.shape)
@@ -727,19 +708,3 @@ class PixelSet(DataSet):
             result[:,i] = self.data.d[:,i]*self.weights[i]
         
         self.weighted = DataSeries(result, self.data.dimensions)
-
-    def apply_transform(self, transform=None):
-
-        if self.weighted == None:
-            raise ValueError("PixelSet self.weighted not initialised")
-
-        if transform == 'sqrt':
-            self.weighted.set_to(np.sqrt(self.weighted.d))
-
-        elif transform == 'log':
-            self.weighted.set_to(np.log(self.weighted.d))          
-
-        elif transform == None:
-            pass  
-        else:
-            raise ValueError(f"invalue value for transform: {transform}")

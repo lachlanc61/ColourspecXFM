@@ -166,7 +166,7 @@ def classify(embedding, majors_only=False):
     if USE=="HDBSCAN":
         operator, args = find_operator(classifier_list, USE)
         args["min_cluster_size"]=round(embedding.shape[0]/cluster_factor)
-        print(f"min cluster size: {embedding.shape[0]/cluster_factor}")
+        print(f"min cluster size: {args['min_cluster_size']}")
     
     elif USE=="DBSCAN":
         operator, args = find_operator(classifier_list, USE)
