@@ -146,7 +146,7 @@ def multireduce(data, target_components=FINAL_COMPONENTS):
     return reducer, embedding
 
 
-def classify(embedding, majors_only=False):
+def classify(embedding, majors_only: bool = False, min_cluster_size: int = -1):
     """
     performs classification on embedding to produce final clusters
 
@@ -165,7 +165,11 @@ def classify(embedding, majors_only=False):
 
     if USE=="HDBSCAN":
         operator, args = find_operator(classifier_list, USE)
-        args["min_cluster_size"]=round(embedding.shape[0]/cluster_factor)
+        if min_cluster_size == -1:
+            args["min_cluster_size"]=round(embedding.shape[0]/cluster_factor)
+        else:
+            args["min_cluster_size"]=min_cluster_size
+
         print(f"min cluster size: {args['min_cluster_size']}")
     
     elif USE=="DBSCAN":

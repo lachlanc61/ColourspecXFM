@@ -82,7 +82,7 @@ def read_processed(args_in):
     args = argops.readargs_processed(args_in, config)
 
     image_directory=args.input_directory
-    output_directory=os.path.join(image_directory, "outputs")
+    output_directory=os.path.join(image_directory, "analysis")
 
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
@@ -102,9 +102,9 @@ def read_processed(args_in):
 
     overwrite = ( args.force or args.force_clustering )
 
-    categories, embedding, kde = clustering.run(pxs.weighted.d, image_directory, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite, do_kde=args.kde)
+    categories, embedding, kde = clustering.run(pxs.weighted.d, output_directory, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite, do_kde=args.kde)
 
-    classavg = clustering.get_classavg(pxs.data.d, categories, image_directory, labels=pxs.labels)
+    classavg = clustering.get_classavg(pxs.data.d, categories, output_directory, labels=pxs.labels)
 
     palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory, plot_kde=args.kde, labels=pxs.labels)
 
