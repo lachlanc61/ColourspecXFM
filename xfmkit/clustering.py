@@ -51,11 +51,11 @@ CLASSIFIERS = [
         "max_iter": 300, 
         "random_state": 42 }),
 
-    (hdbscan.HDBSCAN, {"min_cluster_size": 1000,
+    (hdbscan.HDBSCAN, {"min_cluster_size": 100,
         "min_samples": 500,
         "alpha": 1.0,
-        "cluster_selection_epsilon": 0.2, 
-        "cluster_selection_method": "leaf",     #alt: "eom"
+        "cluster_selection_epsilon": 0.2,
+        "cluster_selection_method": "eom",
         "gen_min_span_tree": True }),
 ]
 
@@ -146,7 +146,7 @@ def multireduce(data, target_components=FINAL_COMPONENTS):
     return reducer, embedding
 
 
-def classify(embedding, majors_only: bool = False, min_cluster_size: int = -1):
+def classify(embedding, majors_only: bool = False):
     """
     performs classification on embedding to produce final clusters
 
@@ -155,26 +155,19 @@ def classify(embedding, majors_only: bool = False, min_cluster_size: int = -1):
     """
     USE="HDBSCAN"
 
-    if majors_only:
-        cluster_factor=50
-    else:
-        cluster_factor=300
-
     print("RUNNING CLASSIFIER")
     classifier_list = CLASSIFIERS
 
     if USE=="HDBSCAN":
         operator, args = find_operator(classifier_list, USE)
-        if min_cluster_size == -1:
-            args["min_cluster_size"]=round(embedding.shape[0]/cluster_factor)
-        else:
-            args["min_cluster_size"]=min_cluster_size
 
-        print(f"min cluster size: {args['min_cluster_size']}")
+        if majors_only:
+            args["cluster_selection_epsilon"]=0.3
+
+        print(f"cluster_selection_epsilon: {args['cluster_selection_epsilon']}")
     
     elif USE=="DBSCAN":
-        operator, args = find_operator(classifier_list, USE)
-        args["min_cluster_size"]=round(embedding.shape[0]/cluster_factor)        
+        operator, args = find_operator(classifier_list, USE) 
 
     classifier = operator(**args)
     embedding = classifier.fit(embedding)
@@ -273,7 +266,7 @@ def get_classavg(raw_data, categories, output_dir, overwrite=True, labels=[]):
     return classavg
 
 
-def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True, target_components=3, do_kde=False):
+def run(data, output_dir: str, majors=False, force_embed=False, force_clust=False, overwrite=True, target_components=2, do_kde=False):
 
     if force_embed:
         force_clust = True
@@ -323,7 +316,7 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
         print("CALCULATING CLASSIFICATION")        
-        classifier, categories = classify(embedding)
+        classifier, categories = classify(embedding, majors_only=majors)
         categories=categories+1
         if overwrite or not exists_cats:
             np.save(file_cats,categories)

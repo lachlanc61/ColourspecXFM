@@ -328,10 +328,18 @@ def readargs_processed(args_in, config):
     )
 
     argparser.add_argument(
+        '-m', "--majors", 
+        help="Cluster for majors only",
+        action='store_true', 
+    )
+
+    argparser.add_argument(
         "-k", "--kde", 
         help="Visualise kde",
         action='store_true', 
     )
+
+
 
     #----------------------------------------------------
     #pre-processing options
