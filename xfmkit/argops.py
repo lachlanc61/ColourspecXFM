@@ -334,8 +334,9 @@ def readargs_processed(args_in, config):
     )
 
     argparser.add_argument(
-        '-cc', "--classes_constrain", 
-        help="Cluster for majors only",
+        '-eom', "--classes_eom", 
+        help="HDBSCAN setup: Use mass-based classification with default epsilon"
+        "otherwise, estimate minimum size of clusters from number of pixels",
         action='store_true', 
     )    
 

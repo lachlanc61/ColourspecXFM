@@ -86,7 +86,7 @@ def read_processed(args_in):
 
     overwrite = ( args.force or args.force_clustering )
 
-    categories, embedding, kde = clustering.run(pxs.weighted.d, output_directory, constrain=args.classes_constrain, majors=args.majors, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite, do_kde=args.kde)
+    categories, embedding, kde = clustering.run(pxs.weighted.d, output_directory, eom=args.classes_eom, majors=args.majors, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite, do_kde=args.kde)
 
     classavg = clustering.get_classavg(pxs.data.d, categories, output_directory, labels=pxs.labels)
 

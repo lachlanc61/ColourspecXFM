@@ -59,8 +59,8 @@ CLASSIFIERS = [
         "random_state": 42 }),
 
     (hdbscan.HDBSCAN, {"min_cluster_size": 100,
-        "min_samples": 500,
-        "alpha": 1.0,
+        "min_samples": 500,  #500
+        "alpha": 1.0,   #1.0
         "cluster_selection_epsilon": 0.2,
         "cluster_selection_method": "eom", #eom
         "gen_min_span_tree": True }),
@@ -140,18 +140,20 @@ def multireduce(data, target_components=final_components):
         reducer, embedding = reduce(__embedding, "UMAP", target_components)        
 
     else:
-        if default_reducer=="umap":
+        if default_reducer=="UMAP":
             #go ahead with UMAP
             reducer, embedding = reduce(data, "UMAP", target_components)
 
-        if default_reducer=="PaCMAP":
+        elif default_reducer=="PaCMAP":
             #go ahead with PaCMAP
             reducer, embedding = reduce(data, "PaCMAP", target_components)
+        else:
+            raise ValueError(f"unrecognised reducer {default_reducer} in config")
 
     return reducer, embedding
 
 
-def classify(embedding, constrain: bool = False, majors_only: bool = False):
+def classify(embedding, eom: bool = False, majors_only: bool = False):
     """
     performs classification on embedding to produce final clusters
 
@@ -169,17 +171,19 @@ def classify(embedding, constrain: bool = False, majors_only: bool = False):
     if default_classifier=="HDBSCAN":
         operator, args = find_operator(classifier_list, default_classifier)
 
-        if not constrain:
+        if eom:
+            print("using HDBSCAN eom with minimum min_size")
+            args["cluster_selection_method"]="eom"   
 
             if majors_only:
                 args["cluster_selection_epsilon"]=0.3
             else:
                 args["cluster_selection_epsilon"]=0.2
 
-            args["cluster_selection_method"]="eom"               
-            print(f"cluster_selection_epsilon: {args['cluster_selection_epsilon']}")
-            
+
         else:
+            print("using HDBSCAN leaf with estimated min_size")
+            args["cluster_selection_method"]="leaf"            
 
             if majors_only:
                 cluster_factor=50
@@ -187,7 +191,6 @@ def classify(embedding, constrain: bool = False, majors_only: bool = False):
                 cluster_factor=300         
 
             args["min_cluster_size"]=round(embedding.shape[0]/cluster_sizefactor)
-            args["cluster_selection_method"]="leaf"   
 
         print(f"cluster_selection_method: {args['cluster_selection_method']}")
         print(f"min cluster size: {args['min_cluster_size']}")
@@ -291,7 +294,7 @@ def get_classavg(raw_data, categories, output_dir, overwrite=True, labels=[]):
     return classavg
 
 
-def run(data, output_dir: str, constrain=False, majors=False, force_embed=False, force_clust=False, overwrite=True, target_components=2, do_kde=False):
+def run(data, output_dir: str, eom=False, majors=False, force_embed=False, force_clust=False, overwrite=True, target_components=2, do_kde=False):
 
     if force_embed:
         force_clust = True
@@ -343,7 +346,7 @@ def run(data, output_dir: str, constrain=False, majors=False, force_embed=False,
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
         print("CALCULATING CLASSIFICATION")        
-        classifier, categories = classify(embedding, constrain=constrain, majors_only=majors)
+        classifier, categories = classify(embedding, eom=eom, majors_only=majors)
         categories=categories+1     
         print(f"number of categories: {np.max(categories)}")
         if overwrite or not exists_cats:
