@@ -452,7 +452,7 @@ class DataSeries:
 
     def crop(self, xrange=(0, 99999), yrange=(0, 99999)):
         """
-        crop maps in 2D and adjustcorresponding 1D view
+        crop maps in 2D and adjust corresponding 1D view
         """
         self.mapview = self.mapview[yrange[0]:yrange[1], xrange[0]:xrange[1], :]
         self.d, self.dimensions = self.data_from_mapview(self.mapview)
@@ -685,7 +685,7 @@ class DataSet:
 
 class PixelSet(DataSet):
     """
-    superclass of DataSet with additional transformed data
+    superclass of DataSet with additional data transformations
 
     """
 

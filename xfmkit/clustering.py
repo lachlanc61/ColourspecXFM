@@ -55,7 +55,7 @@ CLASSIFIERS = [
         "min_samples": 500,
         "alpha": 1.0,
         "cluster_selection_epsilon": 0.2,
-        "cluster_selection_method": "eom",
+        "cluster_selection_method": "leaf", #eom
         "gen_min_span_tree": True }),
 ]
 
@@ -294,6 +294,7 @@ def run(data, output_dir: str, majors=False, force_embed=False, force_clust=Fals
         force_clust = True
         if overwrite or not exists_embed:
             np.save(file_embed,embedding)
+        print("COMPLETED EMBEDDING")
     else:
         print("LOADING EMBEDDING")
         embedding = np.load(file_embed)
@@ -307,6 +308,7 @@ def run(data, output_dir: str, majors=False, force_embed=False, force_clust=Fals
             if overwrite or not exists_kde:
                 print("Pickling KDE") 
                 pickle.dump(kde, open(file_kde, "wb"))
+            print("COMPLETED KDE")
         else:
             print("LOADING KDE")
             kde = pickle.load(open(file_kde, "rb"))
@@ -317,7 +319,8 @@ def run(data, output_dir: str, majors=False, force_embed=False, force_clust=Fals
     if force_clust or not exists_cats:
         print("CALCULATING CLASSIFICATION")        
         classifier, categories = classify(embedding, majors_only=majors)
-        categories=categories+1
+        categories=categories+1     
+        print(f"number of categories: {np.max(categories)}")
         if overwrite or not exists_cats:
             np.save(file_cats,categories)
     else:

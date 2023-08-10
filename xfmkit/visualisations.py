@@ -110,7 +110,7 @@ def tricolour(r, g, b):
 
 def tricolour_pixelset(e_red:str, e_green:str, e_blue:str, pxs):
     """
-    display a 3-colour RGB from element names
+    display a 3-colour RGB from element names and a pixelset object
     normalise each channel
     """
     ridx = utils.findelement(pxs.labels, e_red)
@@ -323,8 +323,6 @@ def seaborn_kdeplot(embedding, categories):
     fig = kdeplot.fig
 
     #ax = sns.despine(ax=None, left=True, bottom=True)
-
-    plt.show()
 
     return fig
 
