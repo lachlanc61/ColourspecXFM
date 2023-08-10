@@ -4,13 +4,13 @@ import psutil
 import logging
 
 import xfmkit.processops as processops
+import xfmkit.config as config
 
 logger = logging.getLogger(__name__)
 
-
-WEIGHT_TRANSFORMS=["sqrt", "log"]
-DATA_TRANSFORMS=["sqrt", "log"]
-IGNORE_LIST=['Mo','MoL','sum','Back','Compton','Ar']
+valid_weight_transforms=config.get('argparse', 'valid_weight_transforms')
+valid_data_transforms=config.get('argparse', 'valid_data_transforms')
+ignore_lines=config.get('element_lines', 'ignore_lines')
 
 def checkargs(args, config):
     """
@@ -252,10 +252,10 @@ def checkargs_processed(args, config):
     if args.n_components <= 0 or args.n_components >= 100:
         raise ValueError("Invalid number of components, (expected 1 < n < 100)")
 
-    if not args.weight_transform in WEIGHT_TRANSFORMS and not args.weight_transform is None:
+    if not args.weight_transform in valid_weight_transforms and not args.weight_transform is None:
         raise ValueError(f"Unrecognised weight transform {args.weight_transform}")
 
-    if not args.data_transform in DATA_TRANSFORMS and not args.data_transform is None:
+    if not args.data_transform in valid_data_transforms and not args.data_transform is None:
         raise ValueError(f"Unrecognised weight transform {args.data_transform}")
 
     processops.check_expected_lines(args.suppress)
@@ -359,7 +359,7 @@ def readargs_processed(args_in, config):
     argparser.add_argument(
         '-tw', "--weight_transform", 
         help="Transformation to apply to weights"
-        f"recognised values: {WEIGHT_TRANSFORMS}",        
+        f"recognised values: {valid_weight_transforms}",        
         type=str, 
         default=None
     )
@@ -367,7 +367,7 @@ def readargs_processed(args_in, config):
     argparser.add_argument(
         '-td', "--data_transform", 
         help="Transformation to apply to data"
-        f"recognised values: {DATA_TRANSFORMS}",        
+        f"recognised values: {valid_data_transforms}",        
         type=str, 
         default=None
     )
@@ -385,7 +385,7 @@ def readargs_processed(args_in, config):
         help="Element/line symbols to be ignored",
         nargs='+', 
         type=str, 
-        default=IGNORE_LIST,        
+        default=ignore_lines,        
     )
 
     argparser.add_argument(

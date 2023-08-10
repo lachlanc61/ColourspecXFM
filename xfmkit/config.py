@@ -20,8 +20,7 @@ except IOError:
     raise FileNotFoundError(f"{conf_location} not found")
 
 
-
-def get(section, value, default=None, mandatory=False):
+def get_str(section, value, default=None, mandatory=False):
     """
     Reads config value from within section
     or return default
@@ -37,10 +36,11 @@ def get(section, value, default=None, mandatory=False):
             return default
         
 
-def get_list(section, value, default=None, mandatory=False):
+def get(section, value, default=None, mandatory=False):
     """
-    Reads config value from within section
-    or return default
+    Read config value/list
+
+    attempt cast via json.loads
     """
 
     try:

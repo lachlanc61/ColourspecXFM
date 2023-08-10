@@ -1,11 +1,11 @@
 import pandas as pd
 from tabulate import tabulate
+import xfmkit.config as config
 
 import logging
 logger = logging.getLogger(__name__)
 
-
-IGNORE_LINES=['sum','Back','Compton','Mo','MoL']
+ignore_lines=config.get('element_lists', 'ignore_lines')
 
 def get_df(classavg, labels):
     """
@@ -26,12 +26,6 @@ def printout(df):
 
 def get_major_list(df):
 
-    IGNORE_LINES=['sum','Back','Compton','Mo','MoL']
-
-    N_MAJORS=3
-
-    labels = df.columns.values.tolist()
-
     class_majors = []
 
     df_=df.copy()
@@ -41,11 +35,9 @@ def get_major_list(df):
 
         #filter method not working as row_ is not a df anymore and thus does not have labels
         #use ignore instead of filter for now, TO-DO fix this
-        drop_filter = row_.filter(IGNORE_LINES)
+        drop_filter = row_.filter(ignore_lines)
 
-        row_ = row_.drop(IGNORE_LINES, errors='ignore')
-
-        #majors_ = row_.index[0:N_MAJORS].tolist()
+        row_ = row_.drop(ignore_lines, errors='ignore')
 
         majors_=[]
 
@@ -53,10 +45,11 @@ def get_major_list(df):
             if len(majors_) == 0 or (row_[i] > 50000):# and row_[i] > row_[majors_[-1]]/10): 
                     #majors_.append(row_.index[i])
                     try:
-                        pct = int(round(row_[i]/10000,0))
+                        percent = int(round(row_[i]/10000,0))
                     except:
-                        pct = 0
-                    majors_.append(str(row_.index[i])+str(pct))
+                        percent = 0
+
+                    majors_.append(str(row_.index[i])+str(percent))
 
         class_majors.append(majors_)
 

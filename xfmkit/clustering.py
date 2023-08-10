@@ -12,6 +12,7 @@ from sklearn.cluster import KMeans
 from sklearn.neighbors import KernelDensity
 
 import xfmkit.utils as utils
+import xfmkit.config as config
 
 import logging
 logger = logging.getLogger(__name__)
@@ -20,16 +21,12 @@ logger = logging.getLogger(__name__)
 #CONSTANTS
 #-----------------------------------
 #REDUCERS
-FINAL_COMPONENTS=2
-UMAP_PRECOMPONENTS=11
-MIN_SEPARATION=0.1
+final_components=config.get('reducer', 'final_components')
+umap_precomponents=config.get('reducer', 'umap_precomponents')
+min_separation=config.get('reducer', 'min_separation')
+default_kde_points=config.get('reducer', 'default_kde_points')
 
-#CLASSIFIER
-BY_EPSILON=True
-
-#KDE
-DEFAULT_KDE_POINTS=201  #odd number apparently speeds up rendering via mpl.plot_surface
-
+#   odd number of points apparently speeds up rendering via mpl.plot_surface
 
 #-----------------------------------
 #GROUPS
@@ -39,7 +36,7 @@ REDUCERS = [
 
     (umap.UMAP, {"n_components":2, 
         "n_neighbors": 30,  #300 
-        "min_dist": MIN_SEPARATION, 
+        "min_dist": min_separation, 
         "low_memory": True, 
         "verbose": True}),
 
@@ -67,7 +64,7 @@ CLASSIFIERS = [
     (hdbscan.HDBSCAN, {"min_cluster_size": 1000,    #6000
         "min_samples": 500,
         "alpha": 1.0,
-        "cluster_selection_epsilon": MIN_SEPARATION, 
+        "cluster_selection_epsilon": min_separation, 
         "cluster_selection_method": "leaf",     #alt: "eom"
         "gen_min_span_tree": True }),
 """
@@ -100,7 +97,7 @@ def find_operator(list, target_name: str):
 
 
 
-def reduce(data, reducer_name: str, target_components=FINAL_COMPONENTS):
+def reduce(data, reducer_name: str, target_components=final_components):
     """
     perform dimensionality reduction using a specific reducer
     args:       data, reducer_name ("PCA", "UMAP"), target components
@@ -118,7 +115,7 @@ def reduce(data, reducer_name: str, target_components=FINAL_COMPONENTS):
     return reducer, embedding
 
 
-def multireduce(data, target_components=FINAL_COMPONENTS):
+def multireduce(data, target_components=final_components):
     """
     manage dimensionality reduction based on size of dataset
     """  
@@ -136,7 +133,7 @@ def multireduce(data, target_components=FINAL_COMPONENTS):
 
     elif nchan >= DIMENSIONALITY_CUTOFF:
         #if dimensionality is high, chain PCA into UMAP
-        __reducer, __embedding = reduce(data, "PCA", UMAP_PRECOMPONENTS)   
+        __reducer, __embedding = reduce(data, "PCA", umap_precomponents)   
         reducer, embedding = reduce(__embedding, "UMAP", target_components)        
 
     else:
@@ -225,8 +222,8 @@ def calc_classavg(data, categories):
 
 
 class KdeMap():
-    def __init__(self, embedding, n=DEFAULT_KDE_POINTS):
-        self.kde = KernelDensity(kernel='gaussian',bandwidth=MIN_SEPARATION*3)
+    def __init__(self, embedding, n=default_kde_points):
+        self.kde = KernelDensity(kernel='gaussian',bandwidth=min_separation*3)
         self.n = n
 
         print("Fitting KDE")
@@ -242,7 +239,7 @@ class KdeMap():
         print("KDE complete")
 
 
-def get_linspace(embedding, n=DEFAULT_KDE_POINTS):
+def get_linspace(embedding, n=default_kde_points):
     ex = embedding[:,0]
     ey = embedding[:,1]
 
@@ -320,8 +317,8 @@ def run(data, output_dir: str, constrain=False, majors=False, force_embed=False,
     #   calculate kde from embedding
     if do_kde and target_components == 2:
         if force_embed or not exists_kde:
-            print(f"CALCULATING KDE with n={DEFAULT_KDE_POINTS}")        
-            kde = KdeMap(embedding, n=DEFAULT_KDE_POINTS)
+            print(f"CALCULATING KDE with n={default_kde_points}")        
+            kde = KdeMap(embedding, n=default_kde_points)
             if overwrite or not exists_kde:
                 print("Pickling KDE") 
                 pickle.dump(kde, open(file_kde, "wb"))

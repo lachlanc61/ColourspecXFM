@@ -14,13 +14,9 @@ from math import log
 import logging
 logger = logging.getLogger(__name__)
 
-conc_sanity_threshold=config.get('preprocessing', 'conc_sanity_threshold')
-snr_threshold=config.get('preprocessing', 'snr_threshold')
-deweight_on_downsample_factor=config.get('preprocessing', 'deweight_on_downsample_factor')
-
-SANITY_THRESHOLD = 500000
-SE_THRESHOLD = 3
-DEWEIGHT_FACTOR = 0.5
+conc_sanity_threshold=float(config.get('preprocessing', 'conc_sanity_threshold'))
+snr_threshold=float(config.get('preprocessing', 'snr_threshold'))
+deweight_on_downsample_factor=float(config.get('preprocessing', 'deweight_on_downsample_factor'))
 
 #CLASSES
 class Xfmap:
@@ -655,7 +651,7 @@ class DataSet:
         se_map_ = np.zeros(self.se.mapview.shape, dtype=np.float32)
 
         if deweight == True:
-            deweight_factor = DEWEIGHT_FACTOR
+            deweight_factor = deweight_on_downsample_factor
         else:
             deweight_factor = 1.0
 
@@ -676,7 +672,7 @@ class DataSet:
                     label_=""
 
                 j=0
-                while ratio <= SE_THRESHOLD:
+                while ratio <= snr_threshold:
                     print(f"averaging element {label_} ({i}), cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
                     img_, se_ = imgops.apply_gaussian(img_, 1, se_)
 
@@ -689,8 +685,8 @@ class DataSet:
                 print(f"element {label_} ({i}), ratio: {ratio:.3f}")
 
                 #check if value is unreasonably high and normalise if needed
-                if np.max(img_) >= SANITY_THRESHOLD:
-                    norm_factor = SANITY_THRESHOLD/np.max(img_)
+                if np.max(img_) >= conc_sanity_threshold:
+                    norm_factor = conc_sanity_threshold/np.max(img_)
                     img_ = img_*norm_factor
                     se_ = se_*norm_factor
 

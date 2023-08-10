@@ -14,8 +14,6 @@ import xfmkit.tabular as tabular
 import logging
 logger = logging.getLogger(__name__)
 
-REDUCER=1
-
 logging.basicConfig(format='%(message)s')
 log = logging.getLogger(__name__)
 

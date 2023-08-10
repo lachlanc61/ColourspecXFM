@@ -11,9 +11,9 @@ from math import sqrt, log
 amplify_factor=config.get('preprocessing', 'amplify_factor')
 suppress_factor=config.get('preprocessing', 'suppress_factor')
 
-affected_lines=config.get_list('element_lists', 'affected_lines')
-non_element_lines=config.get_list('element_lists', 'non_element_lines')
-light_lines=config.get_list('element_lists', 'light_lines')
+affected_lines=config.get('element_lists', 'affected_lines')
+non_element_lines=config.get('element_lists', 'non_element_lines')
+light_lines=config.get('element_lists', 'light_lines')
 
 print("TESTING LINES")
 print(affected_lines)
