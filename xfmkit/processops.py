@@ -220,23 +220,6 @@ def printsdvals(data, element, qval):
         return
 
 
-def calc_quantiles(data, sd, multiplier):
-    DATA_QUANTILE=0.999
-    SD_QUANTILE_MIN=0.25
-    SD_QUANTILE_MAX=0.5
-
-    max_data = np.max(data)
-    q99_data = utils.mean_within_quantile(data, qmin=DATA_QUANTILE)
-
-    q2_sd = utils.mean_within_quantile(sd, qmin=SD_QUANTILE_MIN, qmax=SD_QUANTILE_MAX)
-
-    ratio = q99_data / (q2_sd*multiplier)
-
-    ratio = (q2_sd*multiplier) / q99_data
-
-    return ratio, q99_data, q2_sd
-
-
 def variance_to_std(data):
     """
     convert variance stats to standard deviations via sqrt

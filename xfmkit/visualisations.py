@@ -94,18 +94,37 @@ def tricolour(r, g, b):
     """
     display a 3-colour RGB, normalising each channel
     """
-    r = utils.norm_channel(r)
-    g = utils.norm_channel(g)
-    b = utils.norm_channel(b)
+    r_ = utils.norm_channel(r)
+    g_ = utils.norm_channel(g)
+    b_ = utils.norm_channel(b)
 
     fig = plt.figure(figsize=(24,12))
     ax = fig.add_subplot(111)
 
-    rgb = np.stack((r,g,b), axis=2)
+    rgb = np.stack((r_,g_,b_), axis=2)
 
     ax.imshow(rgb)    
 
     return fig
+
+
+def tricolour_pixelset(e_red:str, e_green:str, e_blue:str, pxs):
+    """
+    display a 3-colour RGB from element names
+    normalise each channel
+    """
+    ridx = utils.findelement(pxs.labels, e_red)
+    gidx = utils.findelement(pxs.labels, e_green)
+    bidx = utils.findelement(pxs.labels, e_blue)   
+
+    r = pxs.data.mapview[:,:,ridx]
+    g = pxs.data.mapview[:,:,gidx]
+    b = pxs.data.mapview[:,:,bidx]   
+
+    fig = tricolour(r, g, b)
+
+    return fig
+
 
 def tricolour_enames(e1:str, e2:str, e3:str, data, dims, elements):
     """

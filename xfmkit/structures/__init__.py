@@ -522,6 +522,7 @@ class DataSet:
                 if guess_se==True:  
                     self.se = DataSeries(np.sqrt(self.data.d), self.data.dimensions) 
                 else:
+                    raise ValueError("no standard errors found")
                     self.se = DataSeries(np.zeros(self.data.d.shape, dtype=np.float32), self.data.dimensions) 
             else:
                 if isinstance(se, DataSeries):
@@ -637,7 +638,7 @@ class DataSet:
 
     def downsample_by_se(self, deweight=True):
 
-        SD_MULTIPLIER = 2
+        SE_THRESHOLD = 3
         DEWEIGHT_FACTOR = 0.5
 
         self.check()
@@ -656,19 +657,22 @@ class DataSet:
                 img_ = np.ndarray.copy(self.data.mapview[:,:,i])
                 se_ = np.ndarray.copy(self.se.mapview[:,:,i])
 
-                ratio, q2_sd, q99_data = imgops.calc_quantiles(img_, se_, SD_MULTIPLIER)
+                #ratio, q2_sd, q99_data = imgops.calc_quantiles(img_, se_, SD_MULTIPLIER)
+                ratio, q2_sd, q99_data = imgops.calc_se_ratio(img_, se_)
 
                 j=0
-                while ratio >= 1:
-                    print(f"averaging channel {i}, cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
+                while ratio <= SE_THRESHOLD:
+                    print(f"averaging element {self.labels[i]} ({i}), cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
                     img_, se_ = imgops.apply_gaussian(img_, 1, se_)
 
                     if deweight:
                         #deweight channel for each gaussian applied
                         self.weights[i] = self.weights[i]*DEWEIGHT_FACTOR
 
-                    ratio, q2_sd, q99_data = imgops.calc_quantiles(img_, se_, SD_MULTIPLIER)
+                    ratio, q2_sd, q99_data = imgops.calc_se_ratio(img_, se_)
                     j+=1
+
+                print(f"element {self.labels[i]} ({i}), ratio: {ratio:.3f}")
 
                 mapview_[:,:,i] = img_
                 se_map_[:,:,i] = se_

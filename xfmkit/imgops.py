@@ -101,3 +101,18 @@ def calc_quantiles(data, sd, multiplier):
     ratio = (q2_sd*multiplier) / q99_data
 
     return ratio, q99_data, q2_sd
+
+
+
+def calc_se_ratio(data, se):
+    DATA_QUANTILE=0.999
+    SE_QUANTILE_MIN=0.25
+    SE_QUANTILE_MAX=0.5
+
+    q99_data = utils.mean_within_quantile(data, qmin=DATA_QUANTILE)
+
+    q2_sd = utils.mean_within_quantile(se, qmin=SE_QUANTILE_MIN, qmax=SE_QUANTILE_MAX)
+
+    ratio = q99_data / q2_sd
+
+    return ratio, q99_data, q2_sd

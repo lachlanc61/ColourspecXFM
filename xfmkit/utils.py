@@ -322,10 +322,11 @@ def norm_channel(in_array, new_max=255):
 
     returns an p.uint16 array
     """
-    in_array = in_array-np.min(in_array)
-    in_array = (in_array/np.max(in_array))    
-    in_array = np.ndarray.astype(in_array*new_max,np.uint16)
-    return in_array    
+    result_ = np.copy(in_array)
+    result_ = result_-np.min(result_)
+    result_ = (result_/np.max(result_))    
+    result_ = np.ndarray.astype(result_*new_max,np.uint16)
+    return result_    
 
 def norm_channel_float(in_array, new_max=1.0):
     """
