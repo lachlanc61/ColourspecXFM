@@ -43,7 +43,7 @@ def logging_setup():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
-    log_file = config.get('logging', 'log_file', default = "/home/lachlan/log/xfmkit.log")
+    log_file = config.get('logging', 'log_file', default = "/var/log/xfmkit.log")
 
     filehandler = TimedRotatingFileHandler(log_file, when='midnight',backupCount=7)
     filehandler.setLevel(logging.DEBUG)

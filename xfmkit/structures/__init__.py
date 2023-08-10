@@ -6,6 +6,7 @@ import xfmkit.bufferops as bufferops
 import xfmkit.dtops as dtops
 import xfmkit.imgops as imgops
 import xfmkit.utils as utils
+import xfmkit.config as config
 
 from math import sqrt
 from math import log
@@ -13,6 +14,13 @@ from math import log
 import logging
 logger = logging.getLogger(__name__)
 
+conc_sanity_threshold=config.get('preprocessing', 'conc_sanity_threshold')
+snr_threshold=config.get('preprocessing', 'snr_threshold')
+deweight_on_downsample_factor=config.get('preprocessing', 'deweight_on_downsample_factor')
+
+SANITY_THRESHOLD = 500000
+SE_THRESHOLD = 3
+DEWEIGHT_FACTOR = 0.5
 
 #CLASSES
 class Xfmap:
@@ -637,10 +645,6 @@ class DataSet:
         self.check()
 
     def downsample_by_se(self, deweight=False):
-
-        SANITY_THRESHOLD = 500000
-        SE_THRESHOLD = 3
-        DEWEIGHT_FACTOR = 0.5
 
         self.check()
 

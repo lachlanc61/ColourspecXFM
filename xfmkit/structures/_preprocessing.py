@@ -4,19 +4,18 @@ import pandas as pd
 import xfmkit.structures as structures
 import xfmkit.utils as utils
 import xfmkit.processops as processops
+import xfmkit.config as config
 
 from math import sqrt, log
 
-IGNORE_LINES=[]
-AFFECTED_LINES=['Ar', 'Mo', 'MoL']
-NON_ELEMENT_LINES=['sum','Back','Compton']
-LIGHT_LINES=['Mg', 'Al', 'Si', 'P', 'S']
+amplify_factor=config.get('preprocessing', 'amplify_factor')
+suppress_factor=config.get('preprocessing', 'suppress_factor')
 
-AMP_FACTOR=10.0
-SUPPRESS_FACTOR=0.1
+affected_lines=config.get_list('element_lists', 'affected_lines')
+non_element_lines=config.get_list('element_lists', 'non_element_lines')
+light_lines=config.get_list('element_lists', 'light_lines')
 
 N_TO_AVG=5
-
 
 #----------------------
 #local
@@ -28,12 +27,11 @@ def mean_highest_lines(max_set, elements, n_to_avg=N_TO_AVG):
     excluding light, bad and non-element lines
     """
 
-
     df = pd.DataFrame(columns=elements)
     df.loc[0]=max_set
 
     #use a filter to avoid error if a label is not present for df.drop
-    drop_filter = df.filter(LIGHT_LINES+NON_ELEMENT_LINES+AFFECTED_LINES)
+    drop_filter = df.filter(light_lines+non_element_lines+affected_lines)
     df.drop(drop_filter, inplace=True, axis=1) 
     sorted = df.iloc[0].sort_values(ascending=False)
     result = sorted[0:n_to_avg].mean()
@@ -113,7 +111,7 @@ def process_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], nor
     smoothed_max = float(mean_highest_lines(max_set, self.labels, N_TO_AVG))
 
     #normalise non-element lines to smoothed_max/10
-    for target in NON_ELEMENT_LINES:
+    for target in non_element_lines:
         for i, label in enumerate(self.labels):
             if label == target:
                 max_=np.max(self.data.d[:,i])
@@ -121,7 +119,7 @@ def process_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], nor
                     self.weights[i] = self.weights[i]*smoothed_max/max_/10
 
     #normalise high affected lines to smoothed_max/10
-    for target in AFFECTED_LINES:
+    for target in affected_lines:
         for i, label in enumerate(self.labels):
             if label == target:
                 max_=np.max(self.data.d[:,i])
@@ -134,7 +132,7 @@ def process_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], nor
             if label == target:
                 max_=np.max(self.data.d[:,i])
                 if max_ < smoothed_max:
-                    self.weights[i] = self.weights[i]*AMP_FACTOR
+                    self.weights[i] = self.weights[i]*amplify_factor
 
     #suppress targets
     for target in suppress_list:
@@ -144,7 +142,7 @@ def process_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], nor
                 if False:    #use sqrt
                     self.weights[i] = self.weights[i]*sqrt(max_)/max_
                 else:       #use factor
-                    self.weights[i] = self.weights[i]*SUPPRESS_FACTOR                    
+                    self.weights[i] = self.weights[i]/suppress_factor                    
 
     if normalise:
         for i, label in enumerate(self.labels):
