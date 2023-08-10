@@ -52,7 +52,11 @@ def get_major_list(df):
         for i in range(len(row_.index)):
             if len(majors_) == 0 or (row_[i] > 50000):# and row_[i] > row_[majors_[-1]]/10): 
                     #majors_.append(row_.index[i])
-                    majors_.append(str(row_.index[i])+str(int(round(row_[i]/10000,0))))
+                    try:
+                        pct = int(round(row_[i]/10000,0))
+                    except:
+                        pct = 0
+                    majors_.append(str(row_.index[i])+str(pct))
 
         class_majors.append(majors_)
 
