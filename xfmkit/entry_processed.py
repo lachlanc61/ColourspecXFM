@@ -15,15 +15,15 @@ import xfmkit.visualisations as vis
 import xfmkit.processops as processops
 import xfmkit.structures as structures
 import xfmkit.geopixeio as geopixeio
-import xfmkit.tabular as tabular
 
 #-----------------------------------
 #vars
 #-----------------------------------
-PACKAGE_CONFIG='xfmkit/config.yaml'
+CONF_FILE_DEFAULT="conf/xfmkit.conf"
+
+logger = logging.getLogger(__name__)
 
 def logging_setup():
-    logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
     log_file = config.get('logging', 'log_file', default = "/var/log/xfmkit.log")
@@ -36,16 +36,15 @@ def logging_setup():
     
     logger.addHandler(filehandler)
 
-    return logger
+logging_setup()
 
-
-def entry_processed():
+def entry_processed(conf_file=CONF_FILE_DEFAULT):
     """
     entrypoint wrapper getting args from sys
     """
     args_in = sys.argv[1:]  #NB: exclude 0 == script name
 
-    logger = logging_setup()
+    config.setup(conf_file=conf_file)
 
     read_processed(args_in)
 
@@ -58,11 +57,9 @@ def read_processed(args_in):
     
     perform clustering and visualisation
     """
-    #create input config from args and config files
-    config =utils.initcfg(PACKAGE_CONFIG)
 
     #get command line arguments
-    args = argops.readargs_processed(args_in, config)
+    args = argops.readargs_processed(args_in)
 
     image_directory=args.input_directory
     output_directory=os.path.join(image_directory, "analysis")

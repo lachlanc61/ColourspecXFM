@@ -1,17 +1,22 @@
 import pytest
 import sys, os
 import numpy as np
-import xfmkit.utils as utils
 
+#PATHS
 TEST_DIR=os.path.realpath(os.path.dirname(__file__))
 BASE_DIR=os.path.dirname(TEST_DIR)
-
 sys.path.append(BASE_DIR)
 
+#CONFIG REASSIGNMENT
+import xfmkit.config as config
+CONF_FILE="tests/test_conf/xfmkit.conf"
+config.setup(conf_file=CONF_FILE)   #reassign config - may not actually work
+
+#IMPORT LOCAL
+import xfmkit.utils as utils
 import xfmkit.structures as structures
 
 def test_dataseries_mapview():
-
     SHAPE=(400,20)
     DIMENSIONS=(40,10)
     array = np.zeros(SHAPE, dtype=np.float32)

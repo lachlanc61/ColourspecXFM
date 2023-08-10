@@ -235,7 +235,7 @@ def readargs(args_in, config):
 
 
 
-def checkargs_processed(args, config):
+def checkargs_processed(args):
     """
     sanity check on arg combinations
     """
@@ -263,7 +263,7 @@ def checkargs_processed(args, config):
 
     return args
 
-def readargs_processed(args_in, config):
+def readargs_processed(args_in):
     """
     read in a set of command-line args for analysing processed maps
     """
@@ -399,6 +399,6 @@ def readargs_processed(args_in, config):
 
     args = argparser.parse_args(args_in)
 
-    args = checkargs_processed(args, config)
+    args = checkargs_processed(args)
 
     return args

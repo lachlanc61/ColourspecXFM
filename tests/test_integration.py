@@ -347,3 +347,5 @@ def test_cycle_unchanged_cpp(datafiles):
     assert np.allclose(pixelseries.xidx, expected_xidx)
     assert np.allclose(pixelseries.yidx, expected_yidx)
     assert np.allclose(pixelseries.dt, expected_dt)
+
+
