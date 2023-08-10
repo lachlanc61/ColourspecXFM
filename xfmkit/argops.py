@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 WEIGHT_TRANSFORMS=["sqrt", "log"]
 DATA_TRANSFORMS=["sqrt", "log"]
-
+IGNORE_LIST=['Mo','MoL','sum','Back','Compton','Ar']
 
 def checkargs(args, config):
     """
@@ -372,6 +372,14 @@ def readargs_processed(args_in, config):
         nargs='+', 
         type=str, 
         default=[],        
+    )
+
+    argparser.add_argument(
+        '-i', "--ignore", 
+        help="Element/line symbols to be ignored",
+        nargs='+', 
+        type=str, 
+        default=IGNORE_LIST,        
     )
 
     argparser.add_argument(

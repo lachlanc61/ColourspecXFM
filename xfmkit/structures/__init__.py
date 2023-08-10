@@ -635,7 +635,7 @@ class DataSet:
         self.se.crop(xrange, yrange)
         self.check()
 
-    def downsample_by_se(self, deweight=False):
+    def downsample_by_se(self, deweight=True):
 
         SD_MULTIPLIER = 2
         DEWEIGHT_FACTOR = 0.5

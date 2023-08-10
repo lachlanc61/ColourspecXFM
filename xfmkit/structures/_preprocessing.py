@@ -89,7 +89,7 @@ def apply_direct_transform(self, transform=None):
         raise ValueError(f"invalid value for transform: {transform}")
 
    
-def process_weights(self, amplify_list=[], suppress_list=[], normalise=False,weight_transform=None, data_transform=None):
+def process_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], normalise=False,weight_transform=None, data_transform=None):
     """
     perform specified preprocessing steps, applying weights to data
 
@@ -153,6 +153,12 @@ def process_weights(self, amplify_list=[], suppress_list=[], normalise=False,wei
 
     if weight_transform is not None:
         self.weight_by_transform(transform=weight_transform)
+
+    #ignore targets
+    for target in ignore_list:
+        for i, label in enumerate(self.labels):
+            if label == target:
+                self.weights[i] = 0.0
 
     self.apply_weights()
 

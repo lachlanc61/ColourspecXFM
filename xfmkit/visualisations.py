@@ -363,7 +363,11 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
     else:
         class_labels = []
 
-    print("plotting") 
+    print(
+    "---------------------------\n"
+    "VISUALISATION\n"
+    "---------------------------\n"
+    )
     if embedding.shape[1] == 2:
         print("using 2d embedding x") 
         #generate the palette from the categories, independent of distance
