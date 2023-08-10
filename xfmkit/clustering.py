@@ -150,7 +150,7 @@ def multireduce(data, target_components=FINAL_COMPONENTS):
     return reducer, embedding
 
 
-def classify(embedding, majors_only: bool = False):
+def classify(embedding, constrain: bool = False, majors_only: bool = False):
     """
     performs classification on embedding to produce final clusters
 
@@ -169,9 +169,12 @@ def classify(embedding, majors_only: bool = False):
 
     if USE=="HDBSCAN":
         operator, args = find_operator(classifier_list, USE)
-        if BY_EPSILON:
+        if not constrain:
             if majors_only:
                 args["cluster_selection_epsilon"]=0.3
+            else:
+                args["cluster_selection_epsilon"]=0.2
+            args["cluster_selection_method"]="eom"               
             print(f"cluster_selection_epsilon: {args['cluster_selection_epsilon']}")
         else:
             if majors_only:
@@ -179,6 +182,7 @@ def classify(embedding, majors_only: bool = False):
             else:
                 cluster_factor=300            
             args["min_cluster_size"]=round(embedding.shape[0]/cluster_sizefactor)
+            args["cluster_selection_method"]="leaf"   
             print(f"min cluster size: {embedding.shape[0]/cluster_sizefactor}")
 
     elif USE=="DBSCAN":
@@ -279,7 +283,7 @@ def get_classavg(raw_data, categories, output_dir, overwrite=True, labels=[]):
     return classavg
 
 
-def run(data, output_dir: str, majors=False, force_embed=False, force_clust=False, overwrite=True, target_components=2, do_kde=False):
+def run(data, output_dir: str, constrain=False, majors=False, force_embed=False, force_clust=False, overwrite=True, target_components=2, do_kde=False):
 
     if force_embed:
         force_clust = True
@@ -331,7 +335,7 @@ def run(data, output_dir: str, majors=False, force_embed=False, force_clust=Fals
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
         print("CALCULATING CLASSIFICATION")        
-        classifier, categories = classify(embedding, majors_only=majors)
+        classifier, categories = classify(embedding, constrain=constrain, majors_only=majors)
         categories=categories+1     
         print(f"number of categories: {np.max(categories)}")
         if overwrite or not exists_cats:

@@ -1,9 +1,25 @@
 import os
+import sys
 import configparser
 import json
+from pathlib import Path
+
+CONF_FILE="conf/xfmkit.conf"
+
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+__base__ = os.path.dirname(__location__)
+conf_location = os.path.join(__base__,CONF_FILE)
 
 config = configparser.ConfigParser()
-config.read("conf/xfmkit.conf")
+
+try:
+    with open(conf_location) as f:
+        config.read_file(f)
+        print(f"conf_loaded from {conf_location}")
+except IOError:
+    raise FileNotFoundError(f"{conf_location} not found")
+
+
 
 def get(section, value, default=None, mandatory=False):
     """

@@ -670,9 +670,14 @@ class DataSet:
                 #ratio, q2_sd, q99_data = imgops.calc_quantiles(img_, se_, SD_MULTIPLIER)
                 ratio, q2_sd, q99_data = imgops.calc_se_ratio(img_, se_)
 
+                try:
+                    label_=self.labels[i]
+                except:
+                    label_=""
+
                 j=0
                 while ratio <= SE_THRESHOLD:
-                    print(f"averaging element {self.labels[i]} ({i}), cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
+                    print(f"averaging element {label_} ({i}), cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
                     img_, se_ = imgops.apply_gaussian(img_, 1, se_)
 
                     #deweight channel for each gaussian applied
@@ -681,7 +686,7 @@ class DataSet:
                     ratio, q2_sd, q99_data = imgops.calc_se_ratio(img_, se_)
                     j+=1
 
-                print(f"element {self.labels[i]} ({i}), ratio: {ratio:.3f}")
+                print(f"element {label_} ({i}), ratio: {ratio:.3f}")
 
                 #check if value is unreasonably high and normalise if needed
                 if np.max(img_) >= SANITY_THRESHOLD:

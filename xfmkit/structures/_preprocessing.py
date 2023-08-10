@@ -15,6 +15,8 @@ affected_lines=config.get_list('element_lists', 'affected_lines')
 non_element_lines=config.get_list('element_lists', 'non_element_lines')
 light_lines=config.get_list('element_lists', 'light_lines')
 
+print("TESTING LINES")
+print(affected_lines)
 N_TO_AVG=5
 
 #----------------------
