@@ -28,7 +28,7 @@ MIN_SEPARATION=0.1
 BY_EPSILON=False
 
 #KDE
-DEFAULT_KDE_POINTS=301  #odd number apparently speeds up rendering via mpl.plot_surface
+DEFAULT_KDE_POINTS=201  #odd number apparently speeds up rendering via mpl.plot_surface
 
 
 #-----------------------------------

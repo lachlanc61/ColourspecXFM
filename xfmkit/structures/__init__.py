@@ -636,8 +636,9 @@ class DataSet:
         self.se.crop(xrange, yrange)
         self.check()
 
-    def downsample_by_se(self, deweight=True):
+    def downsample_by_se(self, deweight=False):
 
+        SANITY_THRESHOLD = 500000
         SE_THRESHOLD = 3
         DEWEIGHT_FACTOR = 0.5
 
@@ -648,6 +649,11 @@ class DataSet:
 
         mapview_ = np.zeros(self.data.mapview.shape, dtype=np.float32)
         se_map_ = np.zeros(self.se.mapview.shape, dtype=np.float32)
+
+        if deweight == True:
+            deweight_factor = DEWEIGHT_FACTOR
+        else:
+            deweight_factor = 1.0
 
         if np.max(self.se.d) == 0:
             print("WARNING: downsampling without valid data for errors - data will be left unchanged")
@@ -665,14 +671,19 @@ class DataSet:
                     print(f"averaging element {self.labels[i]} ({i}), cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
                     img_, se_ = imgops.apply_gaussian(img_, 1, se_)
 
-                    if deweight:
-                        #deweight channel for each gaussian applied
-                        self.weights[i] = self.weights[i]*DEWEIGHT_FACTOR
+                    #deweight channel for each gaussian applied
+                    self.weights[i] = self.weights[i]*deweight_factor
 
                     ratio, q2_sd, q99_data = imgops.calc_se_ratio(img_, se_)
                     j+=1
 
                 print(f"element {self.labels[i]} ({i}), ratio: {ratio:.3f}")
+
+                #check if value is unreasonably high and normalise if needed
+                if np.max(img_) >= SANITY_THRESHOLD:
+                    norm_factor = SANITY_THRESHOLD/np.max(img_)
+                    img_ = img_*norm_factor
+                    se_ = se_*norm_factor
 
                 mapview_[:,:,i] = img_
                 se_map_[:,:,i] = se_
@@ -681,7 +692,6 @@ class DataSet:
         self.se.set_to(se_map_)
 
         self.check()
-
 
 class PixelSet(DataSet):
     """
