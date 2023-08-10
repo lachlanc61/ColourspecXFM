@@ -345,6 +345,11 @@ def count_categories(categories):
     return the total number of categories, including negative values
     """
     min_cat = np.min(categories)
+
+    #  maintain a category for unclassified even if this is empty
+    if min_cat > 0:
+        min_cat = 0
+
     max_cat = np.max(categories)
     
     cat_list = range(min_cat, max_cat+1)
@@ -393,16 +398,17 @@ def compile_centroids(embedding, categories):
     finds the centroid of each cluster, given an embedding and a categorised array
     """
 
+    FIRST_CATEGORISED=1
+
     if embedding.shape[0] != categories.shape[0]:
         raise ValueError("Embedding and category list have different number of pixels")
 
-    n_clusters, category_list = count_categories(categories)
+    n_clusters, ___ = count_categories(categories)
 
     centroids=np.zeros((n_clusters, embedding.shape[1]), dtype=np.float32)
 
-    for i in range(n_clusters):
-        icat=category_list[i]
-        centroids[i] = get_centroid(embedding[categories==icat])    
+    for i in range(FIRST_CATEGORISED, n_clusters):
+        centroids[i] = get_centroid(embedding[categories==i])    
 
     return centroids
 

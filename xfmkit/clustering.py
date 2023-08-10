@@ -24,8 +24,12 @@ FINAL_COMPONENTS=2
 UMAP_PRECOMPONENTS=11
 MIN_SEPARATION=0.1
 
+#CLASSIFIER
+BY_EPSILON=False
+
 #KDE
 DEFAULT_KDE_POINTS=301  #odd number apparently speeds up rendering via mpl.plot_surface
+
 
 #-----------------------------------
 #GROUPS
@@ -158,14 +162,25 @@ def classify(embedding, majors_only: bool = False):
     print("RUNNING CLASSIFIER")
     classifier_list = CLASSIFIERS
 
+    if majors_only:
+        cluster_sizefactor=50
+    else:
+        cluster_sizefactor=300
+
     if USE=="HDBSCAN":
         operator, args = find_operator(classifier_list, USE)
+        if BY_EPSILON:
+            if majors_only:
+                args["cluster_selection_epsilon"]=0.3
+            print(f"cluster_selection_epsilon: {args['cluster_selection_epsilon']}")
+        else:
+            if majors_only:
+                cluster_factor=50
+            else:
+                cluster_factor=300            
+            args["min_cluster_size"]=round(embedding.shape[0]/cluster_sizefactor)
+            print(f"min cluster size: {embedding.shape[0]/cluster_sizefactor}")
 
-        if majors_only:
-            args["cluster_selection_epsilon"]=0.3
-
-        print(f"cluster_selection_epsilon: {args['cluster_selection_epsilon']}")
-    
     elif USE=="DBSCAN":
         operator, args = find_operator(classifier_list, USE) 
 
@@ -178,7 +193,7 @@ def classify(embedding, majors_only: bool = False):
 
     return classifier, categories
 
-def calc_classavg(data, categories, category_list, n_channels):
+def calc_classavg(data, categories):
     """
     calculate summed spectrum for each cluster
     args: 
@@ -186,23 +201,22 @@ def calc_classavg(data, categories, category_list, n_channels):
         catlist, categories by px
     returns:
         specsum, spectrum by category
-    
-    aware: nclust, number of clusters
     """
     n_channels = data.shape[1]
-    n_clusters = len(category_list)
+    n_clusters, ___ = utils.count_categories(categories)
 
     result=np.zeros((n_clusters,n_channels))
 
-    if n_clusters != utils.count_categories(categories)[0]:
-        raise ValueError("cluster count mismatch")
-
-    for i in range(n_clusters):
-        icat=category_list[i]
-        data_subset=data[categories==icat]
+    for i in range(0, n_clusters):
+        data_subset=data[categories==i]
         pxincat = data_subset.shape[0]  #no. pixels in category i
         print(f"cluster {i}, count: {pxincat}") #DEBUG
-        result[icat,:]=(np.sum(data_subset,axis=0))/pxincat
+
+        if pxincat > 0:
+            result[i,:]=(np.mean(data_subset,axis=0))
+        else:   #assign nan to any category with zero, avoids warning from np.mean
+            result[i,:]=float("nan")
+        
     return result
 
 
@@ -247,19 +261,18 @@ def get_classavg(raw_data, categories, output_dir, overwrite=True, labels=[]):
     n_channels = raw_data.shape[1]
 
     #   sum and extract class averages
-    n_clusters, category_list = utils.count_categories(categories)
-    classavg=np.zeros([n_clusters, n_channels], dtype=np.float32)
+    n_clusters, ___ = utils.count_categories(categories)
 
-    header=''
-
-    if not labels == []:
-        for i in range(raw_data.shape[1]):
-            header=header+f"{labels[i]},"
-
-    classavg=calc_classavg(raw_data, categories, category_list, n_channels)
+    classavg=calc_classavg(raw_data, categories)
 
     print("WRITING CLASS AVERAGES")
     if overwrite or not exists_classes:
+
+        header=''
+        if not labels == []:
+            for i in range(raw_data.shape[1]):
+                header=header+f"{labels[i]},"
+
         np.save(file_classes,classavg)
         np.savetxt(csv_classes, classavg, header=header, fmt='%.8f', delimiter=',')
     

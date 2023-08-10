@@ -53,11 +53,13 @@ def rgb_from_centroids(embedding, categories):
     create RGB indexes based on centroids of each cluster
     """
 
+    FIRST_CATEGORISED=1
+
     centroids = utils.compile_centroids(embedding, categories)
 
     centroids_rgb = np.zeros(centroids.shape, dtype=np.float32)
 
-    for i in range(centroids.shape[1]):
+    for i in range(FIRST_CATEGORISED, centroids.shape[1]):
         centroids_rgb[:,i] = utils.norm_channel_float(centroids[:,i],new_max=1.0)
 
     centroids_rgb[0] = (0.5, 0.5, 0.5)
