@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 valid_weight_transforms=config.get('argparse', 'valid_weight_transforms')
 valid_data_transforms=config.get('argparse', 'valid_data_transforms')
-ignore_lines=config.get('element_lines', 'ignore_lines')
+ignore_lines=config.get('elements', 'ignore_lines')
 
 def checkargs(args, config):
     """

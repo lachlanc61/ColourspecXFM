@@ -5,7 +5,7 @@ import xfmkit.config as config
 import logging
 logger = logging.getLogger(__name__)
 
-ignore_lines=config.get('element_lists', 'ignore_lines')
+ignore_lines=config.get('elements', 'ignore_lines')
 
 def get_df(classavg, labels):
     """

@@ -17,27 +17,10 @@ import xfmkit.structures as structures
 import xfmkit.geopixeio as geopixeio
 import xfmkit.tabular as tabular
 
-"""
-Parses spectrum-by-pixel maps from IXRF XFM
-
-- parses binary .GeoPIXE files
-- extracts pixel parameters
-- extracts pixel data
-- classifies data via eg. UMAP, HDBSCAN
-- displays classified maps
-- produces average spectrum per class
-
-./data has example datasets
-"""
 #-----------------------------------
 #vars
 #-----------------------------------
 PACKAGE_CONFIG='xfmkit/config.yaml'
-
-#-----------------------------------
-#INITIALISE
-#-----------------------------------
-
 
 def logging_setup():
     logger = logging.getLogger(__name__)

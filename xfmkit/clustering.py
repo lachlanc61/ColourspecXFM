@@ -18,13 +18,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 #-----------------------------------
-#CONSTANTS
+#LOCAL CONFIG VARS
 #-----------------------------------
 #REDUCERS
+default_reducer=config.get('reducer', 'default_reducer')
 final_components=config.get('reducer', 'final_components')
 umap_precomponents=config.get('reducer', 'umap_precomponents')
 min_separation=config.get('reducer', 'min_separation')
 default_kde_points=config.get('reducer', 'default_kde_points')
+pixel_cutoff_pca_only=config.get('reducer', 'pixel_cutoff_pca_only')
+dim_cutoff_pre_pca=config.get('reducer', 'dim_cutoff_pre_pca')
+
+#CLASSIFIERS
+default_classifier=config.get('classifier', 'default_classifier')
 
 #   odd number of points apparently speeds up rendering via mpl.plot_surface
 
@@ -41,7 +47,7 @@ REDUCERS = [
         "verbose": True}),
 
     (pacmap.PaCMAP, {"n_components":2,
-        "n_neighbors": None,
+        "n_neighbors": None,    #automatic
         "verbose": True }),
 ]
 
@@ -118,29 +124,27 @@ def reduce(data, reducer_name: str, target_components=final_components):
 def multireduce(data, target_components=final_components):
     """
     manage dimensionality reduction based on size of dataset
-    """  
-    PXNR_CUTOFF=5000000
-    DIMENSIONALITY_CUTOFF=31
-
+    """ 
     npx=data.shape[0]
     nchan=data.shape[1]
 
     start_time = time.time()
 
-    if npx >= PXNR_CUTOFF:
+    if npx >= pixel_cutoff_pca_only:
         #if number of pixels is very high, use PCA
         reducer, embedding = reduce(data, "PCA", target_components)   
 
-    elif nchan >= DIMENSIONALITY_CUTOFF:
+    elif nchan >= dim_cutoff_pre_pca:
         #if dimensionality is high, chain PCA into UMAP
         __reducer, __embedding = reduce(data, "PCA", umap_precomponents)   
         reducer, embedding = reduce(__embedding, "UMAP", target_components)        
 
     else:
-        if True:
+        if default_reducer=="umap":
             #go ahead with UMAP
             reducer, embedding = reduce(data, "UMAP", target_components)
-        if False:
+
+        if default_reducer=="PaCMAP":
             #go ahead with PaCMAP
             reducer, embedding = reduce(data, "PaCMAP", target_components)
 
@@ -154,8 +158,6 @@ def classify(embedding, constrain: bool = False, majors_only: bool = False):
     args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
     returns:    category-by-pixel matrix, shape [nreducers,chan]
     """
-    USE="HDBSCAN"
-
     print("RUNNING CLASSIFIER")
     classifier_list = CLASSIFIERS
 
@@ -164,26 +166,35 @@ def classify(embedding, constrain: bool = False, majors_only: bool = False):
     else:
         cluster_sizefactor=300
 
-    if USE=="HDBSCAN":
-        operator, args = find_operator(classifier_list, USE)
+    if default_classifier=="HDBSCAN":
+        operator, args = find_operator(classifier_list, default_classifier)
+
         if not constrain:
+
             if majors_only:
                 args["cluster_selection_epsilon"]=0.3
             else:
                 args["cluster_selection_epsilon"]=0.2
+
             args["cluster_selection_method"]="eom"               
             print(f"cluster_selection_epsilon: {args['cluster_selection_epsilon']}")
+            
         else:
+
             if majors_only:
                 cluster_factor=50
             else:
-                cluster_factor=300            
+                cluster_factor=300         
+
             args["min_cluster_size"]=round(embedding.shape[0]/cluster_sizefactor)
             args["cluster_selection_method"]="leaf"   
-            print(f"min cluster size: {embedding.shape[0]/cluster_sizefactor}")
 
-    elif USE=="DBSCAN":
-        operator, args = find_operator(classifier_list, USE) 
+        print(f"cluster_selection_method: {args['cluster_selection_method']}")
+        print(f"min cluster size: {args['min_cluster_size']}")
+        print(f"min cluster_selection_epsilon size: {args['cluster_selection_epsilon']}")
+
+    elif default_classifier=="DBSCAN":
+        operator, args = find_operator(classifier_list, default_classifier) 
 
     classifier = operator(**args)
     embedding = classifier.fit(embedding)

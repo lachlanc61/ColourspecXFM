@@ -11,12 +11,10 @@ from math import sqrt, log
 amplify_factor=config.get('preprocessing', 'amplify_factor')
 suppress_factor=config.get('preprocessing', 'suppress_factor')
 
-affected_lines=config.get('element_lists', 'affected_lines')
-non_element_lines=config.get('element_lists', 'non_element_lines')
-light_lines=config.get('element_lists', 'light_lines')
+affected_lines=config.get('elements', 'affected_lines')
+non_element_lines=config.get('elements', 'non_element_lines')
+light_lines=config.get('elements', 'light_lines')
 
-print("TESTING LINES")
-print(affected_lines)
 N_TO_AVG=5
 
 #----------------------

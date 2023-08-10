@@ -20,23 +20,7 @@ except IOError:
     raise FileNotFoundError(f"{conf_location} not found")
 
 
-def get_str(section, value, default=None, mandatory=False):
-    """
-    Reads config value from within section
-    or return default
-    """
-
-    try:
-        return config.get(section, value).strip()
-    
-    except:
-        if mandatory: 
-            raise Exception(f"Mandatory value {value} not found in section {section}")
-        else:
-            return default
-        
-
-def get(section, value, default=None, mandatory=False):
+def get(section, value, default=None, mandatory=True):
     """
     Read config value/list
 
@@ -53,3 +37,20 @@ def get(section, value, default=None, mandatory=False):
             raise Exception(f"Mandatory value {value} not found in section {section}")
         else:
             return default
+
+
+def get_str(section, value, default=None, mandatory=True):
+    """
+    Reads config value as string (needs cast when called)
+    or return default
+    """
+
+    try:
+        return config.get(section, value).strip()
+    
+    except:
+        if mandatory: 
+            raise Exception(f"Mandatory value {value} not found in section {section}")
+        else:
+            return default
+        
