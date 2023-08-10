@@ -65,7 +65,7 @@ def nestlist_as_str(nested_list: list):
         if i == 0:
             string_ = f"{i: >2} " + "N/A"
         else:
-            string_ = f"{i: >2} " + ''.join(nested_list[i])
+            string_ = f"{i: >2} " + ' '.join(nested_list[i])
 
         string_list.append(string_)
 

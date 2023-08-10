@@ -25,7 +25,7 @@ UMAP_PRECOMPONENTS=11
 MIN_SEPARATION=0.1
 
 #CLASSIFIER
-BY_EPSILON=False
+BY_EPSILON=True
 
 #KDE
 DEFAULT_KDE_POINTS=201  #odd number apparently speeds up rendering via mpl.plot_surface
@@ -59,7 +59,7 @@ CLASSIFIERS = [
         "min_samples": 500,
         "alpha": 1.0,
         "cluster_selection_epsilon": 0.2,
-        "cluster_selection_method": "leaf", #eom
+        "cluster_selection_method": "eom", #eom
         "gen_min_span_tree": True }),
 ]
 

@@ -61,10 +61,10 @@ def weight_by_transform(self, transform=None):
 
         if transform == 'sqrt':
             self.weights[i] = self.weights[i]*sqrt(max_)/max_
-        
-        if transform == 'log':
+
+        elif transform == 'log':
             self.weights[i] = self.weights[i]*log(max_)/max_
-        
+            
         elif transform == None:
             pass  
         else:
