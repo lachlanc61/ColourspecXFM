@@ -321,15 +321,31 @@ def writefileheader(xfmap, xcoords, ycoords):
 
     #modify width and height in header and re-print
 
-    newxres=xcoords[1]-xcoords[0]
+    xstart = xcoords[0]
+    if xcoords[1] <= xfmap.xres:
+        xend = xcoords[1]
+    else:
+        xend = xfmap.xres
+
+    newxres=xend-xstart
     #if new res larger than original, set to original
     if newxres > xfmap.xres:
+        print("WARNING: derived X size larger than X size read from data")
         newxres = xfmap.xres
     newxdim=newxres*(xfmap.headerdict["File Header"]["Width (mm)"]/xfmap.headerdict["File Header"]["Xres"])
 
-    newyres=ycoords[1]-ycoords[0]
+
+    ystart = ycoords[0]
+    if ycoords[1] <= xfmap.yres:
+        yend = ycoords[1]
+    else:
+        yend = xfmap.yres
+
+    newyres=yend-ystart
+
     #if new res larger than original, set to original
     if newyres > xfmap.yres:
+        print("WARNING: derived Y size larger than Y size read from data")        
         newyres = xfmap.yres
     newydim=newyres*(xfmap.headerdict["File Header"]["Height (mm)"]/xfmap.headerdict["File Header"]["Yres"])
 
