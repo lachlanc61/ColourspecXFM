@@ -648,7 +648,7 @@ class PixelSet(DataSet):
 
     #from . import _preprocessing
 
-    from ._preprocessing import assign_weights, apply_direct_transform, weight_by_transform, downsample_by_se, apply_weights
+    from ._preprocessing import generated_weighted, apply_direct_transform, weight_by_transform, downsample_by_se, apply_weights
 
     def __init__(self, dataset):
 
