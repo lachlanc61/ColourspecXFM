@@ -12,9 +12,6 @@ import xfmkit.config as config
 import logging
 logger = logging.getLogger(__name__)
 
-IGNORE_LINES=[]
-NON_ELEMENT_LINES=['sum','Back','Compton']
-AFFECTED_LINES=['Ar', 'Mo', 'MoL']
 Z_CUTOFFS=[11, 55, 37, 73]  # cutoffs for K, L, M lines 
                             #   K min, K max, L min, M min
 
@@ -42,7 +39,7 @@ def get_possible_lines():
         if ptelement.number >= Z_CUTOFFS[3]:            
             possible_lines.append(ptelement.symbol+"M")
 
-    for line in NON_ELEMENT_LINES:
+    for line in non_element_lines:
         possible_lines.append(line)
     
     return possible_lines
@@ -77,7 +74,7 @@ def get_elements(files):
         finally:
             if found == "var":
                 pass
-            elif found in IGNORE_LINES:
+            elif found in ignore_lines:
                 pass
             elif found in possible_lines:
                 elements.append(found)

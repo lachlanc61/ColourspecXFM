@@ -75,7 +75,7 @@ def read_processed(args_in):
 
     pxs.downsample_by_se()
 
-    pxs.assign_weights(amplify_list = args.amplify, 
+    pxs.apply_weights(amplify_list = args.amplify, 
                             suppress_list = args.suppress, 
                             ignore_list = args.ignore,
                             normalise = args.normalise, 

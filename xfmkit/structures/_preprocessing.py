@@ -22,6 +22,7 @@ deweight_on_downsample_factor=float(config.get('preprocessing', 'deweight_on_dow
 
 BASEFACTOR=1/10000 #ppm to wt%
 
+N_TO_AVG=5
 
 #----------------------
 #local
@@ -49,16 +50,7 @@ def mean_highest_lines(max_set, elements, n_to_avg=N_TO_AVG):
 #for import
 #----------------------
 
-def apply_weights(self):
-    print("-----------------")
-    print(f"APPLYING CHANNEL WEIGHTS")            
-    
-    result = np.zeros(self.data.shape)
 
-    for i in range(self.data.shape[1]):
-        result[:,i] = self.data.d[:,i]*self.weights[i]
-    
-    self.weighted = structures.DataSeries(result, self.data.dimensions)
 
 
 def weight_by_transform(self, transform=None):
@@ -105,8 +97,23 @@ def apply_direct_transform(self, transform=None):
     else:
         raise ValueError(f"invalid value for transform: {transform}")
 
-   
-def assign_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], normalise=False,weight_transform=None, data_transform=None):
+
+def generated_weighted(self):
+
+    print("-----------------")
+    print(f"APPLYING CHANNEL WEIGHTS")            
+    
+    _result = np.zeros(self.data.shape)
+
+    for i in range(self.data.shape[1]):
+        _result[:,i] = self.data.d[:,i]*self.weights[i]
+    
+    result = structures.DataSeries(_result, self.data.dimensions)
+
+    return result
+
+
+def apply_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], normalise=False,weight_transform=None, data_transform=None):
     """
     perform specified preprocessing steps, applying weights to data
 
@@ -114,8 +121,6 @@ def assign_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], norm
     - normalise
     - perform data/weight transformations
     """
-
-    N_TO_AVG=5
 
     print("-----------------")
     print(f"CALCULATING CHANNEL WEIGHTS")    
@@ -131,42 +136,43 @@ def assign_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], norm
     max_set_weighted = np.zeros(len(self.data.d[1]))    
 
     for i, label in enumerate(self.labels):
-        max_set[i] = np.max(self.data.d[:,i])
-        #max_set_weighted[i] = max_set[i]*self.weights[i]
+        max_set[i] = np.max(self.data.d[:,i]*self.weights[i])   #apply weights here
+        #max_set[i] = max_set[i]
 
-    smoothed_max = float(mean_highest_lines(max_set, self.labels, N_TO_AVG))
-    #smoothed_max_weighted = float(mean_highest_lines(max_set_weighted, self.labels, N_TO_AVG))
+    avg_max = float(mean_highest_lines(max_set, self.labels, N_TO_AVG))
 
-    #normalise non-element lines to smoothed_max/10
+    #normalise non-element lines to avg_max/10
     for target in non_element_lines:
         for i, label in enumerate(self.labels):
             if label == target:
-                max_=np.max(self.data.d[:,i])
-                if max_ < smoothed_max:
-                    self.weights[i] = self.weights[i]*smoothed_max/max_/10
+                max_=np.max(self.data.d[:,i]*self.weights[i])
+                if max_ < avg_max:
+                    self.weights[i] = self.weights[i]*avg_max/max_/10
 
-    #normalise high affected lines to smoothed_max/10
+    #normalise high affected lines to avg_max/10
     for target in affected_lines:
         for i, label in enumerate(self.labels):
             if label == target:
-                max_=np.max(self.data.d[:,i])
-                if max_ > smoothed_max/10:
-                    self.weights[i] = self.weights[i]*smoothed_max/max_/10
+                max_=np.max(self.data.d[:,i]*self.weights[i])
+                if max_ > avg_max/10:
+                    self.weights[i] = self.weights[i]*avg_max/max_/10
 
-    #amplify targets unless already > smoothed_max
+    #amplify targets up to average max
     for target in amplify_list:
         for i, label in enumerate(self.labels):
             if label == target:
-                max_=np.max(self.data.d[:,i])
-                if max_ < smoothed_max:
-                    self.weights[i] = self.weights[i]*amplify_factor
+                print(f"----amplifying {label}")
+                max_=np.max(self.data.d[:,i]*self.weights[i])
+                if max_ < avg_max:
+                    self.weights[i] = self.weights[i]*avg_max/max_
 
     #suppress targets
     for target in suppress_list:
         for i, label in enumerate(self.labels):
             if label == target:
-                max_=np.max(self.data.d[:,i])
-                if False:    #use sqrt
+                print(f"----suppressing {label}")
+                max_=np.max(self.data.d[:,i]*self.weights[i])
+                if True:    #use sqrt
                     self.weights[i] = self.weights[i]*sqrt(max_)/max_
                 else:       #use factor
                     self.weights[i] = self.weights[i]/suppress_factor                    
@@ -185,8 +191,10 @@ def assign_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], norm
             if label == target:
                 self.weights[i] = 0.0
 
-    self.apply_weights()
+    #generate the weighted dataset
+    self.weighted = self.generate_weighted()
 
+    #apply full transforms
     if data_transform is not None:
         self.apply_direct_transform(data_transform)
 

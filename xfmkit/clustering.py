@@ -153,7 +153,32 @@ def multireduce(data, target_components=final_components):
     return reducer, embedding
 
 
-def classify(embedding, eom: bool = False, majors_only: bool = False):
+def multiclassify(embedding):
+    minor_classifier, minor_categories = classify(embedding, eom=False, majors_only=False, use_classifier=default_classifier)
+
+    major_classifier, major_categories = classify(embedding, eom=False, majors_only=True, use_classifier=default_classifier)
+
+    #merge fine and major classifiers
+
+    final_categories = np.zeros(major_categories.shape)
+
+    minor_categories = minor_categories+np.max(major_categories)
+
+    for i in range(final_categories.shape):
+        if major_categories[i] > 0:
+            final_categories[i] = major_categories[i]
+        elif minor_categories[i] > 0:
+            final_categories[i] = minor_categories[i]
+
+    #FUTURE: instead, iterate through minor categories and merge into major if 90% shared
+    #   retain any more than 90% unique
+
+    #TO-DO: loop through final_categories and decrement until category numbers are contiguous
+    #ie. skip any empty categories
+
+    return final_categories
+
+def classify(embedding, eom: bool = False, majors_only: bool = False, use_classifier: str=default_classifier):
     """
     performs classification on embedding to produce final clusters
 
@@ -168,8 +193,8 @@ def classify(embedding, eom: bool = False, majors_only: bool = False):
     else:
         cluster_sizefactor=300
 
-    if default_classifier=="HDBSCAN":
-        operator, args = find_operator(classifier_list, default_classifier)
+    if use_classifier=="HDBSCAN":
+        operator, args = find_operator(classifier_list, use_classifier)
 
         if eom:
             print("using HDBSCAN eom with small min_size")
@@ -192,8 +217,11 @@ def classify(embedding, eom: bool = False, majors_only: bool = False):
         print(f"min cluster size: {args['min_cluster_size']}")
         print(f"min cluster_selection_epsilon size: {args['cluster_selection_epsilon']}")
 
-    elif default_classifier=="DBSCAN":
-        operator, args = find_operator(classifier_list, default_classifier) 
+    elif use_classifier=="DBSCAN":
+        operator, args = find_operator(classifier_list, use_classifier) 
+
+    else:
+        raise ValueError(f"unrecognised default classifier {use_classifier}")
 
     classifier = operator(**args)
     embedding = classifier.fit(embedding)
@@ -201,6 +229,8 @@ def classify(embedding, eom: bool = False, majors_only: bool = False):
     categories=classifier.labels_
 
     categories = categories.astype(np.int32)
+
+    categories=categories+1  
 
     return classifier, categories
 
@@ -343,7 +373,7 @@ def run(data, output_dir: str, eom=False, majors=False, force_embed=False, force
     if force_clust or not exists_cats:
         print("CALCULATING CLASSIFICATION")        
         classifier, categories = classify(embedding, eom=eom, majors_only=majors)
-        categories=categories+1     
+   
         print(f"number of categories: {np.max(categories)}")
         if overwrite or not exists_cats:
             np.save(file_cats,categories)
