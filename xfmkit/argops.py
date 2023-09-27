@@ -8,7 +8,9 @@ import xfmkit.config as config
 
 logger = logging.getLogger(__name__)
 
+
 valid_weight_transforms=config.get('argparse', 'valid_weight_transforms')
+default_weight_transform=config.get('argparse', 'default_weight_transform')
 valid_data_transforms=config.get('argparse', 'valid_data_transforms')
 ignore_lines=config.get('elements', 'ignore_lines')
 
@@ -362,7 +364,7 @@ def readargs_processed(args_in):
         help="Transformation to apply to weights"
         f"recognised values: {valid_weight_transforms}",        
         type=str, 
-        default=None
+        default=default_weight_transform
     )
 
     argparser.add_argument(

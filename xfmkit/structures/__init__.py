@@ -8,9 +8,6 @@ import xfmkit.imgops as imgops
 import xfmkit.utils as utils
 import xfmkit.config as config
 
-from math import sqrt
-from math import log
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -526,6 +523,7 @@ class DataSet:
                 if guess_se==True:  
                     self.se = DataSeries(np.sqrt(self.data.d), self.data.dimensions) 
                 else:
+                    #currently, throw an error if we have no stderr
                     raise ValueError("no standard errors found")
                     self.se = DataSeries(np.zeros(self.data.d.shape, dtype=np.float32), self.data.dimensions) 
             else:
@@ -640,63 +638,7 @@ class DataSet:
         self.se.crop(xrange, yrange)
         self.check()
 
-    def downsample_by_se(self, deweight=False):
-
-        self.check()
-
-        if not np.issubdtype(self.data.d.dtype, np.floating):
-            print("WARNING: dtype changing to float")
-
-        mapview_ = np.zeros(self.data.mapview.shape, dtype=np.float32)
-        se_map_ = np.zeros(self.se.mapview.shape, dtype=np.float32)
-
-        if deweight == True:
-            deweight_factor = deweight_on_downsample_factor
-        else:
-            deweight_factor = 1.0
-
-        if np.max(self.se.d) == 0:
-            print("WARNING: downsampling without valid data for errors - data will be left unchanged")
-        else:
-            for i in range(self.data.d.shape[1]):
-
-                img_ = np.ndarray.copy(self.data.mapview[:,:,i])
-                se_ = np.ndarray.copy(self.se.mapview[:,:,i])
-
-                #ratio, q2_sd, q99_data = imgops.calc_quantiles(img_, se_, SD_MULTIPLIER)
-                ratio, q2_sd, q99_data = imgops.calc_se_ratio(img_, se_)
-
-                try:
-                    label_=self.labels[i]
-                except:
-                    label_=""
-
-                j=0
-                while ratio <= snr_threshold:
-                    print(f"averaging element {label_} ({i}), cycle {j} -- dataq99: {q99_data:.3f}, sdq2: {q2_sd:.3f}, ratio: {ratio:.3f}")
-                    img_, se_ = imgops.apply_gaussian(img_, 1, se_)
-
-                    #deweight channel for each gaussian applied
-                    self.weights[i] = self.weights[i]*deweight_factor
-
-                    ratio, q2_sd, q99_data = imgops.calc_se_ratio(img_, se_)
-                    j+=1
-
-                print(f"element {label_} ({i}), ratio: {ratio:.3f}")
-
-                #check if value is unreasonably high and normalise if needed
-                if np.max(img_) >= conc_sanity_threshold:
-                    norm_factor = conc_sanity_threshold/np.max(img_)
-                    img_ = img_*norm_factor
-                    se_ = se_*norm_factor
-
-                mapview_[:,:,i] = img_
-                se_map_[:,:,i] = se_
-
-        self.data.set_to(mapview_)
-        self.se.set_to(se_map_)
-
-        self.check()
+    
 
 class PixelSet(DataSet):
     """
@@ -706,7 +648,7 @@ class PixelSet(DataSet):
 
     #from . import _preprocessing
 
-    from ._preprocessing import process_weights, apply_direct_transform, weight_by_transform
+    from ._preprocessing import assign_weights, apply_direct_transform, weight_by_transform, downsample_by_se, apply_weights
 
     def __init__(self, dataset):
 
@@ -720,10 +662,4 @@ class PixelSet(DataSet):
 
         self.weighted = None
     
-    def apply_weights(self):
-        result = np.zeros(self.data.shape)
 
-        for i in range(self.data.shape[1]):
-            result[:,i] = self.data.d[:,i]*self.weights[i]
-        
-        self.weighted = DataSeries(result, self.data.dimensions)

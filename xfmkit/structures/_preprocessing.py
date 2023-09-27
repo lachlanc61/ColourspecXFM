@@ -4,6 +4,7 @@ import pandas as pd
 import xfmkit.structures as structures
 import xfmkit.utils as utils
 import xfmkit.processops as processops
+import xfmkit.imgops as imgops
 import xfmkit.config as config
 
 from math import sqrt, log
@@ -15,7 +16,12 @@ affected_lines=config.get('elements', 'affected_lines')
 non_element_lines=config.get('elements', 'non_element_lines')
 light_lines=config.get('elements', 'light_lines')
 
-N_TO_AVG=5
+conc_sanity_threshold=float(config.get('preprocessing', 'conc_sanity_threshold'))
+snr_threshold=float(config.get('preprocessing', 'snr_threshold'))
+deweight_on_downsample_factor=float(config.get('preprocessing', 'deweight_on_downsample_factor'))
+
+BASEFACTOR=1/10000 #ppm to wt%
+
 
 #----------------------
 #local
@@ -42,6 +48,19 @@ def mean_highest_lines(max_set, elements, n_to_avg=N_TO_AVG):
 #----------------------
 #for import
 #----------------------
+
+def apply_weights(self):
+    print("-----------------")
+    print(f"APPLYING CHANNEL WEIGHTS")            
+    
+    result = np.zeros(self.data.shape)
+
+    for i in range(self.data.shape[1]):
+        result[:,i] = self.data.d[:,i]*self.weights[i]
+    
+    self.weighted = structures.DataSeries(result, self.data.dimensions)
+
+
 def weight_by_transform(self, transform=None):
     """
     adjust weights to correspond to transformation of data
@@ -87,7 +106,7 @@ def apply_direct_transform(self, transform=None):
         raise ValueError(f"invalid value for transform: {transform}")
 
    
-def process_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], normalise=False,weight_transform=None, data_transform=None):
+def assign_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], normalise=False,weight_transform=None, data_transform=None):
     """
     perform specified preprocessing steps, applying weights to data
 
@@ -95,6 +114,11 @@ def process_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], nor
     - normalise
     - perform data/weight transformations
     """
+
+    N_TO_AVG=5
+
+    print("-----------------")
+    print(f"CALCULATING CHANNEL WEIGHTS")    
 
     if normalise:
         if weight_transform is not None or data_transform is not None:
@@ -104,11 +128,14 @@ def process_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], nor
         raise ValueError("Can't perform both weight and data transformation")
 
     max_set = np.zeros(len(self.data.d[1]))
+    max_set_weighted = np.zeros(len(self.data.d[1]))    
 
     for i, label in enumerate(self.labels):
         max_set[i] = np.max(self.data.d[:,i])
+        #max_set_weighted[i] = max_set[i]*self.weights[i]
 
     smoothed_max = float(mean_highest_lines(max_set, self.labels, N_TO_AVG))
+    #smoothed_max_weighted = float(mean_highest_lines(max_set_weighted, self.labels, N_TO_AVG))
 
     #normalise non-element lines to smoothed_max/10
     for target in non_element_lines:
@@ -163,3 +190,75 @@ def process_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], nor
     if data_transform is not None:
         self.apply_direct_transform(data_transform)
 
+
+def downsample_by_se(self, deweight=False):
+
+    print("-----------------")
+    print(f"SMOOTHING CHANNELS")    
+
+    self.check()
+
+    if not np.issubdtype(self.data.d.dtype, np.floating):
+        print("WARNING: dtype changing to float")
+
+    mapview_ = np.zeros(self.data.mapview.shape, dtype=np.float32)
+    se_map_ = np.zeros(self.se.mapview.shape, dtype=np.float32)
+
+    if deweight == True:
+        deweight_factor = deweight_on_downsample_factor
+    else:
+        deweight_factor = 1.0
+
+    if np.max(self.se.d) == 0:
+        print("WARNING: downsampling without valid data for errors - data will be left unchanged")
+    else:
+        for i in range(self.data.d.shape[1]):
+
+            try:
+                label_=self.labels[i]
+            except:
+                label_=""
+
+            img_ = np.ndarray.copy(self.data.mapview[:,:,i])
+            se_ = np.ndarray.copy(self.se.mapview[:,:,i])
+
+            #ratio, q2_sd, q99_data = utils.calc_se_ratio(img_, se_)
+
+            #print(f"*****1 element {label_} ({i}),  dmax: {q99_data:.3f},  seavg: {q2_sd:.3f}, ratio: {ratio:.3f}")
+
+            ratio, data_max, se_mean = utils.calc_simple_se_ratio(img_, se_)
+
+            #print(f"*****2 element {label_} ({i}), dmax: {data_max:.3f},  seavg: {se_avg:.3f}, ratio: {simple_ratio:.3f}")
+
+
+            j=0
+            while ratio <= snr_threshold:
+                print(f"---averaging element {label_} ({i}), cycle {j} -- max: {data_max:.3f}, se_avg: {se_mean:.3f}, ratio: {ratio:.3f}")
+                img_, se_ = imgops.apply_gaussian(img_, 1, se_)
+
+                #deweight channel for each gaussian applied
+                self.weights[i] = self.weights[i]*deweight_factor
+
+                ratio, data_max, se_mean = utils.calc_simple_se_ratio(img_, se_)
+                j+=1
+
+            print(f"FINISHED element {label_} ({i}), max: {data_max*BASEFACTOR:.3f} %, se_avg: {se_mean*BASEFACTOR:.3f} %, ratio: {ratio:.3f}")
+
+            #check if value is unreasonably high and normalise back to threshold/2 if needed
+            if np.max(img_) >= conc_sanity_threshold:
+
+                print(f"**WARNING: element {label_} ({i}) max of {data_max} unexpectedly high, normalising")
+                norm_factor = conc_sanity_threshold/np.max(img_)/2
+                img_ = img_*norm_factor
+                se_ = se_*norm_factor
+
+            mapview_[:,:,i] = img_
+            se_map_[:,:,i] = se_
+
+    self.data.set_to(mapview_)
+    self.se.set_to(se_map_)
+
+    self.check()
+
+    print("-----------------")
+    print(f"SMOOTHING COMPLETE")    

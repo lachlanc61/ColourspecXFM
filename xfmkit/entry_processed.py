@@ -73,7 +73,9 @@ def read_processed(args_in):
 
     pxs = structures.PixelSet(ds)
 
-    pxs.process_weights(amplify_list = args.amplify, 
+    pxs.downsample_by_se()
+
+    pxs.assign_weights(amplify_list = args.amplify, 
                             suppress_list = args.suppress, 
                             ignore_list = args.ignore,
                             normalise = args.normalise, 

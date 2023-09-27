@@ -497,3 +497,29 @@ def smartcast(data, target_dtype):
 
     
     return data_
+
+
+
+def calc_se_ratio(data, se):
+    DATA_QUANTILE=0.999
+    SE_QUANTILE_MIN=0.25
+    SE_QUANTILE_MAX=0.5
+
+    q99_data = mean_within_quantile(data, qmin=DATA_QUANTILE)
+
+    q2_sd = mean_within_quantile(se, qmin=SE_QUANTILE_MIN, qmax=SE_QUANTILE_MAX)
+
+    ratio = q99_data / q2_sd
+
+    return ratio, q99_data, q2_sd
+
+
+def calc_simple_se_ratio(data, se):
+
+    data_max = np.max(data)
+
+    se_avg = np.mean(se)
+
+    ratio = data_max / se_avg
+
+    return ratio, data_max, se_avg

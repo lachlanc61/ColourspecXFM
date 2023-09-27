@@ -13,11 +13,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 IGNORE_LINES=[]
-AFFECTED_LINES=['Ar', 'Mo', 'MoL']
 NON_ELEMENT_LINES=['sum','Back','Compton']
-
+AFFECTED_LINES=['Ar', 'Mo', 'MoL']
 Z_CUTOFFS=[11, 55, 37, 73]  # cutoffs for K, L, M lines 
                             #   K min, K max, L min, M min
+
+ignore_lines=config.get('elements', 'ignore_lines')
+affected_lines=config.get('elements', 'affected_lines')
+non_element_lines=config.get('elements', 'non_element_lines')
+light_lines=config.get('elements', 'light_lines')
+
 
 BASEFACTOR=1/10000 #ppm to wt%
 
@@ -297,19 +302,12 @@ def compile(image_directory):
 
         ds = structures.DataSet(dataseries, se=seseries, labels=elements)
 
-        ds.downsample_by_se()
-
     else:
         ds = structures.DataSet(dataseries, labels=elements)
 
     print("-----------------")
+    print(f"DATA IMPORT COMPLETE")    
     print(f"Final shape: {ds.data.shape}")
-
-    print("-----------------")
-    print(f"Element values:")    
-    for i in range(len(elements)):
-        print(f"{elements[i]}, max: {np.max(ds.data.d[:,i]):.2f}, 98: {np.quantile(ds.data.d[:,i],0.98):.2f}, avg: {np.average(ds.data.d[:,i]):.2f}")
-    print("-----------------")
 
     return ds
 
