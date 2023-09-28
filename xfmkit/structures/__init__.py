@@ -442,6 +442,10 @@ class DataSeries:
         """
         d_ = mapview.reshape(mapview.shape[0]*mapview.shape[1],-1)
         dimensions_ = (mapview.shape[0], mapview.shape[1])
+
+        print("SHARE inner")
+        print(np.may_share_memory(mapview, mapview.reshape(mapview.shape[0]*mapview.shape[1],-1)))
+
         return d_, dimensions_
 
     def mapview_from_data(self, d, dimensions):
@@ -455,9 +459,12 @@ class DataSeries:
         """
         crop maps in 2D and adjust corresponding 1D view
         """
-        self.mapview = self.mapview[yrange[0]:yrange[1], xrange[0]:xrange[1], :]
+        _mapview = self.mapview[yrange[0]:yrange[1], xrange[0]:xrange[1], :]
+        self.mapview = np.copy(_mapview)     
         self.d, self.dimensions = self.data_from_mapview(self.mapview)
         self.shape = self.d.shape
+
+        self.check()        
 
     def zoom(self, zoom_factor, order:int = None):
         """
@@ -634,8 +641,10 @@ class DataSet:
         """
         crop maps in 2D and adjustcorresponding 1D view
         """
-        self.data.crop(xrange, yrange)
+        print("CROPPING")      
+        self.data.crop(xrange, yrange)         
         self.se.crop(xrange, yrange)
+        self.dimensions = self.data.dimensions    
         self.check()
 
     

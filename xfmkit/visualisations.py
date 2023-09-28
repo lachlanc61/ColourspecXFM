@@ -98,6 +98,8 @@ def tricolour(r, g, b):
     g_ = utils.norm_channel(g)
     b_ = utils.norm_channel(b)
 
+    print(f"R, G, B max: {np.max(r_)}, {np.max(g_)}, {np.max(b_)}")
+
     fig = plt.figure(figsize=(24,12))
     ax = fig.add_subplot(111)
 
