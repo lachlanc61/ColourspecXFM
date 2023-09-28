@@ -183,6 +183,7 @@ def apply_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], norma
             self.weights[i] = self.weights[i]/max_
 
     if weight_transform is not None:
+        print(f"applying weight transform {weight_transform}")
         self.weight_by_transform(transform=weight_transform)
 
     #ignore targets
@@ -202,7 +203,7 @@ def apply_weights(self, amplify_list=[], suppress_list=[], ignore_list=[], norma
 def downsample_by_se(self, deweight=False):
 
     print("-----------------")
-    print(f"SMOOTHING CHANNELS")    
+    print(f"AVERAGING CHANNELS")    
 
     self.check()
 
@@ -269,4 +270,4 @@ def downsample_by_se(self, deweight=False):
     self.check()
 
     print("-----------------")
-    print(f"SMOOTHING COMPLETE")    
+    print(f"AVERAGING COMPLETE")    
