@@ -31,6 +31,7 @@ dim_cutoff_pre_pca=config.get('reducer', 'dim_cutoff_pre_pca')
 
 #CLASSIFIERS
 default_classifier=config.get('classifier', 'default_classifier')
+kde_separation_bandwidth_mult=config.get('classifier', 'kde_separation_bandwidth_mult')
 
 #   odd number of points apparently speeds up rendering via mpl.plot_surface
 
@@ -262,7 +263,7 @@ def calc_classavg(data, categories):
 
 class KdeMap():
     def __init__(self, embedding, n=default_kde_points):
-        self.kde = KernelDensity(kernel='gaussian',bandwidth=min_separation*3)
+        self.kde = KernelDensity(kernel='gaussian',bandwidth=min_separation*kde_separation_bandwidth_mult)
         self.n = n
 
         print("Fitting KDE")

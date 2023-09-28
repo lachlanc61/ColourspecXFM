@@ -97,7 +97,7 @@ def read_processed(args_in):
 
     #vis.contours_3d(embedding)
 
-    return pxs, embedding, categories, classavg, palette
+    return pxs, embedding, categories, classavg, palette, kde
 
 
 if __name__ == '__main__':

@@ -300,6 +300,9 @@ def seaborn_embedplot(embedding, categories, palette=None, labels=[]):
     x=embedding.T[0]
     y=embedding.T[1]
 
+    alpha=10/(np.sqrt(embedding.shape[0]))
+    print(f"embedplot alpha: {alpha}, {(np.sqrt(embedding.shape[0]))}")
+
     ### scatter plot with marginal axes
     sns.set_style('white')
 
@@ -307,7 +310,7 @@ def seaborn_embedplot(embedding, categories, palette=None, labels=[]):
                 hue=categories, palette=palette,
                 legend='full',
                 lw=0,
-                joint_kws = dict(alpha=0.01),           #FUTURE: scale alpha with log(n_pixels)
+                joint_kws = dict(alpha=alpha),           #FUTURE: scale alpha with log(n_pixels)
                 height=12, ratio=6
                 )
 
@@ -382,6 +385,7 @@ DPI=96
 
 def contours_3d(kde):
 
+    #drop the floor slightly to emphasise low-but-nonzero regions
     Z_local = np.copy(kde.Z)
     Z_local[Z_local < 0.00001] = -0.0005
     #Z_local = np.log(Z_local)
@@ -395,6 +399,35 @@ def contours_3d(kde):
     ax.set_zlabel('Z')
 
     return fig
+
+
+def contours_2d(kde):
+
+    #lower the floor slightly to emphasise low-but-nonzero regions
+    Z_local = np.copy(kde.Z)
+    Z_local[Z_local < 0.00001] = -0.0001    #-0.00000001 if viridis
+
+    fig = plt.figure(figsize=(24,18))
+    ax = fig.add_subplot()
+
+    cfset = ax.contourf(kde.X, kde.Y, Z_local, levels=25, cmap='Blues')
+
+    ## ALT direct kernel density estimate plot
+    #   flipped vertically
+    #ax.imshow(Z_local, cmap='Blues', extent=[-7, 20, -7, 20])    
+
+    #ADD contour lines
+    #cset = ax.contour(kde.X, kde.Y, Z_local, colors='k')
+
+    #ADD contour labels
+    #ax.clabel(cset, inline=1, fontsize=10)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+
+    return fig
+
+
 
 def plot_clusters(categories, classavg, embedding, kde, dims, output_directory=".", plot_kde=False, plot_margins=False, labels=[]):
     """
@@ -421,7 +454,7 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
     else:
         #use the 3D embedding to colour the categories based on distance
         fig_embed_map = embedding_map(embedding, dims)
-        fig_embed_map.savefig(os.path.join(output_directory,'embed_map.png'), transparent=False)  
+        fig_embed_map.savefig(os.path.join(output_directory,'vis_embed_map.png'), transparent=False)  
 
         # produce 2D embedding for visualisation
         print("creating 2d embedding")
@@ -431,19 +464,21 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
     if plot_margins:
         print("saving map with margins")        
         fig_cat_map = category_map(categories, dims, palette=palette)
-        fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
+        fig_cat_map.savefig(os.path.join(output_directory,'vis_category_map.png'), transparent=False)    
     else:
         print("creating category map")
         fig_cat_map = category_map_direct(categories, dims, palette=palette)
-        fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)  
+        fig_cat_map.savefig(os.path.join(output_directory,'vis_category_map.png'), transparent=False)  
 
     print("creating embedplot")    
 
     fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette, labels=class_labels)
-    fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
+    fig_embed.savefig(os.path.join(output_directory,'vis_embeddings.png'), transparent=False)    
     
     if plot_kde and kde is not None:
-        fig_contours = contours_3d(kde)
+        fig_contours_3d = contours_3d(kde)
+        fig_contours_2d = contours_2d(kde)
+        fig_contours_2d.savefig(os.path.join(output_directory,'vis_kde.png'), transparent=False)
     
     tabular.printout(df)
 
