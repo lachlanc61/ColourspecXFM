@@ -121,16 +121,40 @@ def tricolour_pixelset(e_red:str, e_green:str, e_blue:str, pxs):
     g = pxs.data.mapview[:,:,gidx]
     b = pxs.data.mapview[:,:,bidx]   
 
+    print(f"R, G, B max: {np.max(r)}, {np.max(g)}, {np.max(b)}")
+
+    fig = tricolour(r, g, b)
+
+    return fig
+
+def tricolour_explicit(e_red:str, e_green:str, e_blue:str, data, dims, labels):
+    """
+    display a 3-colour RGB from element names
+    normalise each channel
+    """
+    ridx = utils.findelement(labels, e_red)
+    gidx = utils.findelement(labels, e_green)   
+    bidx = utils.findelement(labels, e_blue)   
+
+
+    r = data.mapview[:,:,ridx]
+    g = data.mapview[:,:,gidx]
+    b = data.mapview[:,:,bidx]   
+
+
+
     fig = tricolour(r, g, b)
 
     return fig
 
 
+"""
+DEPRECATE
 def tricolour_enames(e1:str, e2:str, e3:str, data, dims, elements):
-    """
+    ""
     display a 3-colour RGB from element names
     normalise each channel
-    """
+    ""
     r = utils.get_map(data, dims, elements, e1)
     g = utils.get_map(data, dims, elements, e2)
     b = utils.get_map(data, dims, elements, e3)    
@@ -138,6 +162,8 @@ def tricolour_enames(e1:str, e2:str, e3:str, data, dims, elements):
     fig = tricolour(r, g, b)
 
     return fig
+"""
+
 
 def embedding_map(embedding, dims):
     """

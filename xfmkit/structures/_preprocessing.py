@@ -98,7 +98,7 @@ def apply_direct_transform(self, transform=None):
         raise ValueError(f"invalid value for transform: {transform}")
 
 
-def generated_weighted(self):
+def generate_weighted(self):
 
     print("-----------------")
     print(f"APPLYING CHANNEL WEIGHTS")            
