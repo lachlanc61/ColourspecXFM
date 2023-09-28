@@ -191,7 +191,7 @@ def classify(embedding, eom: bool = False, majors_only: bool = False, use_classi
     if majors_only:
         cluster_sizefactor=50
     else:
-        cluster_sizefactor=300
+        cluster_sizefactor=1000
 
     if use_classifier=="HDBSCAN":
         operator, args = find_operator(classifier_list, use_classifier)
@@ -210,8 +210,7 @@ def classify(embedding, eom: bool = False, majors_only: bool = False, use_classi
         else:
             print("using HDBSCAN leaf with estimated min_size")
             args["cluster_selection_method"]="leaf"             
-
-            args["min_cluster_size"]=round(embedding.shape[0]/cluster_sizefactor)
+            args["min_cluster_size"]=round(embedding.shape[0]/cluster_sizefactor)   
 
         print(f"cluster_selection_method: {args['cluster_selection_method']}")
         print(f"min cluster size: {args['min_cluster_size']}")

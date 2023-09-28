@@ -91,9 +91,9 @@ def read_processed(args_in):
 
     weighted_avg = clustering.get_classavg(pxs.weighted.d, categories, output_directory, labels=pxs.labels)
 
-    palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory, plot_kde=args.kde, labels=pxs.labels)
-
     geopixeio.export_regions(categories, pxs.dimensions, output_directory=output_directory)
+
+    palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory, plot_kde=args.kde, labels=pxs.labels)
 
     #vis.contours_3d(embedding)
 
