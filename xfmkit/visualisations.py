@@ -300,8 +300,11 @@ def seaborn_embedplot(embedding, categories, palette=None, labels=[]):
     x=embedding.T[0]
     y=embedding.T[1]
 
-    alpha=10/(np.sqrt(embedding.shape[0]))
-    print(f"embedplot alpha: {alpha}, {(np.sqrt(embedding.shape[0]))}")
+    _div=np.sqrt(embedding.shape[0])
+    alpha=2/(_div)
+    if alpha < 0.002:   #alpha below this level seems rounded to 0
+        alpha = 0.002
+    print(f"embedplot alpha: {alpha}, {_div}")
 
     ### scatter plot with marginal axes
     sns.set_style('white')

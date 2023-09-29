@@ -28,10 +28,10 @@ min_separation=config.get('reducer', 'min_separation')
 default_kde_points=config.get('reducer', 'default_kde_points')
 pixel_cutoff_pca_only=config.get('reducer', 'pixel_cutoff_pca_only')
 dim_cutoff_pre_pca=config.get('reducer', 'dim_cutoff_pre_pca')
+kde_separation_bandwidth_mult=config.get('reducer', 'kde_separation_bandwidth_mult')
 
 #CLASSIFIERS
 default_classifier=config.get('classifier', 'default_classifier')
-kde_separation_bandwidth_mult=config.get('classifier', 'kde_separation_bandwidth_mult')
 
 #   odd number of points apparently speeds up rendering via mpl.plot_surface
 
@@ -152,6 +152,34 @@ def multireduce(data, target_components=final_components):
             raise ValueError(f"unrecognised reducer {default_reducer} in config")
 
     return reducer, embedding
+
+
+def localclassify(embedding, input_classifier):
+    """
+    performs classification using specified classifier
+    """
+
+    print("RUNNING CLASSIFIER")
+    operator, args = input_classifier
+
+    print(f"operator: {operator}")
+    print(f"args: {args}")
+
+    classifier = operator(**args)
+    embedding = classifier.fit(embedding)
+
+    categories=classifier.labels_
+
+    categories = categories.astype(np.int32)
+
+    categories=categories+1  
+
+    return classifier, categories
+
+
+
+
+
 
 
 def multiclassify(embedding):
