@@ -496,3 +496,43 @@ def plot_classes(categories, labels, classavg, palette):
     
     """
     category_avgs(categories, labels, classavg, palette=palette)    
+
+
+
+def plot_som(categories, classavg, som, dims, output_directory=".", labels=[], plot_margins=False):
+    """
+    display all plots for clusters
+    """
+
+    if not labels == []:
+        df = tabular.get_df(classavg, labels)
+        major_list = tabular.get_major_list(df)
+        class_labels = tabular.nestlist_as_str(major_list)
+    else:
+        class_labels = []
+
+    print(
+    "---------------------------\n"
+    "VISUALISATION\n"
+    "---------------------------\n"
+    )
+    
+    palette=colours.som_colourmap()
+
+    if plot_margins:
+        print("saving map with margins")   
+        fig_cat_map = category_map(categories, dims, palette=palette)
+        fig_cat_map.savefig(os.path.join(output_directory,'vis_category_map.png'), transparent=False)    
+    else:
+        print("creating category map")
+        fig_cat_map = category_map_direct(categories, dims, palette=palette)
+        fig_cat_map.savefig(os.path.join(output_directory,'vis_category_map.png'), transparent=False)  
+
+    print("plotting neurons")
+    pass
+    
+    tabular.printout(df)
+
+    #plt.show()
+
+    return palette

@@ -15,6 +15,7 @@ import xfmkit.visualisations as vis
 import xfmkit.processops as processops
 import xfmkit.structures as structures
 import xfmkit.geopixeio as geopixeio
+import xfmkit.somfit as somfit
 
 #-----------------------------------
 #vars
@@ -85,7 +86,10 @@ def read_processed(args_in):
 
     overwrite = ( args.force or args.force_clustering )
 
-    categories, embedding, kde = clustering.run(pxs.weighted.d, output_directory, eom=args.classes_eom, majors=args.majors, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite, do_kde=args.kde)
+    if args.use_som:
+        categories, embedding, kde = somfit.run(pxs.weighted.d, output_directory, force=(args.force or args.force_clustering), overwrite=overwrite)
+    else:
+        categories, embedding, kde = clustering.run(pxs.weighted.d, output_directory, eom=args.classes_eom, majors=args.majors, target_components=args.n_components, force_embed=args.force, force_clust=args.force_clustering, overwrite=overwrite, do_kde=args.kde)
 
     classavg = clustering.get_classavg(pxs.data.d, categories, output_directory, labels=pxs.labels)
 
@@ -93,7 +97,10 @@ def read_processed(args_in):
 
     geopixeio.export_regions(categories, pxs.dimensions, output_directory=output_directory)
 
-    palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory, plot_kde=args.kde, labels=pxs.labels)
+    if args.use_som:
+        palette = vis.plot_som(categories, classavg, embedding, pxs.data.dimensions, output_directory=output_directory, labels=pxs.labels)
+    else:
+        palette = vis.plot_clusters(categories, classavg, embedding, kde, pxs.data.dimensions, output_directory=output_directory, plot_kde=args.kde, labels=pxs.labels)
 
     #vis.contours_3d(embedding)
 

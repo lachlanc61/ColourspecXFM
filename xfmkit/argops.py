@@ -323,6 +323,12 @@ def readargs_processed(args_in):
     )   
 
     argparser.add_argument(
+        "-som", "--use_som", 
+        help="Classify via self-organising map",
+        action='store_true', 
+    )
+
+    argparser.add_argument(
         '-n', "--n-components", 
         help="Number of components for reduction",
         type=int, 
