@@ -176,7 +176,7 @@ class PixelSeries:
                 self.dtmod = self.dt
             elif modify_dt == 999:
                 #dt = predicted
-                self.dtmod = dtops.predict_dt(config, self, xfmap)
+                self.dtmod = dtops.predict_dt(self, xfmap)
             elif modify_dt >= 0 and modify_dt <= 100:
                 #dt = assigned value 0-100
                 self.dtmod = np.full((self.dt.shape), np.float32(modify_dt), dtype=np.float32) 

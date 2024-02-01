@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from numpy.polynomial  import Polynomial
 
 import logging
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ def predict_single_dt(config, pxsum, dwell, timeconst):
 
     return dtmod
 
-def predict_dt(config, pixelseries, xfmap):
+def predict_dt_flat(config, pixelseries, xfmap):
     """
     predict deadtimes-per-pixel from counts
     
@@ -62,7 +63,7 @@ def predict_dt(config, pixelseries, xfmap):
     if len(pixelseries.flatsum) != len(pixelseries.dtflat):
         raise ValueError("sum and dt array sizes differ")
 
-    dtmod=np.zeros((len(pixelseries.dtflat),ndet),dtype=np.float32) 
+    dtmod=np.zeros((len(pixelseries.dtflat),ndet),dtype=np.float32)
 
     if timeconst == 0.5:    #currently hardcoded to TC = 0.5 us
         for i in range(len(pixelseries.flatsum)):
@@ -72,6 +73,62 @@ def predict_dt(config, pixelseries, xfmap):
         raise ValueError(f"Deadtime prediction not yet calibrated for TC={timeconst}")        
 
     return dtmod
+
+def dt_poly3(data):
+
+    # Define the coefficients
+    coefficients = [0.23438781, 0.21464015, 0.05402071, 0.02689396]
+    domain = [ 4.08008563, 99.727441  ]
+    window = [-1.,  1.]
+    SATURATION_CUTOFF = 65
+    MAX_CUTOFF = 80
+
+    # Create the polynomial
+    q = Polynomial(coefficients, domain=domain, window=window)
+
+    predicted = q(data)*100
+
+    lower_mask = np.where(predicted > SATURATION_CUTOFF)
+
+    if len(lower_mask[0]) > 0:
+        print(f"WARNING: When predicting deadtimes, {len(lower_mask[0])} pixels in saturation zone ({len(lower_mask[0])/data.shape[0]*100:.2f}% of pixels at >{SATURATION_CUTOFF}% DT)")
+
+    upper_mask = np.where(predicted > MAX_CUTOFF)
+
+    if len(upper_mask[0]) > 0:
+        print(f"WARNING: When predicting deadtimes, {len(upper_mask[0])} pixels at >{MAX_CUTOFF}% deadtime; normalised to 80%")
+
+    return predicted
+
+
+def predict_dt(pixelseries, xfmap):
+    """
+    predict deadtimes-per-pixel from counts
+    
+    """
+
+    #FUTURE: alternate behaviour if flag:
+    #           fill deadtimes with fixed value from average
+    timeconst = xfmap.timeconst
+    dwell = xfmap.dwell
+    n_det = pixelseries.ndet
+
+    if pixelseries.parsed == False and not np.max(pixelseries.sum) > 0:
+        raise ValueError("Deadtime prediction requires parsed map with flattened data")
+
+    if len(pixelseries.sum) != len(pixelseries.dt):
+        raise ValueError("sum and dt array sizes differ")
+
+    dt_pred=np.zeros(pixelseries.dt.shape,dtype=np.float32)
+
+    if timeconst == 0.5:    #currently hardcoded to TC = 0.5 us
+        dt_pred = dt_poly3(pixelseries.sum/dwell)
+    else:
+        raise ValueError(f"Deadtime prediction not yet calibrated for TC={timeconst}")        
+
+
+
+    return dt_pred
 
 
 def export(dir:str, dtmod, flatsum):
