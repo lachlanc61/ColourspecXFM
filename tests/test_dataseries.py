@@ -140,75 +140,6 @@ def test_dataset_create_stderr_diffaxes():
 
 
 
-def test_dataset_downsample_by_se():
-    SHAPE=(400,20)
-    DIMENSIONS=(40,10)
-    se_dimensions=(int(DIMENSIONS[0]/2),int(DIMENSIONS[1]/3))   #different scalars
-    se_shape=(se_dimensions[0]*se_dimensions[1],SHAPE[1])
-
-    array_d = np.random.randint(0, 100, SHAPE)          #int
-    array_se = np.random.uniform(0.0, 10.0, se_shape)    #float
-    
-    #scale se so some channels are high relative to data
-    se_scalars = np.random.randint(1,20, SHAPE[1])     
-    for i in range(SHAPE[1]):
-        array_se[:,i] = array_se[:,i]*se_scalars[i]
-
-    #assert 0
-    data = structures.DataSeries(array_d, dimensions=DIMENSIONS)
-    stderr = structures.DataSeries(array_se, dimensions=se_dimensions)    
-
-    #assert 0
-    ds = structures.DataSet(data, stderr)
-
-    ds.downsample_by_se()
-
-    assert ds.check()
-
-
-def test_dataset_downsample_without_se():
-    """
-    check behaviour if no stderror given
-
-    downsample_by_se should compelte but leave unchanged
-    """
-    SHAPE=(400,20)
-    DIMENSIONS=(40,10)
-
-    array_d = np.random.randint(0, 100, SHAPE)          #int
-
-    #assert 0
-    data = structures.DataSeries(array_d, dimensions=DIMENSIONS)
-
-    #assert 0
-    ds = structures.DataSet(data)
-    expected = ds.data.d
-
-    ds.downsample_by_se()
-
-    assert ds.check()
-    assert np.allclose(ds.data.d, expected)
-
-#    assert ds.data.d.shape == ds.se.d.shape
-#    assert ds.data.dimensions == ds.se.dimensions
-
-def test_pxset_create():
-    SHAPE=(400,20)
-    DIMENSIONS=(40,10)
-
-    array_d = np.random.randint(0, 100, SHAPE)
-    array_se = np.random.uniform(0.0, 10.0, SHAPE)
-
-    data = structures.DataSeries(array_d, dimensions=DIMENSIONS)
-    stderr = structures.DataSeries(array_se, dimensions=DIMENSIONS)    
-
-    ds = structures.DataSet(data, stderr)
-
-    px = structures.PixelSet(ds)
-
-    assert px.check()
-
-
 def test_smartcast_ok():
     SHAPE=(400,20)
     DIMENSIONS=(40,10)
@@ -349,3 +280,77 @@ def test_dataseries_set_3D():
             assert data.check()
             assert(np.allclose(data.mapview, array_new, atol=1))
 
+
+
+def test_pxset_create():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+
+    array_d = np.random.randint(0, 100, SHAPE)
+    array_se = np.random.uniform(0.0, 10.0, SHAPE)
+
+    data = structures.DataSeries(array_d, dimensions=DIMENSIONS)
+    stderr = structures.DataSeries(array_se, dimensions=DIMENSIONS)    
+
+    ds = structures.DataSet(data, stderr)
+
+    px = structures.PixelSet(ds)
+
+    assert px.check()
+
+
+def test_dataset_downsample_by_se():
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+    se_dimensions=(int(DIMENSIONS[0]/2),int(DIMENSIONS[1]/3))   #different scalars
+    se_shape=(se_dimensions[0]*se_dimensions[1],SHAPE[1])
+
+    array_d = np.random.randint(0, 100, SHAPE)          #int
+    array_se = np.random.uniform(0.0, 10.0, se_shape)    #float
+    
+    #scale se so some channels are high relative to data
+    se_scalars = np.random.randint(1,20, SHAPE[1])     
+    for i in range(SHAPE[1]):
+        array_se[:,i] = array_se[:,i]*se_scalars[i]
+
+    #assert 0
+    data = structures.DataSeries(array_d, dimensions=DIMENSIONS)
+    stderr = structures.DataSeries(array_se, dimensions=se_dimensions)    
+
+    #assert 0
+    ds = structures.DataSet(data, stderr)
+
+    pxs = structures.PixelSet(ds)
+
+    pxs.downsample_by_se()
+
+    assert pxs.check()
+
+
+def test_dataset_downsample_without_se():
+    """
+    check behaviour if no stderror given
+
+    downsample_by_se should compelte but leave unchanged
+    """
+    SHAPE=(400,20)
+    DIMENSIONS=(40,10)
+
+    array_d = np.random.randint(0, 100, SHAPE)          #int
+
+    #assert 0
+    data = structures.DataSeries(array_d, dimensions=DIMENSIONS)
+
+    #assert 0
+    ds = structures.DataSet(data)
+    expected = ds.data.d
+
+    pxs = structures.PixelSet(ds)
+
+    pxs.downsample_by_se()
+
+    assert pxs.check()
+    assert np.allclose(pxs.data.d, expected)
+
+#    assert ds.data.d.shape == ds.se.d.shape
+#    assert ds.data.dimensions == ds.se.dimensions
