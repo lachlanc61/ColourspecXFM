@@ -166,22 +166,23 @@ class PixelSeries:
         
         return self
 
-    def get_dtmod(self, config, xfmap, modify_dt: float):
+    def get_dtmod(self, config, xfmap, target_dt: float):
             """
             calculate derived arrays from values extracted from map
             """
             #modify_dt used as both flag and value
-            if modify_dt == -1:
-                #dt = unchanged
-                self.dtmod = self.dt
-            elif modify_dt == 999:
+            if target_dt < 0:
                 #dt = predicted
                 self.dtmod = dtops.predict_dt(self, xfmap)
-            elif modify_dt >= 0 and modify_dt <= 100:
+            elif target_dt > 100:
+                #dt = unchanged
+                self.dtmod = self.dt
+
+            elif target_dt >= 0 and target_dt <= 100:
                 #dt = assigned value 0-100
-                self.dtmod = np.full((self.dt.shape), np.float32(modify_dt), dtype=np.float32) 
+                self.dtmod = np.full((self.dt.shape), np.float32(target_dt), dtype=np.float32) 
             else:
-                raise ValueError("unexpected value for modify_dt") 
+                raise ValueError(f"unexpected value for target_dt, {target_dt}") 
 
             return self
 

@@ -1,12 +1,13 @@
 import numpy as np
 import os
+import time
 import matplotlib.pyplot as plt
 from numpy.polynomial  import Polynomial
 
 import logging
 logger = logging.getLogger(__name__)
 
-cset = ['red', 'blue']
+cset = ['red', 'pink', 'blue', 'lightblue']
 
 def dt_stats(dt):
     """
@@ -74,24 +75,28 @@ def predict_dt_flat(config, pixelseries, xfmap):
 
     return dtmod
 
-def dt_poly3(data):
+def dt_poly3(summed_data, dwell: float):
+    """
+    predict deadtimes from per-pixel-per-det counts
+    """
+    # preset coefficients for polynomial
+    #   calculated from series of geological standards with varied deadtimes
+    COEFFICIENTS = [0.23438781, 0.21464015, 0.05402071, 0.02689396]
+    DOMAIN = [ 4.08008563, 99.727441  ]
+    WINDOW = [-1.,  1.]
 
-    # Define the coefficients
-    coefficients = [0.23438781, 0.21464015, 0.05402071, 0.02689396]
-    domain = [ 4.08008563, 99.727441  ]
-    window = [-1.,  1.]
     SATURATION_CUTOFF = 65
     MAX_CUTOFF = 80
 
     # Create the polynomial
-    q = Polynomial(coefficients, domain=domain, window=window)
+    q = Polynomial(COEFFICIENTS, domain=DOMAIN, window=WINDOW)
 
-    predicted = q(data)*100
+    predicted = q(summed_data/dwell)*100
 
     lower_mask = np.where(predicted > SATURATION_CUTOFF)
 
     if len(lower_mask[0]) > 0:
-        print(f"WARNING: When predicting deadtimes, {len(lower_mask[0])} pixels in saturation zone ({len(lower_mask[0])/data.shape[0]*100:.2f}% of pixels at >{SATURATION_CUTOFF}% DT)")
+        print(f"WARNING: When predicting deadtimes, {len(lower_mask[0])} pixels in saturation zone ({len(lower_mask[0])/summed_data.shape[0]*100:.2f}% of pixels at >{SATURATION_CUTOFF}% DT)")
 
     upper_mask = np.where(predicted > MAX_CUTOFF)
 
@@ -103,7 +108,7 @@ def dt_poly3(data):
 
 def predict_dt(pixelseries, xfmap):
     """
-    predict deadtimes-per-pixel from counts
+    predict deadtimes-per-pixel from per-detector counts
     
     """
 
@@ -114,7 +119,7 @@ def predict_dt(pixelseries, xfmap):
     n_det = pixelseries.ndet
 
     if pixelseries.parsed == False and not np.max(pixelseries.sum) > 0:
-        raise ValueError("Deadtime prediction requires parsed map with flattened data")
+        raise ValueError("Deadtime prediction requires sum-per-pixel-per-detector")
 
     if len(pixelseries.sum) != len(pixelseries.dt):
         raise ValueError("sum and dt array sizes differ")
@@ -122,12 +127,10 @@ def predict_dt(pixelseries, xfmap):
     dt_pred=np.zeros(pixelseries.dt.shape,dtype=np.float32)
 
     if timeconst == 0.5:    #currently hardcoded to TC = 0.5 us
-        dt_pred = dt_poly3(pixelseries.sum/dwell)
+        dt_pred = dt_poly3(pixelseries.sum, dwell)
     else:
-        raise ValueError(f"Deadtime prediction not yet calibrated for TC={timeconst}")        
-
-
-
+        raise ValueError(f"Deadtime prediction not yet calibrated for TC={timeconst}")   
+         
     return dt_pred
 
 
@@ -171,6 +174,7 @@ def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
     """
     plot the deadtimes as a map image
     """
+    
     #https://stackoverflow.com/questions/52273546/matplotlib-typeerror-axessubplot-object-is-not-subscriptable
     #squeeze kwarg forces 1x1 plot to behave as a 2D array so subscripting works
     fig, ax = plt.subplots(1, ndet, figsize=(8,4), squeeze=False)
@@ -197,6 +201,7 @@ def diffimage(sum, dir: str, xres: int, yres: int, ndet: int):
     """
     plot the differences in deadtimes between detectors as a map image
     """    
+
     if ndet != 2:
         raise ValueError("Number of detectors != 2, difference map not possible")
        
@@ -221,6 +226,7 @@ def dtscatter(dt, sum, dir: str, ndet: int):
     """
     produce scatterplot of deadtime vs counts per pixel
     """  
+
     fig = plt.figure(figsize=(8,4))
 
     ax = fig.add_subplot(111)
@@ -249,6 +255,7 @@ def predhist(dt, dtmod, dir: str, ndet: int):
     """
     generate the predicted deadtime histogram plot
     """ 
+    
     fig = plt.figure(figsize=(6,4))
 
     ax = fig.add_subplot(111)
@@ -260,7 +267,8 @@ def predhist(dt, dtmod, dir: str, ndet: int):
     labels = [ "measured", "predicted" ]
 
     for data in [ dt, dtmod ]:
-        ax.hist(data, 100, fc=cset[i], alpha=0.5, label=f"{labels[i]}")
+        for det in range(ndet):
+            ax.hist(data[:,det], 100, fc=cset[i*2+det], alpha=0.5, label=f"{labels[i]}, {det}")
         i+=1
 
     fig.savefig(os.path.join(dir, 'predicted_deadtime_histograms.png'), dpi=150)
@@ -269,6 +277,8 @@ def predhist(dt, dtmod, dir: str, ndet: int):
 def preddiffimage(dt, dtmod, dir: str, xres: int, yres: int, ndet: int):
     """
     plot the differences in predicted deadtimes between detectors as a map image
+
+    DEPRECATED
     """          
     diffmap = dtmod-dt
 
@@ -288,6 +298,8 @@ def preddiffimage(dt, dtmod, dir: str, xres: int, yres: int, ndet: int):
 def predscatter(dt, dtmod, sum, dir: str, ndet: int):
     """
     produce scatterplot of predicted deadtime vs counts per pixel
+
+    DEPRECATED
     """  
     fig = plt.figure(figsize=(8,4))
 
@@ -318,12 +330,16 @@ def dtplots(config, dir: str, dt, sum, dtmod, dtavg, mergedsum, xres: int, yres:
     """
     produce all deadtime-related plots
     """
-
+    
     dthist(dt, dir, ndet)
+    time.sleep(2)
     dtimages(dt, dir, xres, yres, ndet)
+    time.sleep(2)    
     diffimage(sum, dir, xres, yres, ndet)    
+    time.sleep(2)
     dtscatter(dt, sum, dir, ndet)    
-
+    time.sleep(2)
+    
     if not INDEX_ONLY and (np.amax(sum) > 0):
         
         if ndet == 2:
@@ -331,13 +347,17 @@ def dtplots(config, dir: str, dt, sum, dtmod, dtavg, mergedsum, xres: int, yres:
             diffimage(sum, dir, xres, yres, ndet)
         
         dtscatter(dt, sum, dir, ndet)
+        time.sleep(2)
     elif (np.amax(sum) <= 0):
         raise ValueError("Sum array is empty or zero - cannot generate sum plots")
 
-    #predhist(dtavg, dtmod, dir, ndet)
-    #preddiffimage(dtavg, dtmod, dir, xres, yres, ndet)
-    #predscatter(dtavg, dtmod, mergedsum, dir, ndet)
+    if np.max(dtmod) > 0 and dtmod.shape[1] == 2:
+        #predicted deadtime map requieres active prediction with two detectors
+        predhist(dt, dtmod, dir, ndet)
+        time.sleep(2)        
+    else:
+        pass
 
     plt.close()
-
+    
     return 

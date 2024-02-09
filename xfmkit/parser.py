@@ -165,7 +165,7 @@ def parse(xfmap, pixelseries, multiproc):
                 ___ = endpx(pxidx, absidx, buffer, xfmap, pixelseries)
 
         #PARALLELIZED
-        else: 
+        else:         
             buffer_start_px = 0
 
             while buffer_start_px <= xfmap.fullsize:
@@ -219,7 +219,6 @@ def parse(xfmap, pixelseries, multiproc):
         pixelseries.parsed = True
         buffer.wait()
         xfmap.resetfile()
-        
         return pixelseries
 
 def writemap(config, xfmap, pixelseries, xcoords, ycoords, modify_dt, multiproc):
@@ -292,7 +291,7 @@ def read(config, args, dirs):
             pixelseries = pixelseries.get_derived()    #calculate additional derived properties after parse
 
         #assign modified deadtimes
-        if not args.modify_deadtimes == -1: #-1 = False
+        if not args.modify_deadtimes > 100: #-1 = False
             pixelseries = pixelseries.get_dtmod(config, xfmap, args.modify_deadtimes)
 
         if args.write_modified:
@@ -307,7 +306,7 @@ def read(config, args, dirs):
 
         print(
         "---------------------------\n"
-        "COMPLETE\n"
+        "PARSING COMPLETE\n"
         "---------------------------\n"
         f"dimensions expected (x,y): {xfmap.xres},{xfmap.yres}\n"
         f"pixels expected (X*Y): {xfmap.npx}\n"

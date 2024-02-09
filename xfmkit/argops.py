@@ -28,13 +28,13 @@ def checkargs(args, config):
         print("continuing with --index-only disabled")
         args.index_only = False
 
-    if args.index_only and args.modify_deadtimes == 999:
+    if args.index_only and args.modify_deadtimes < 0:
         print("-------------------------------")
         print("WARNING: must parse map to predict deadtimes")
         print("continuing with --index-only disabled")
         args.index_only = False
 
-    if not args.modify_deadtimes == -1 and not args.write_modified:
+    if not args.modify_deadtimes > 100 and not args.write_modified:
         print("-------------------------------")
         print("WARNING: must write map to apply modified deadtimes")
         print("continuing with --write-modified enabled")
@@ -51,12 +51,12 @@ def checkargs(args, config):
 
     if args.modify_deadtimes >= 0 and args.modify_deadtimes <= 100:
         pass
-    elif args.modify_deadtimes == -1:
+    elif args.modify_deadtimes < 0:
         pass
-    elif args.modify_deadtimes == 999:
+    elif args.modify_deadtimes > 100:
         pass
     else:
-       raise ValueError("modify-deadtimes value out of range, expected a float within 0.0-100.0") 
+       raise ValueError("modify-deadtimes value out of range")
 
     if args.write_modified:
         if args.x_coords == None:
@@ -171,15 +171,15 @@ def readargs(args_in, config):
         "If no value is given, will perform a per-pixel prediction from parsed counts"
         "Use with ----write-modified"
         "WARNING: experimental, prediction highly approximate",
-        const=float(999),
-        default=float(-1),
+        const=float(-1),
+        default=float(101),
         action='store',
         nargs='?',
         type=float,
         #DEFAULTS: 
-        #   if arg not given, value = -1 
+        #   if arg not given, value = 101 
         #       = do not fill deadtimes
-        #   if arg given but no value specified, value = 999
+        #   if arg given but no value specified, value = -1
         #        = predict deadtimes from counts
 
     )
