@@ -168,6 +168,8 @@ def dthist(dt, dir: str, ndet: int):
     ax.legend(loc=1, title="Detector:")
 
     fig.savefig(os.path.join(dir, 'deadtime_histograms.png'), dpi=150)
+    time.sleep(2)
+    plt.clf()    
     return
 
 def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
@@ -195,6 +197,8 @@ def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
         ax[0,i].imshow(dtimage, cmap="magma")
 
     fig.savefig(os.path.join(dir, 'deadtime_maps.png'), dpi=150)
+    time.sleep(2)
+    plt.clf()    
     return
 
 def diffimage(sum, dir: str, xres: int, yres: int, ndet: int):
@@ -220,6 +224,8 @@ def diffimage(sum, dir: str, xres: int, yres: int, ndet: int):
     plt.colorbar(img, fraction=0.04346, pad=0.04)
 
     plt.savefig(os.path.join(dir, 'difference_map.png'), dpi=150)
+    time.sleep(2)
+    plt.clf()
     return
 
 def dtscatter(dt, sum, dir: str, ndet: int):
@@ -244,7 +250,8 @@ def dtscatter(dt, sum, dir: str, ndet: int):
     #from: https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot
 
     fig.savefig(os.path.join(dir, 'deadtime_vs_counts.png'), dpi=150)
-    
+    time.sleep(2)
+    plt.clf()
     #https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib/53865762#53865762
     #seriously consider contoured plots
     #particularly 3rd answer by "Guilliame" using density_scatter
@@ -272,6 +279,8 @@ def predhist(dt, dtmod, dir: str, ndet: int):
         i+=1
 
     fig.savefig(os.path.join(dir, 'predicted_deadtime_histograms.png'), dpi=150)
+    time.sleep(2)
+    plt.clf()
     return
 
 def preddiffimage(dt, dtmod, dir: str, xres: int, yres: int, ndet: int):
@@ -293,6 +302,8 @@ def preddiffimage(dt, dtmod, dir: str, xres: int, yres: int, ndet: int):
     plt.colorbar(img, fraction=0.04, pad=0.04)
 
     plt.savefig(os.path.join(dir, 'predicted_difference_map.png'), dpi=150)
+    time.sleep(2)
+    plt.clf()
     return
 
 def predscatter(dt, dtmod, sum, dir: str, ndet: int):
@@ -322,7 +333,8 @@ def predscatter(dt, dtmod, sum, dir: str, ndet: int):
     #from: https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot
 
     fig.savefig(os.path.join(dir, 'predicted_deadtime_scatter.png'), dpi=150)
-    
+    plt.clf()
+    time.sleep(2)
     return
 
 
@@ -332,13 +344,9 @@ def dtplots(config, dir: str, dt, sum, dtmod, dtavg, mergedsum, xres: int, yres:
     """
     
     dthist(dt, dir, ndet)
-    time.sleep(2)
     dtimages(dt, dir, xres, yres, ndet)
-    time.sleep(2)    
     diffimage(sum, dir, xres, yres, ndet)    
-    time.sleep(2)
     dtscatter(dt, sum, dir, ndet)    
-    time.sleep(2)
     
     if not INDEX_ONLY and (np.amax(sum) > 0):
         
@@ -347,14 +355,12 @@ def dtplots(config, dir: str, dt, sum, dtmod, dtavg, mergedsum, xres: int, yres:
             diffimage(sum, dir, xres, yres, ndet)
         
         dtscatter(dt, sum, dir, ndet)
-        time.sleep(2)
     elif (np.amax(sum) <= 0):
         raise ValueError("Sum array is empty or zero - cannot generate sum plots")
 
     if np.max(dtmod) > 0 and dtmod.shape[1] == 2:
         #predicted deadtime map requieres active prediction with two detectors
-        predhist(dt, dtmod, dir, ndet)
-        time.sleep(2)        
+        predhist(dt, dtmod, dir, ndet)   
     else:
         pass
 
