@@ -24,7 +24,7 @@ class Xfmap:
         methods to parse pixel header and body, manage memory via chunks
             bufferops.py module contains subsidiary code to parse binary
     """
-    def __init__(self, config, fi, fo, WRITE_MODIFIED: bool, CHUNK_SIZE: int, MULTIPROC: bool):
+    def __init__(self, config, fi, fo, WRITE_MODIFIED: bool, CHUNK_SIZE: int, MULTILOAD: bool):
 
         #assign input file object for reading
         try:
@@ -47,7 +47,7 @@ class Xfmap:
             raise ValueError(f"File pointer at {self.fidx} - Expected 0 (start of file)")
 
         #read the beginning of the file into buffer
-        buffer = bufferops.MapBuffer(self.infile, self.chunksize, MULTIPROC)
+        buffer = bufferops.MapBuffer(self.infile, self.chunksize, MULTILOAD)
 
         #read the JSON header and store position of first pixel
         self.headerdict, self.datastart, buffer = bufferops.readjsonheader(buffer, 0)

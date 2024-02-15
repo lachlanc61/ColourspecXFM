@@ -12,7 +12,8 @@ DATA_DIR, ___ = os.path.splitext(__file__)
 
 CHUNK_SIZE=5
 CONTROL_ARGS=[ "-s", str(CHUNK_SIZE),]
-CONTROL_ARGS_MULTIPROC=[ "-s", str(CHUNK_SIZE), "-m"]
+CONTROL_ARGS_MULTILOAD=[ "-s", str(CHUNK_SIZE), "-m"]
+CONTROL_ARGS_MULTILOAD=[ ]
 
 PACKAGE_CONFIG='xfmkit/config.yaml'
 
@@ -178,7 +179,7 @@ def test_integration_index_cpp(datafiles):
             - xcoords
             - ycoords
     """
-    control_args = CONTROL_ARGS_MULTIPROC
+    control_args = CONTROL_ARGS_MULTILOAD
     #get expected
     ef = ut.findin("pxlen.npy", datafiles)
     expected_pxlen = np.load(ef)
@@ -216,7 +217,7 @@ def test_integration_parse_cpp(datafiles):
         NB: failing at pxidx 1492, channel 0
         - likely first pixel after new chunk
     """
-    control_args = CONTROL_ARGS_MULTIPROC
+    control_args = CONTROL_ARGS_MULTILOAD
 
     #get expected
     ef = ut.findin("ts2_01_sub_data.npy", datafiles)
@@ -251,7 +252,7 @@ def test_integration_cycle_cpp(datafiles):
 
         FUTURE: assert header values for cropped file
     """
-    control_args = CONTROL_ARGS_MULTIPROC
+    control_args = CONTROL_ARGS_MULTILOAD
 
     expected_size = int(1407157)    #size for written, cropped .GeoPIXE file
 
@@ -305,7 +306,7 @@ def test_cycle_unchanged_cpp(datafiles):
         - assert pixeldata and headervals are correct
 
     """
-    control_args = CONTROL_ARGS_MULTIPROC
+    control_args = CONTROL_ARGS_MULTILOAD
 
     #get expected
     ef = ut.findin("ts2_01_sub_data.npy", datafiles)

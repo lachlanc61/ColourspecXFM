@@ -12,7 +12,7 @@ DATA_DIR, ___ = os.path.splitext(__file__)
 
 CHUNK_SIZE=5
 CONTROL_ARGS=[ "-s", str(CHUNK_SIZE),]
-CONTROL_ARGS_MULTIPROC=[ "-s", str(CHUNK_SIZE), "-m"]
+CONTROL_ARGS_MULTILOAD=[ "-s", str(CHUNK_SIZE), "-m"]
 
 PACKAGE_CONFIG='xfmkit/config.yaml'
 
@@ -53,7 +53,7 @@ def test_cycle_dtfill_cpp(datafiles):
 
     """
     NEW_DEADTIME=float(33)
-    control_args = CONTROL_ARGS_MULTIPROC
+    control_args = CONTROL_ARGS_MULTILOAD
 
     #get expected
     ef = ut.findin("ts2_01_sub_data.npy", datafiles)

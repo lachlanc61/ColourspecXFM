@@ -21,7 +21,7 @@ pxheadstruct = struct.Struct("<ccI3Hf")
 
 def worker(infile, chunksize, pipe_child):
     """
-    Worker for multiprocess
+    Worker for multiload
         loads new buffer object in a subprocess to cache it 
         then sends data and file index via pipe to MapBuffer.retrieve()
             will hold open until data is received
@@ -40,7 +40,7 @@ class MapBuffer:
     """
     Object holding current chunk of file for processing
     """
-    def __init__(self, infile, chunksize: int, multiproc: bool):
+    def __init__(self, infile, chunksize: int, multiload: bool):
         self.infile=infile
         self.fidx = self.infile.tell()
 
@@ -50,7 +50,7 @@ class MapBuffer:
             cache_flag = False
 
         self.chunksize=chunksize
-        self.multiproc=multiproc
+        self.multiload=multiload
         self.len = 0
         try:
             self.data = self.infile.read(self.chunksize) 
@@ -61,14 +61,14 @@ class MapBuffer:
 
         self.check()
 
-        if self.multiproc and cache_flag:
+        if self.multiload and cache_flag:
             self.cache()
 
         return
 
     def cache(self):
         """
-        Spawn new multiprocess to pre-load next chunk
+        Spawn new multiload to pre-load next chunk
         Create a pipe to transfer newly loaded chunk
         """
         #print('Caching...')
@@ -78,13 +78,13 @@ class MapBuffer:
 
     def retrieve(self):
         """
-        Receives data and file index from next chunk preloaded by Multiprocess
+        Receives data and file index from next chunk preloaded by multiload
 
             Waits for process to complete, close pipes
             Assign new data to current buffer
             Begin caching next chunk
         """
-        if self.multiproc:
+        if self.multiload:
             nextdata=self.pipe_parent.recv()
             nextfidx=self.pipe_parent.recv()
 
@@ -128,7 +128,7 @@ class MapBuffer:
         """
         wait for running cache to complete
         """
-        if self.multiproc:
+        if self.multiload:
             #need to receive sends, otherwise will block indefinitely
             ___=self.pipe_parent.recv()
             ___=self.pipe_parent.recv()
@@ -385,7 +385,7 @@ def writepxheader(config, xfmap, pxseries, det: int, pxidx: int, xcoords, ycoord
         - whether we are calculating new deadtimes
 
     """
-    if modify_dt == -1:
+    if modify_dt > 100:
         dt=pxseries.dt[pxidx,det]
     else:
         dt=pxseries.dtmod[pxidx,det]

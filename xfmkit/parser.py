@@ -36,18 +36,18 @@ def endpx(pxidx, idx, buffer, xfmap, pixelseries):
     return pxidx
 
 
-def initparse(xfmap, multiproc):
+def initparse(xfmap, multiload):
     """
     unused for now
     """
     xfmap.resetfile()
-    buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
+    buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiload)
     idx = xfmap.datastart
     pxheaderlen = xfmap.PXHEADERLEN    
 
     return buffer, idx, pxheaderlen
 
-def indexmap(xfmap, pixelseries, multiproc):
+def indexmap(xfmap, pixelseries, multiload):
     """
     parse the pixel headers
     - get pixel statistics
@@ -59,7 +59,7 @@ def indexmap(xfmap, pixelseries, multiproc):
         indexlist=np.empty((xfmap.npx, xfmap.ndet),dtype=np.uint64) #must match xfmap.indexlist declaration
 
         xfmap.resetfile()
-        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
+        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiload)
         idx = xfmap.datastart
         pxheaderlen = xfmap.PXHEADERLEN    
 
@@ -125,7 +125,7 @@ def readspectrum(buffer,det,absidx,pxlength,pxheaderlen,bytesperchan,nchannels):
 
 
 
-def parse(xfmap, pixelseries, multiproc):
+def parse(xfmap, pixelseries, multiload):
     """
     read in the map data after indexing
 
@@ -135,7 +135,7 @@ def parse(xfmap, pixelseries, multiproc):
     print("PARSING PIXEL DATA")
     try:
         xfmap.resetfile()
-        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
+        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiload)
         idx = xfmap.datastart
 
         pxheaderlen = xfmap.PXHEADERLEN
@@ -149,7 +149,8 @@ def parse(xfmap, pixelseries, multiproc):
 #        indices_ravel = np.ravel(indexlist, order='F')
 #        pxlens_ravel = np.ravel(pixelseries.pxlen, order='F')
 
-        if not multiproc:
+        python_only = False
+        if python_only:
             for pxidx in range(pixelseries.npx):
                 for det in range(pixelseries.ndet):
 
@@ -221,7 +222,7 @@ def parse(xfmap, pixelseries, multiproc):
         xfmap.resetfile()
         return pixelseries
 
-def writemap(config, xfmap, pixelseries, xcoords, ycoords, modify_dt, multiproc):
+def writemap(config, xfmap, pixelseries, xcoords, ycoords, modify_dt, multiload):
     """
     Write a map or submap
         Updates headers and pixel headers
@@ -238,7 +239,7 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, modify_dt, multiproc)
     print("WRITING NEW .GeoPIXE FILE")
     try:
         xfmap.resetfile()
-        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiproc)
+        buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiload)
         idx = xfmap.datastart
         pxheaderlen = xfmap.PXHEADERLEN
 
@@ -279,15 +280,15 @@ def read(config, args, dirs):
     
     try:
         #initialise map object
-        xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub, args.write_modified, args.chunk_size, args.multiprocess)
+        xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub, args.write_modified, args.chunk_size, args.multiload)
 
         #initialise the spectrum-by-pixel object
         pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray, args.index_only)
 
-        pixelseries, xfmap.indexlist = indexmap(xfmap, pixelseries, args.multiprocess)
+        pixelseries, xfmap.indexlist = indexmap(xfmap, pixelseries, args.multiload)
 
         if not args.index_only:
-            pixelseries = parse(xfmap, pixelseries, args.multiprocess)
+            pixelseries = parse(xfmap, pixelseries, args.multiload)
             pixelseries = pixelseries.get_derived()    #calculate additional derived properties after parse
 
         #assign modified deadtimes
@@ -296,7 +297,7 @@ def read(config, args, dirs):
 
         if args.write_modified:
             writemap(config, xfmap, pixelseries, args.x_coords, args.y_coords, \
-                args.modify_deadtimes, args.multiprocess)
+                args.modify_deadtimes, args.multiload)
 
     finally:
         xfmap.closefiles()

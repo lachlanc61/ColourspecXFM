@@ -213,14 +213,20 @@ def readargs(args_in, config):
     )
 
     #--------------------------
-    #resource args eg. multiprocess, batch size
+    #resource args eg. multiload, batch size
     argparser.add_argument(
-        '-m', "--multiprocess", 
+        '-m', "--multiload", 
         help="Pre-cache memory using second process"
         "Prevents parse operation waiting on disk I/O"
         "Increases memory usage for buffer to 2x --memory-size",
         action='store_true', 
     )
+    argparser.add_argument(
+        '-p', "--python-only", 
+        help="Parse using python only"
+        "Exclude C++ submodule",
+        action='store_true', 
+    )    
     argparser.add_argument(
         '-s', "--chunk-size", 
         help="Size of memory buffer (in Mb) to load while parsing"
