@@ -151,6 +151,7 @@ def parse(xfmap, pixelseries, multiload):
 
         python_only = False
         if python_only:
+            print(f"\nParsing via Python")            
             for pxidx in range(pixelseries.npx):
                 for det in range(pixelseries.ndet):
 
@@ -168,7 +169,7 @@ def parse(xfmap, pixelseries, multiload):
         #PARALLELIZED
         else:         
             buffer_start_px = 0
-
+            print(f"\nParsing via C++")
             while buffer_start_px <= xfmap.fullsize:
 
                 #index_final = indexlist + pixelseries.pxlen
@@ -188,6 +189,15 @@ def parse(xfmap, pixelseries, multiload):
                 stream_pxlen=pxlen[buffer_start_px:buffer_break_px,:]
 
                 print(f"\nReading buffer from pixels {buffer_start_px} to {buffer_break_px}")             
+                
+
+                #DEBUG
+                print(f"\nStart of data to read: {buffer.data[:100]}")
+                print(f"\nFirst pixel location: {indexlist[buffer_start_px, 0]}")   
+                print(f"\nFirst pixel byte: {buffer.data[int(indexlist[buffer_start_px, 0]):(int(indexlist[buffer_start_px, 0])+8)]}") 
+                #print(f"\nFirst pixel: {buffer.data[indexlist[buffer_start_px,0]:indexlist[buffer_start_px,0]+8]}")    
+
+                print(f"\nTypes for parsercore: {type(stream_indexes), stream_indexes.dtype}, {type(stream_pxlen), stream_pxlen.dtype}, {type(buffer.data)}, {type(len(buffer.data))},")
                 
                 #extract the data
                 stream_data = parsercore.readstream(stream_indexes, stream_pxlen, buffer.data, len(buffer.data))
