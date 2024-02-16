@@ -151,6 +151,7 @@ def parse(xfmap, pixelseries, multiload):
 
         python_only = False
         if python_only:
+            print("Reading .GeoPIXE file via python only")
             for pxidx in range(pixelseries.npx):
                 for det in range(pixelseries.ndet):
 
@@ -167,6 +168,7 @@ def parse(xfmap, pixelseries, multiload):
 
         #PARALLELIZED
         else:         
+            print("Reading .GeoPIXE file via C++")
             buffer_start_px = 0
 
             while buffer_start_px <= xfmap.fullsize:
