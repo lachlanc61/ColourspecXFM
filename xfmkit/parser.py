@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 class MapDone(Exception): pass
 
+DEBUG = False
+
 def endpx(pxidx, idx, buffer, xfmap, pixelseries):
     """
     Cleanup operations at end of each pixel
@@ -191,14 +193,12 @@ def parse(xfmap, pixelseries, multiload):
                 print(f"\nReading buffer from pixels {buffer_start_px} to {buffer_break_px}")             
                 
 
-                #DEBUG
-                print(f"\nStart of data to read: {buffer.data[:100]}")
-                print(f"\nFirst pixel location: {indexlist[buffer_start_px, 0]}")   
-                print(f"\nFirst pixel byte: {buffer.data[int(indexlist[buffer_start_px, 0]):(int(indexlist[buffer_start_px, 0])+8)]}") 
-                #print(f"\nFirst pixel: {buffer.data[indexlist[buffer_start_px,0]:indexlist[buffer_start_px,0]+8]}")    
-
-                print(f"\nTypes for parsercore: {type(stream_indexes), stream_indexes.dtype}, {type(stream_pxlen), stream_pxlen.dtype}, {type(buffer.data)}, {type(len(buffer.data))},")
-                
+                if DEBUG == True:
+                    print(f"\nStart of data to read: {buffer.data[:100]}")
+                    print(f"\nFirst pixel location: {indexlist[buffer_start_px, 0]}")   
+                    print(f"\nFirst pixel byte: {buffer.data[int(indexlist[buffer_start_px, 0]):(int(indexlist[buffer_start_px, 0])+8)]}") 
+                    print(f"\nTypes for parsercore: {type(stream_indexes), stream_indexes.dtype}, {type(stream_pxlen), stream_pxlen.dtype}, {type(buffer.data)}, {type(len(buffer.data))},")
+                    
                 #extract the data
                 stream_data = parsercore.readstream(stream_indexes, stream_pxlen, buffer.data, len(buffer.data))
 
