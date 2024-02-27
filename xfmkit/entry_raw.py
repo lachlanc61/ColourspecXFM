@@ -114,7 +114,7 @@ def read_raw(args_in):
         dt_avg = dtops.dt_stats(pixelseries.dt)
      
     else:
-        rgbarray = None
+        pixelseries.rgbarray = None
     #perform clustering
     if args.classify_spectra:
         pixelseries.categories, embedding = clustering.run( pixelseries.flattened, dirs.embeddings, force_embed=args.force, force_clust=args.force, overwrite=config['OVERWRITE_EXPORTS'] )
@@ -123,8 +123,8 @@ def read_raw(args_in):
 
         palette = vis.plot_clusters(pixelseries.categories, pixelseries.classavg, embedding, pixelseries.dimensions)
     else:
-        categories = None
-        classavg = None
+        pixelseries.categories = None
+        pixelseries.classavg = None
 
     print("Processing complete")
 

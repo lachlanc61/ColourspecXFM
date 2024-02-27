@@ -176,20 +176,25 @@ def export_show(rgbimg, rvals, gvals, bvals, dirs):
 
 
 def calccolours(config, pixelseries, xfmap, dataset, dirs):
-    red, green, blue = initialise(config, pixelseries.energy)
-    
-    rvals=np.zeros(pixelseries.npx)
-    gvals=np.zeros(pixelseries.npx)
-    bvals=np.zeros(pixelseries.npx)
-    totalcounts=np.zeros(pixelseries.npx)
+    try:
+        red, green, blue = initialise(config, pixelseries.energy)
+        
+        rvals=np.zeros(pixelseries.npx)
+        gvals=np.zeros(pixelseries.npx)
+        bvals=np.zeros(pixelseries.npx)
+        totalcounts=np.zeros(pixelseries.npx)
 
-    for i in np.arange(pixelseries.npx):
-        counts=dataset[i,:]
-        rvals[i], bvals[i], gvals[i], totalcounts[i] = spectorgb(pixelseries.energy, counts, red, green, blue)
+        for i in np.arange(pixelseries.npx):
+            counts=dataset[i,:]
+            rvals[i], bvals[i], gvals[i], totalcounts[i] = spectorgb(pixelseries.energy, counts, red, green, blue)
 
-    rgbimg, rvals, gvals, bvals = compile(rvals, gvals, bvals, xfmap.xres, pixelseries.nrows)
+        rgbimg, rvals, gvals, bvals = compile(rvals, gvals, bvals, xfmap.xres, pixelseries.nrows)
 
-    export_show(rgbimg, rvals, gvals, bvals, dirs)
+        export_show(rgbimg, rvals, gvals, bvals, dirs)
 
-    
-    return rgbimg, rvals, gvals, bvals
+        return rgbimg, rvals, gvals, bvals
+
+    except:
+        print('WARNING: could not complete RGB plot')
+        return None, None, None, None
+        
