@@ -75,7 +75,6 @@ def indexmap(xfmap, pixelseries, multiload):
             indexlist[pxidx, det] = buffer.fidx+idx-pxheaderlen
 
             pixelseries = pixelseries.receiveheader(pxidx, pxlen, xidx, yidx, det, dt)
-            
             #use getstream to step to the next pixel and handle end-of-buffer events
             __, idx, buffer = bufferops.getstream(buffer, idx, pxlen-pxheaderlen)
 
@@ -83,9 +82,24 @@ def indexmap(xfmap, pixelseries, multiload):
                 pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)
 
     except MapDone:
-        pixelseries.npx=pxidx+1
-        pixelseries.nrows=pixelseries.yidx[pxidx,0]+1 
+
+        npx = pxidx+1
+        nrows = yidx
+
+        print(f"LASTINDEX: {pxidx}, LASTY {yidx}")
+        print(f"EXPECTED: {xfmap.npx}, {xfmap.yres}, {xfmap.dimensions}")
+        print(f"FOUND: {npx}, {nrows}")
+
+        pixelseries.npx=npx
+        pixelseries.nrows=nrows 
         pixelseries.dtflat = np.sum(pixelseries.dt, axis=1)/pixelseries.ndet
+   
+
+        if not (npx == xfmap.npx or nrows == xfmap.yres ):
+            pass
+            #pixelseries.truncate_y(npx, nrows )
+        else:
+            pass
 
         buffer.wait()
         xfmap.resetfile()
