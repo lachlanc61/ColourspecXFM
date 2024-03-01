@@ -11,21 +11,29 @@ from sklearn import decomposition
 from sklearn.cluster import KMeans
 from sklearn.neighbors import KernelDensity
 
-import xfmreadout.utils as utils
+import xfmkit.utils as utils
+import xfmkit.config as config
+
+import logging
+logger = logging.getLogger(__name__)
 
 #-----------------------------------
-#CONSTANTS
+#LOCAL CONFIG VARS
 #-----------------------------------
 #REDUCERS
-FINAL_COMPONENTS=2
-UMAP_PRECOMPONENTS=11
-MIN_SEPARATION=0.1
+default_reducer=config.get('reducer', 'default_reducer')
+final_components=config.get('reducer', 'final_components')
+umap_precomponents=config.get('reducer', 'umap_precomponents')
+min_separation=config.get('reducer', 'min_separation')
+default_kde_points=config.get('reducer', 'default_kde_points')
+pixel_cutoff_pca_only=config.get('reducer', 'pixel_cutoff_pca_only')
+dim_cutoff_pre_pca=config.get('reducer', 'dim_cutoff_pre_pca')
+kde_separation_bandwidth_mult=config.get('reducer', 'kde_separation_bandwidth_mult')
 
-#CLASSIFIERS:
-EST_N_CLUSTERS=300
+#CLASSIFIERS
+default_classifier=config.get('classifier', 'default_classifier')
 
-DEFAULT_KDE_POINTS=301  #odd number apparently speeds up rendering via mpl.plot_surface
-#DEFAULT_KDE_POINTS=101  #odd number apparently speeds up rendering via mpl.plot_surface
+#   odd number of points apparently speeds up rendering via mpl.plot_surface
 
 #-----------------------------------
 #GROUPS
@@ -35,12 +43,12 @@ REDUCERS = [
 
     (umap.UMAP, {"n_components":2, 
         "n_neighbors": 30,  #300 
-        "min_dist": MIN_SEPARATION, 
+        "min_dist": min_separation, 
         "low_memory": True, 
         "verbose": True}),
 
     (pacmap.PaCMAP, {"n_components":2,
-        "n_neighbors": None,
+        "n_neighbors": None,    #automatic
         "verbose": True }),
 ]
 
@@ -51,11 +59,11 @@ CLASSIFIERS = [
         "max_iter": 300, 
         "random_state": 42 }),
 
-    (hdbscan.HDBSCAN, {"min_cluster_size": 1000,
-        "min_samples": 500,
-        "alpha": 1.0,
-        "cluster_selection_epsilon": 0.2, 
-        "cluster_selection_method": "leaf",     #alt: "eom"
+    (hdbscan.HDBSCAN, {"min_cluster_size": 100,
+        "min_samples": 500,  #500
+        "alpha": 1.0,   #1.0
+        "cluster_selection_epsilon": 0.2,
+        "cluster_selection_method": "eom", #eom
         "gen_min_span_tree": True }),
 ]
 
@@ -63,7 +71,7 @@ CLASSIFIERS = [
     (hdbscan.HDBSCAN, {"min_cluster_size": 1000,    #6000
         "min_samples": 500,
         "alpha": 1.0,
-        "cluster_selection_epsilon": MIN_SEPARATION, 
+        "cluster_selection_epsilon": min_separation, 
         "cluster_selection_method": "leaf",     #alt: "eom"
         "gen_min_span_tree": True }),
 """
@@ -96,7 +104,7 @@ def find_operator(list, target_name: str):
 
 
 
-def reduce(data, reducer_name: str, target_components=FINAL_COMPONENTS):
+def reduce(data, reducer_name: str, target_components=final_components):
     """
     perform dimensionality reduction using a specific reducer
     args:       data, reducer_name ("PCA", "UMAP"), target components
@@ -114,72 +122,147 @@ def reduce(data, reducer_name: str, target_components=FINAL_COMPONENTS):
     return reducer, embedding
 
 
-def multireduce(data, target_components=FINAL_COMPONENTS):
+def multireduce(data, target_components=final_components):
     """
     manage dimensionality reduction based on size of dataset
-    """  
-    PXNR_CUTOFF=5000000
-    DIMENSIONALITY_CUTOFF=31
-
+    """ 
     npx=data.shape[0]
     nchan=data.shape[1]
 
     start_time = time.time()
 
-    if npx >= PXNR_CUTOFF:
+    if npx >= pixel_cutoff_pca_only:
         #if number of pixels is very high, use PCA
         reducer, embedding = reduce(data, "PCA", target_components)   
 
-    elif nchan >= DIMENSIONALITY_CUTOFF:
+    elif nchan >= dim_cutoff_pre_pca:
         #if dimensionality is high, chain PCA into UMAP
-        __reducer, __embedding = reduce(data, "PCA", UMAP_PRECOMPONENTS)   
+        __reducer, __embedding = reduce(data, "PCA", umap_precomponents)   
         reducer, embedding = reduce(__embedding, "UMAP", target_components)        
 
     else:
-        if True:
+        if default_reducer=="UMAP":
             #go ahead with UMAP
             reducer, embedding = reduce(data, "UMAP", target_components)
-        if False:
+
+        elif default_reducer=="PaCMAP":
             #go ahead with PaCMAP
             reducer, embedding = reduce(data, "PaCMAP", target_components)
+        else:
+            raise ValueError(f"unrecognised reducer {default_reducer} in config")
 
     return reducer, embedding
 
 
-def classify(embedding, majors_only=False):
+def localclassify(embedding, input_classifier):
     """
-    performs classification on embedding to produce final clusters
-
-    args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
-    returns:    category-by-pixel matrix, shape [nreducers,chan]
+    performs classification using specified classifier
     """
-    USE="HDBSCAN"
-
-    if majors_only:
-        cluster_factor=50
-    else:
-        cluster_factor=300
 
     print("RUNNING CLASSIFIER")
-    classifier_list = CLASSIFIERS
+    operator, args = input_classifier
 
-    if USE=="HDBSCAN":
-        operator, args = find_operator(classifier_list, USE)
-        args["min_cluster_size"]=round(embedding.shape[0]/cluster_factor)
-        print(f"min cluster size: {embedding.shape[0]/cluster_factor}")
-    
-    elif USE=="DBSCAN":
-        operator, args = find_operator(classifier_list, USE)
-        args["min_cluster_size"]=round(embedding.shape[0]/cluster_factor)        
+    print(f"operator: {operator}")
+    print(f"args: {args}")
 
     classifier = operator(**args)
     embedding = classifier.fit(embedding)
 
     categories=classifier.labels_
 
+    categories = categories.astype(np.int32)
+
+    categories=categories+1  
+
     return classifier, categories
 
-def calc_classavg(data, categories, category_list, n_channels):
+
+
+
+
+
+
+def multiclassify(embedding):
+    minor_classifier, minor_categories = classify(embedding, eom=False, majors_only=False, use_classifier=default_classifier)
+
+    major_classifier, major_categories = classify(embedding, eom=False, majors_only=True, use_classifier=default_classifier)
+
+    #merge fine and major classifiers
+
+    final_categories = np.zeros(major_categories.shape)
+
+    minor_categories = minor_categories+np.max(major_categories)
+
+    for i in range(final_categories.shape):
+        if major_categories[i] > 0:
+            final_categories[i] = major_categories[i]
+        elif minor_categories[i] > 0:
+            final_categories[i] = minor_categories[i]
+
+    #FUTURE: instead, iterate through minor categories and merge into major if 90% shared
+    #   retain any more than 90% unique
+
+    #TO-DO: loop through final_categories and decrement until category numbers are contiguous
+    #ie. skip any empty categories
+
+    return final_categories
+
+def classify(embedding, eom: bool = False, majors_only: bool = False, use_classifier: str=default_classifier):
+    """
+    performs classification on embedding to produce final clusters
+
+    args:       set of 2D embedding matrices (shape [nreducers,x,y]), number of pixels in map
+    returns:    category-by-pixel matrix, shape [nreducers,chan]
+    """
+    print("RUNNING CLASSIFIER")
+    classifier_list = CLASSIFIERS
+
+    if majors_only:
+        cluster_sizefactor=50
+    else:
+        cluster_sizefactor=1000
+
+    if use_classifier=="HDBSCAN":
+        operator, args = find_operator(classifier_list, use_classifier)
+
+        if eom:
+            print("using HDBSCAN eom with small min_size")
+            args["cluster_selection_method"]="eom"   
+
+            if majors_only:
+                args["cluster_selection_epsilon"]=0.3
+            else:
+                args["cluster_selection_epsilon"]=0.2
+
+            args["min_cluster_size"]=100
+
+        else:
+            print("using HDBSCAN leaf with estimated min_size")
+            args["cluster_selection_method"]="leaf"             
+            args["min_cluster_size"]=round(embedding.shape[0]/cluster_sizefactor)   
+
+        print(f"cluster_selection_method: {args['cluster_selection_method']}")
+        print(f"min cluster size: {args['min_cluster_size']}")
+        print(f"min cluster_selection_epsilon size: {args['cluster_selection_epsilon']}")
+
+    elif use_classifier=="DBSCAN":
+        operator, args = find_operator(classifier_list, use_classifier) 
+
+    else:
+        raise ValueError(f"unrecognised default classifier {use_classifier}")
+
+    classifier = operator(**args)
+    embedding = classifier.fit(embedding)
+
+    categories=classifier.labels_
+
+    categories = categories.astype(np.int32)
+
+    categories=categories+1  
+
+    return classifier, categories
+
+def calc_classavg(data, categories):
     """
     calculate summed spectrum for each cluster
     args: 
@@ -187,29 +270,28 @@ def calc_classavg(data, categories, category_list, n_channels):
         catlist, categories by px
     returns:
         specsum, spectrum by category
-    
-    aware: nclust, number of clusters
     """
     n_channels = data.shape[1]
-    n_clusters = len(category_list)
+    n_clusters, ___ = utils.count_categories(categories)
 
     result=np.zeros((n_clusters,n_channels))
 
-    if n_clusters != utils.count_categories(categories)[0]:
-        raise ValueError("cluster count mismatch")
-
-    for i in range(n_clusters):
-        icat=category_list[i]
-        data_subset=data[categories==icat]
+    for i in range(0, n_clusters):
+        data_subset=data[categories==i]
         pxincat = data_subset.shape[0]  #no. pixels in category i
         print(f"cluster {i}, count: {pxincat}") #DEBUG
-        result[icat,:]=(np.sum(data_subset,axis=0))/pxincat
+
+        if pxincat > 0:
+            result[i,:]=(np.mean(data_subset,axis=0))
+        else:   #assign nan to any category with zero, avoids warning from np.mean
+            result[i,:]=float("nan")
+        
     return result
 
 
 class KdeMap():
-    def __init__(self, embedding, n=DEFAULT_KDE_POINTS):
-        self.kde = KernelDensity(kernel='gaussian',bandwidth=MIN_SEPARATION*3)
+    def __init__(self, embedding, n=default_kde_points):
+        self.kde = KernelDensity(kernel='gaussian',bandwidth=min_separation*kde_separation_bandwidth_mult)
         self.n = n
 
         print("Fitting KDE")
@@ -225,7 +307,7 @@ class KdeMap():
         print("KDE complete")
 
 
-def get_linspace(embedding, n=DEFAULT_KDE_POINTS):
+def get_linspace(embedding, n=default_kde_points):
     ex = embedding[:,0]
     ey = embedding[:,1]
 
@@ -238,29 +320,35 @@ def get_linspace(embedding, n=DEFAULT_KDE_POINTS):
 
     return xy, X, Y  
 
-def get_classavg(raw_data, categories, output_dir, force=False, overwrite=True):
+def get_classavg(raw_data, categories, output_dir, overwrite=True, labels=[]):
 
     file_classes=os.path.join(output_dir,"classavg.npy")
+    csv_classes=os.path.join(output_dir,"class_averages.csv")
     exists_classes = os.path.isfile(file_classes)
 
     totalpx = raw_data.shape[0]
     n_channels = raw_data.shape[1]
 
     #   sum and extract class averages
-    n_clusters, category_list = utils.count_categories(categories)
-    classavg=np.zeros([len(REDUCERS),n_clusters, n_channels])
+    n_clusters, ___ = utils.count_categories(categories)
 
-    if force or not exists_classes:
-        classavg=calc_classavg(raw_data, categories, category_list, n_channels) 
-        if overwrite or not exists_classes:
-            np.save(file_classes,classavg)
-    else:
-        classavg = np.load(file_classes)
+    classavg=calc_classavg(raw_data, categories)
+
+    print("WRITING CLASS AVERAGES")
+    if overwrite or not exists_classes:
+
+        header=''
+        if not labels == []:
+            for i in range(raw_data.shape[1]):
+                header=header+f"{labels[i]},"
+
+        np.save(file_classes,classavg)
+        np.savetxt(csv_classes, classavg, header=header, fmt='%.8f', delimiter=',')
     
     return classavg
 
 
-def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=True, target_components=3):
+def run(data, output_dir: str, eom=False, majors=False, force_embed=False, force_clust=False, overwrite=True, target_components=2, do_kde=False):
 
     if force_embed:
         force_clust = True
@@ -288,19 +376,21 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
         force_clust = True
         if overwrite or not exists_embed:
             np.save(file_embed,embedding)
+        print("COMPLETED EMBEDDING")
     else:
         print("LOADING EMBEDDING")
         embedding = np.load(file_embed)
         #clusttimes = np.load(file_ctime)     
 
     #   calculate kde from embedding
-    if target_components == 2:
+    if do_kde and target_components == 2:
         if force_embed or not exists_kde:
-            print(f"CALCULATING KDE with n={DEFAULT_KDE_POINTS}")        
-            kde = KdeMap(embedding, n=DEFAULT_KDE_POINTS)
+            print(f"CALCULATING KDE with n={default_kde_points}")        
+            kde = KdeMap(embedding, n=default_kde_points)
             if overwrite or not exists_kde:
                 print("Pickling KDE") 
                 pickle.dump(kde, open(file_kde, "wb"))
+            print("COMPLETED KDE")
         else:
             print("LOADING KDE")
             kde = pickle.load(open(file_kde, "rb"))
@@ -310,17 +400,21 @@ def run(data, output_dir: str, force_embed=False, force_clust=False, overwrite=T
     #   calculate clusters from embedding
     if force_clust or not exists_cats:
         print("CALCULATING CLASSIFICATION")        
-        classifier, categories = classify(embedding)
+        classifier, categories = classify(embedding, eom=eom, majors_only=majors)
+   
+        print(f"number of categories: {np.max(categories)}")
         if overwrite or not exists_cats:
             np.save(file_cats,categories)
     else:
         print("LOADING CLASSIFICATION")
         categories = np.load(file_cats)
+
+        #if old category format with negative classes, update and re-save
+        if np.min(categories) == -1:
+            categories = categories+1
+            np.save(file_cats,categories)
+
         classifier = None
-
-
-
-
 
     #complete the timer
     runtime = time.time() - starttime

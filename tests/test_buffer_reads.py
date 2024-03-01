@@ -8,11 +8,11 @@ BASE_DIR=os.path.dirname(TEST_DIR)
 DATA_DIR_NAME="test_data"   #hardcoded for tests dependent on large datafiles
 DATA_DIR = os.path.join(TEST_DIR, DATA_DIR_NAME)  
 
-PACKAGE_CONFIG='xfmreadout/config.yaml'
+PACKAGE_CONFIG='xfmkit/config.yaml'
 
 sys.path.append(BASE_DIR)
 
-import xfmreadout.bufferops as bufferops
+import xfmkit.bufferops as bufferops
 import tests.utils_tests as ut
 
 #get config
@@ -40,7 +40,7 @@ def test_buffer_flat_load(datafiles):
     """
     validate buffer load & retrieval
         single-detector format
-    tests single-process and multiprocess
+    tests single-process and multiload
 
     """
     #Future: pull first ~20 bytes of each chunk and also check those
@@ -53,10 +53,10 @@ def test_buffer_flat_load(datafiles):
         [ 8963229, 0, 3145728]] #EOF
     #      b.fidx, b.len, b.chunksize
 
-    for multiproc in [ True, False]:
+    for multiload in [ True, False]:
         f = ut.findin("sub.GeoPIXE", datafiles)
         with open(f, mode='rb') as fi:
-            buffer=bufferops.MapBuffer(fi, chunksize, multiproc)
+            buffer=bufferops.MapBuffer(fi, chunksize, multiload)
 
             assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[0]
             buffer=buffer.retrieve()
@@ -73,9 +73,9 @@ def test_buffer_flat_load(datafiles):
     )
 def test_buffer_01_load(datafiles):
     """
-    validate buffer load & retrieval via multiprocess
+    validate buffer load & retrieval via multiload
         dual-detector format
-    tests single-process and multiprocess
+    tests single-process and multiload
     """
     chunksize=int(5*MBCONV) #DO NOT MODIFY, affects expected
     expected = \
@@ -85,10 +85,10 @@ def test_buffer_01_load(datafiles):
         [ 12709445, 0, 5242880]] #EOF
         #     b.fidx, b.len, b.chunksize
 
-    for multiproc in [ True, False]:
+    for multiload in [ True, False]:
         f = ut.findin("sub.GeoPIXE", datafiles)
         with open(f, mode='rb') as fi:
-            buffer=bufferops.MapBuffer(fi, chunksize, multiproc)
+            buffer=bufferops.MapBuffer(fi, chunksize, multiload)
 
             assert [ buffer.fidx, buffer.len, buffer.chunksize ] == expected[0]
             buffer=buffer.retrieve()

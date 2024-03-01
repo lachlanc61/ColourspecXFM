@@ -4,8 +4,12 @@ import numpy as np
 import seaborn as sns
 import colorcet as cc
 
-import xfmreadout.utils as utils
-import xfmreadout.clustering as clustering
+import xfmkit.utils as utils
+import xfmkit.clustering as clustering
+import xfmkit.somfit as somfit
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 
@@ -147,3 +151,17 @@ def embed_colourmap(n_colours=99):
     print(len(palette), len(colour_embedding))
 
     return palette, colour_embedding
+
+def som_colourmap():
+    cc_palette=sns.color_palette(cc.glasbey_light,100)
+
+    linear_colours = somfit.som_on_palette(cc_palette)
+
+    som_palette = copy.deepcopy(cc_palette)
+
+    del som_palette[0:]
+
+    for i in range(linear_colours.shape[0]):
+        som_palette.append(linear_colours[i])
+
+    return som_palette

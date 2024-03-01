@@ -1,5 +1,5 @@
 SIFDIR=$SIFDIR
-IMAGENAME='xfmreadout_latest'
+IMAGENAME='xfmkit_latest'
 APPDIR="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE}")")")"
 
 if [[ -z "${DATADIR}" ]]; 
@@ -20,4 +20,4 @@ fi
 
 #apptainer run --containall --bind $binds  $SIFDIR/$IMAGENAME.sif -f /data/example_datafile.GeoPIXE -m
 
-apptainer exec --containall --bind $binds  $SIFDIR/$IMAGENAME.sif python /repo/xfmreadout/entry_raw.py $args
+apptainer exec --containall --bind $binds  $SIFDIR/$IMAGENAME.sif python /repo/xfmkit/entry_raw.py $args

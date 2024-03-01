@@ -7,6 +7,9 @@ import re
 import argparse
 import numpy as np
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 OUT_NAME="diag.tmp"
 

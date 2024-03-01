@@ -1,19 +1,18 @@
 import os
 import logging
 import numpy as np
-import pandas as pd
-from tabulate import tabulate
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 from matplotlib import colors
 
-import xfmreadout.utils as utils
-import xfmreadout.clustering as clustering
-import xfmreadout.colours as colours
+import xfmkit.utils as utils
+import xfmkit.clustering as clustering
+import xfmkit.colours as colours
+import xfmkit.tabular as tabular
 
-
-REDUCER=1
+import logging
+logger = logging.getLogger(__name__)
 
 logging.basicConfig(format='%(message)s')
 log = logging.getLogger(__name__)
@@ -52,11 +51,13 @@ def rgb_from_centroids(embedding, categories):
     create RGB indexes based on centroids of each cluster
     """
 
+    FIRST_CATEGORISED=1
+
     centroids = utils.compile_centroids(embedding, categories)
 
     centroids_rgb = np.zeros(centroids.shape, dtype=np.float32)
 
-    for i in range(centroids.shape[1]):
+    for i in range(FIRST_CATEGORISED, centroids.shape[1]):
         centroids_rgb[:,i] = utils.norm_channel_float(centroids[:,i],new_max=1.0)
 
     centroids_rgb[0] = (0.5, 0.5, 0.5)
@@ -93,24 +94,69 @@ def tricolour(r, g, b):
     """
     display a 3-colour RGB, normalising each channel
     """
-    r = utils.norm_channel(r)
-    g = utils.norm_channel(g)
-    b = utils.norm_channel(b)
+    r_ = utils.norm_channel(r)
+    g_ = utils.norm_channel(g)
+    b_ = utils.norm_channel(b)
+
+    print(f"R, G, B max: {np.max(r_)}, {np.max(g_)}, {np.max(b_)}")
 
     fig = plt.figure(figsize=(24,12))
     ax = fig.add_subplot(111)
 
-    rgb = np.stack((r,g,b), axis=2)
+    rgb = np.stack((r_,g_,b_), axis=2)
 
     ax.imshow(rgb)    
 
     return fig
 
-def tricolour_enames(e1:str, e2:str, e3:str, data, dims, elements):
+
+def tricolour_pixelset(e_red:str, e_green:str, e_blue:str, pxs):
+    """
+    display a 3-colour RGB from element names and a pixelset object
+    normalise each channel
+    """
+    ridx = utils.findelement(pxs.labels, e_red)
+    gidx = utils.findelement(pxs.labels, e_green)
+    bidx = utils.findelement(pxs.labels, e_blue)   
+
+    r = pxs.data.mapview[:,:,ridx]
+    g = pxs.data.mapview[:,:,gidx]
+    b = pxs.data.mapview[:,:,bidx]   
+
+    print(f"R, G, B max: {np.max(r)}, {np.max(g)}, {np.max(b)}")
+
+    fig = tricolour(r, g, b)
+
+    return fig
+
+def tricolour_explicit(e_red:str, e_green:str, e_blue:str, data, dims, labels):
     """
     display a 3-colour RGB from element names
     normalise each channel
     """
+    ridx = utils.findelement(labels, e_red)
+    gidx = utils.findelement(labels, e_green)   
+    bidx = utils.findelement(labels, e_blue)   
+
+
+    r = data.mapview[:,:,ridx]
+    g = data.mapview[:,:,gidx]
+    b = data.mapview[:,:,bidx]   
+
+
+
+    fig = tricolour(r, g, b)
+
+    return fig
+
+
+"""
+DEPRECATE
+def tricolour_enames(e1:str, e2:str, e3:str, data, dims, elements):
+    ""
+    display a 3-colour RGB from element names
+    normalise each channel
+    ""
     r = utils.get_map(data, dims, elements, e1)
     g = utils.get_map(data, dims, elements, e2)
     b = utils.get_map(data, dims, elements, e3)    
@@ -118,6 +164,8 @@ def tricolour_enames(e1:str, e2:str, e3:str, data, dims, elements):
     fig = tricolour(r, g, b)
 
     return fig
+"""
+
 
 def embedding_map(embedding, dims):
     """
@@ -131,7 +179,7 @@ def embedding_map(embedding, dims):
 
     return fig
 
-def category_map ( categories, dims, palette=None ):
+def category_map (categories, dims, palette=None ):
     """
         display categories as map image, with axes
     """
@@ -139,15 +187,13 @@ def category_map ( categories, dims, palette=None ):
     fig = plt.figure(figsize=(24,12))
     ax = fig.add_subplot(111)
 
-    ncats=np.max(categories)+2
-
     if palette is None:
         log.warning(f"palette not given, building from categories")
         palette=colours.build_palette(categories)
 
     cmap = colors.ListedColormap(palette)
 
-    catmap=utils.map_roll(categories+1,dims)
+    catmap=utils.map_roll(categories,dims)
 
     ax.tick_params(axis='both', which='major', labelsize=16)
 
@@ -167,8 +213,6 @@ def category_map_direct( categories, dims, palette=None ):
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
-    
-    ncats=np.max(categories)+2
 
     if palette is None:
         log.warning(f"palette not given, building from categories")
@@ -176,25 +220,11 @@ def category_map_direct( categories, dims, palette=None ):
 
     cmap = colors.ListedColormap(palette)
 
-    catmap=utils.map_roll(categories+1,dims)
-
-    print("creating direct category map")
+    catmap=utils.map_roll(categories,dims)
 
     ax.imshow(catmap, cmap=cmap, aspect='auto')
 
     return fig
-
-
-
-def table_classavg(classavg, elements):
-    """
-    display a table with class average values
-    """
-    concentration_averages = pd.DataFrame(data=classavg, columns=elements)
-    
-    print(tabulate(concentration_averages, headers='keys', tablefmt='psql'))
-
-    return
 
 def category_avgs(categories, elements, classavg, palette=None ):
     """
@@ -258,7 +288,7 @@ def category_boxplots(data, categories, elements):
 
     return fig
 
-def seaborn_embedplot(embedding, categories, palette=None):
+def seaborn_embedplot(embedding, categories, palette=None, labels=[]):
     """
     display seaborn plot of embedding space
     """
@@ -270,25 +300,39 @@ def seaborn_embedplot(embedding, categories, palette=None):
     x=embedding.T[0]
     y=embedding.T[1]
 
+    _div=np.sqrt(embedding.shape[0])
+    alpha=2/(_div)
+    if alpha < 0.002:   #alpha below this level seems rounded to 0
+        alpha = 0.002
+    print(f"embedplot alpha: {alpha}, {_div}")
+
     ### scatter plot with marginal axes
     sns.set_style('white')
 
     embed_plot = sns.jointplot(x=x, y=y,
                 hue=categories, palette=palette,
+                legend='full',
                 lw=0,
-                joint_kws = dict(alpha=0.01),
+                joint_kws = dict(alpha=alpha),           #FUTURE: scale alpha with log(n_pixels)
                 height=12, ratio=6
                 )
 
-    #xlim=[-3,3], ylim=[-3,3],
+    handles, __ = embed_plot.ax_joint.get_legend_handles_labels()
+
+    embed_plot.ax_joint.legend(handles=handles, labels=labels, fontsize=10)
 
     embed_plot.set_axis_labels('x', 'y', fontsize=16)
 
-    sns.despine(ax=None, left=True, bottom=True)
-    fig = embed_plot.fig
+    xmin=np.min(embedding[:,0])
+    xmax=np.max(embedding[:,0])
+    if xmax < 0:
+        print("WARNING: xmax < 0, plot limits may show unexpected behaviour")
 
-    #plt.savefig('embedplot.png', transparent=True)
-    #plt.show()
+    embed_plot.ax_marg_x.set_xlim(xmin, xmax+(xmax-xmin)*0.15)
+
+    sns.despine(ax=None, left=True, bottom=True)
+
+    fig = embed_plot.fig
 
     return fig
 
@@ -313,8 +357,6 @@ def seaborn_kdeplot(embedding, categories):
     fig = kdeplot.fig
 
     #ax = sns.despine(ax=None, left=True, bottom=True)
-
-    plt.show()
 
     return fig
 
@@ -346,6 +388,7 @@ DPI=96
 
 def contours_3d(kde):
 
+    #drop the floor slightly to emphasise low-but-nonzero regions
     Z_local = np.copy(kde.Z)
     Z_local[Z_local < 0.00001] = -0.0005
     #Z_local = np.log(Z_local)
@@ -360,13 +403,52 @@ def contours_3d(kde):
 
     return fig
 
-def plot_clusters(categories, classavg, embedding, kde, dims, output_directory=".", plot_kde=False, plot_margins=False):
+
+def contours_2d(kde):
+
+    #lower the floor slightly to emphasise low-but-nonzero regions
+    Z_local = np.copy(kde.Z)
+    Z_local[Z_local < 0.00001] = -0.0001    #-0.00000001 if viridis
+
+    fig = plt.figure(figsize=(24,18))
+    ax = fig.add_subplot()
+
+    cfset = ax.contourf(kde.X, kde.Y, Z_local, levels=25, cmap='Blues')
+
+    ## ALT direct kernel density estimate plot
+    #   flipped vertically
+    #ax.imshow(Z_local, cmap='Blues', extent=[-7, 20, -7, 20])    
+
+    #ADD contour lines
+    #cset = ax.contour(kde.X, kde.Y, Z_local, colors='k')
+
+    #ADD contour labels
+    #ax.clabel(cset, inline=1, fontsize=10)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+
+    return fig
+
+
+
+def plot_clusters(categories, classavg, embedding, kde, dims, output_directory=".", plot_kde=False, plot_margins=False, labels=[]):
     """
     display all plots for clusters
     """
 
-    print("plotting") 
+    if not labels == []:
+        df = tabular.get_df(classavg, labels)
+        major_list = tabular.get_major_list(df)
+        class_labels = tabular.nestlist_as_str(major_list)
+    else:
+        class_labels = []
 
+    print(
+    "---------------------------\n"
+    "VISUALISATION\n"
+    "---------------------------\n"
+    )
     if embedding.shape[1] == 2:
         print("using 2d embedding x") 
         #generate the palette from the categories, independent of distance
@@ -375,7 +457,7 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
     else:
         #use the 3D embedding to colour the categories based on distance
         fig_embed_map = embedding_map(embedding, dims)
-        fig_embed_map.savefig(os.path.join(output_directory,'embed_map.png'), transparent=False)  
+        fig_embed_map.savefig(os.path.join(output_directory,'vis_embed_map.png'), transparent=False)  
 
         # produce 2D embedding for visualisation
         print("creating 2d embedding")
@@ -385,19 +467,24 @@ def plot_clusters(categories, classavg, embedding, kde, dims, output_directory="
     if plot_margins:
         print("saving map with margins")        
         fig_cat_map = category_map(categories, dims, palette=palette)
-        fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)    
+        fig_cat_map.savefig(os.path.join(output_directory,'vis_category_map.png'), transparent=False)    
     else:
         print("creating category map")
         fig_cat_map = category_map_direct(categories, dims, palette=palette)
-        fig_cat_map.savefig(os.path.join(output_directory,'category_map.png'), transparent=False)  
+        fig_cat_map.savefig(os.path.join(output_directory,'vis_category_map.png'), transparent=False)  
 
     print("creating embedplot")    
-    fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette)
-    fig_embed.savefig(os.path.join(output_directory,'embeddings.png'), transparent=False)    
+
+    fig_embed = seaborn_embedplot(embedding_2d, categories, palette=palette, labels=class_labels)
+    fig_embed.savefig(os.path.join(output_directory,'vis_embeddings.png'), transparent=False)    
     
     if plot_kde and kde is not None:
-        fig_contours = contours_3d(kde)
+        fig_contours_3d = contours_3d(kde)
+        fig_contours_2d = contours_2d(kde)
+        fig_contours_2d.savefig(os.path.join(output_directory,'vis_kde.png'), transparent=False)
     
+    tabular.printout(df)
+
     #plt.show()
 
     return palette
@@ -409,3 +496,43 @@ def plot_classes(categories, labels, classavg, palette):
     
     """
     category_avgs(categories, labels, classavg, palette=palette)    
+
+
+
+def plot_som(categories, classavg, som, dims, output_directory=".", labels=[], plot_margins=False):
+    """
+    display all plots for clusters
+    """
+
+    if not labels == []:
+        df = tabular.get_df(classavg, labels)
+        major_list = tabular.get_major_list(df)
+        class_labels = tabular.nestlist_as_str(major_list)
+    else:
+        class_labels = []
+
+    print(
+    "---------------------------\n"
+    "VISUALISATION\n"
+    "---------------------------\n"
+    )
+    
+    palette=colours.som_colourmap()
+
+    if plot_margins:
+        print("saving map with margins")   
+        fig_cat_map = category_map(categories, dims, palette=palette)
+        fig_cat_map.savefig(os.path.join(output_directory,'vis_category_map.png'), transparent=False)    
+    else:
+        print("creating category map")
+        fig_cat_map = category_map_direct(categories, dims, palette=palette)
+        fig_cat_map.savefig(os.path.join(output_directory,'vis_category_map.png'), transparent=False)  
+
+    print("plotting neurons")
+    pass
+    
+    tabular.printout(df)
+
+    #plt.show()
+
+    return palette

@@ -2,16 +2,20 @@ import sys
 import os
 import numpy as np
 
+import logging
+from logging.handlers import TimedRotatingFileHandler
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import xfmreadout.utils as utils
-import xfmreadout.argops as argops
-import xfmreadout.rgbspectrum as rgbspectrum
-import xfmreadout.clustering as clustering
-import xfmreadout.visualisations as vis
-import xfmreadout.dtops as dtops
-import xfmreadout.parser as parser
-import xfmreadout.diagops as diagops
+import xfmkit.utils as utils
+import xfmkit.argops as argops
+import xfmkit.rgbspectrum as rgbspectrum
+import xfmkit.clustering as clustering
+import xfmkit.visualisations as vis
+import xfmkit.dtops as dtops
+import xfmkit.parser as parser
+import xfmkit.diagops as diagops
+import xfmkit.config as configuration
 
 """
 Parses spectrum-by-pixel maps from IXRF XFM
@@ -28,18 +32,40 @@ Parses spectrum-by-pixel maps from IXRF XFM
 #-----------------------------------
 #vars
 #-----------------------------------
-PACKAGE_CONFIG='xfmreadout/config.yaml'
+PACKAGE_CONFIG='xfmkit/config.yaml'
 
 #-----------------------------------
 #INITIALISE
 #-----------------------------------
+
+def logging_setup():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    log_file = configuration.get('logging', 'log_file', default = "/home/lachlan/log/xfmkit.log")
+
+    filehandler = TimedRotatingFileHandler(log_file, when='midnight',backupCount=7)
+    filehandler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    filehandler.setFormatter(formatter)
+    
+    logger.addHandler(filehandler)
+
+    return logger
+
 
 def entry_raw():
     """
     entrypoint wrapper getting args from sys
     """
     args_in = sys.argv[1:]  #NB: exclude 0 == script name
+
+    logger = logging_setup()
+
     read_raw(args_in)
+
+
 
 def read_raw(args_in):
     """
@@ -73,20 +99,21 @@ def read_raw(args_in):
         #if using log file
         if args.log_file is not None:
             realtime, livetime, triggers, events, icr, ocr, dt_evt, dt_rt = diagops.dtfromdiag(dirs.logf)
-            print(dt_evt)
 
         #if data is present
-        if (np.max(pixelseries.data) > 0) and pixelseries.parsing == True:
-            dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtmod[:,0], pixelseries.dtflat, \
-                pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
+        if (np.max(pixelseries.data) > 0) and pixelseries.parsed == True:
+            print("--------------")
+            print("GENERATING PLOTS")
+            dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtmod, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
 
             pixelseries.rgbarray, pixelseries.rvals, pixelseries.gvals, pixelseries.bvals \
                 = rgbspectrum.calccolours(config, pixelseries, xfmap, pixelseries.flattened, dirs)       #flattened / corrected
-        
+            print("--------------")
+            print("PLOTTING COMPLETE")
         dt_avg = dtops.dt_stats(pixelseries.dt)
      
     else:
-        rgbarray = None
+        pixelseries.rgbarray = None
     #perform clustering
     if args.classify_spectra:
         pixelseries.categories, embedding = clustering.run( pixelseries.flattened, dirs.embeddings, force_embed=args.force, force_clust=args.force, overwrite=config['OVERWRITE_EXPORTS'] )
@@ -95,8 +122,8 @@ def read_raw(args_in):
 
         palette = vis.plot_clusters(pixelseries.categories, pixelseries.classavg, embedding, pixelseries.dimensions)
     else:
-        categories = None
-        classavg = None
+        pixelseries.categories = None
+        pixelseries.classavg = None
 
     print("Processing complete")
 

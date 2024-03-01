@@ -7,6 +7,9 @@ import numpy as np
 
 from scipy.stats import norm
 
+import logging
+logger = logging.getLogger(__name__)
+
 class DirectoryStructure:
     """
     object holding file locations and directory structure
@@ -319,10 +322,11 @@ def norm_channel(in_array, new_max=255):
 
     returns an p.uint16 array
     """
-    in_array = in_array-np.min(in_array)
-    in_array = (in_array/np.max(in_array))    
-    in_array = np.ndarray.astype(in_array*new_max,np.uint16)
-    return in_array    
+    result_ = np.copy(in_array)
+    result_ = result_-np.min(result_)
+    result_ = (result_/np.max(result_))    
+    result_ = np.ndarray.astype(result_*new_max,np.uint16)
+    return result_    
 
 def norm_channel_float(in_array, new_max=1.0):
     """
@@ -341,6 +345,11 @@ def count_categories(categories):
     return the total number of categories, including negative values
     """
     min_cat = np.min(categories)
+
+    #  maintain a category for unclassified even if this is empty
+    if min_cat > 0:
+        min_cat = 0
+
     max_cat = np.max(categories)
     
     cat_list = range(min_cat, max_cat+1)
@@ -389,16 +398,17 @@ def compile_centroids(embedding, categories):
     finds the centroid of each cluster, given an embedding and a categorised array
     """
 
+    FIRST_CATEGORISED=1
+
     if embedding.shape[0] != categories.shape[0]:
         raise ValueError("Embedding and category list have different number of pixels")
 
-    n_clusters, category_list = count_categories(categories)
+    n_clusters, ___ = count_categories(categories)
 
     centroids=np.zeros((n_clusters, embedding.shape[1]), dtype=np.float32)
 
-    for i in range(n_clusters):
-        icat=category_list[i]
-        centroids[i] = get_centroid(embedding[categories==icat])    
+    for i in range(FIRST_CATEGORISED, n_clusters):
+        centroids[i] = get_centroid(embedding[categories==i])    
 
     return centroids
 
@@ -487,3 +497,29 @@ def smartcast(data, target_dtype):
 
     
     return data_
+
+
+
+def calc_se_ratio(data, se):
+    DATA_QUANTILE=0.999
+    SE_QUANTILE_MIN=0.25
+    SE_QUANTILE_MAX=0.5
+
+    q99_data = mean_within_quantile(data, qmin=DATA_QUANTILE)
+
+    q2_sd = mean_within_quantile(se, qmin=SE_QUANTILE_MIN, qmax=SE_QUANTILE_MAX)
+
+    ratio = q99_data / q2_sd
+
+    return ratio, q99_data, q2_sd
+
+
+def calc_simple_se_ratio(data, se):
+
+    data_max = np.max(data)
+
+    se_avg = np.mean(se)
+
+    ratio = data_max / se_avg
+
+    return ratio, data_max, se_avg

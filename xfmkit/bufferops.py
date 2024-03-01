@@ -6,9 +6,12 @@ import copy
 
 import multiprocessing as mp
 
-import xfmreadout.byteops as byteops
-import xfmreadout.parser as parser
-import xfmreadout.utils as utils
+import xfmkit.byteops as byteops
+import xfmkit.parser as parser
+import xfmkit.utils as utils
+
+import logging
+logger = logging.getLogger(__name__)
 
 #assign an identifier to the local namespace
 #   used to create persistent preloaded buffer
@@ -18,7 +21,7 @@ pxheadstruct = struct.Struct("<ccI3Hf")
 
 def worker(infile, chunksize, pipe_child):
     """
-    Worker for multiprocess
+    Worker for multiload
         loads new buffer object in a subprocess to cache it 
         then sends data and file index via pipe to MapBuffer.retrieve()
             will hold open until data is received
@@ -37,7 +40,7 @@ class MapBuffer:
     """
     Object holding current chunk of file for processing
     """
-    def __init__(self, infile, chunksize: int, multiproc: bool):
+    def __init__(self, infile, chunksize: int, multiload: bool):
         self.infile=infile
         self.fidx = self.infile.tell()
 
@@ -47,7 +50,7 @@ class MapBuffer:
             cache_flag = False
 
         self.chunksize=chunksize
-        self.multiproc=multiproc
+        self.multiload=multiload
         self.len = 0
         try:
             self.data = self.infile.read(self.chunksize) 
@@ -58,14 +61,14 @@ class MapBuffer:
 
         self.check()
 
-        if self.multiproc and cache_flag:
+        if self.multiload and cache_flag:
             self.cache()
 
         return
 
     def cache(self):
         """
-        Spawn new multiprocess to pre-load next chunk
+        Spawn new multiload to pre-load next chunk
         Create a pipe to transfer newly loaded chunk
         """
         #print('Caching...')
@@ -75,13 +78,13 @@ class MapBuffer:
 
     def retrieve(self):
         """
-        Receives data and file index from next chunk preloaded by Multiprocess
+        Receives data and file index from next chunk preloaded by multiload
 
             Waits for process to complete, close pipes
             Assign new data to current buffer
             Begin caching next chunk
         """
-        if self.multiproc:
+        if self.multiload:
             nextdata=self.pipe_parent.recv()
             nextfidx=self.pipe_parent.recv()
 
@@ -117,7 +120,7 @@ class MapBuffer:
         
         if self.data == "":
             print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-            raise parser.MapDone
+            raise parser.MapEarlyStop
 
         return
 
@@ -125,7 +128,7 @@ class MapBuffer:
         """
         wait for running cache to complete
         """
-        if self.multiproc:
+        if self.multiload:
             #need to receive sends, otherwise will block indefinitely
             ___=self.pipe_parent.recv()
             ___=self.pipe_parent.recv()
@@ -158,8 +161,8 @@ def getstream(buffer, idx: int, length: int):
 
     if len(stream) < length:
         if buffer.len == 0:
-            print(f"\n WARNING: Mismatch between EOF and expected pixel count - map dimensions may be incorrect in file header.")
-            raise parser.MapDone
+            print(f"\n WARNING: Early EOF at index {idx} - map dimensions may be incorrect in file header.")
+            raise parser.MapEarlyStop
         else:
             raise ValueError("FATAL: unexpected stream size before end of buffer")
         
@@ -318,15 +321,31 @@ def writefileheader(xfmap, xcoords, ycoords):
 
     #modify width and height in header and re-print
 
-    newxres=xcoords[1]-xcoords[0]
+    xstart = xcoords[0]
+    if xcoords[1] <= xfmap.xres:
+        xend = xcoords[1]
+    else:
+        xend = xfmap.xres
+
+    newxres=xend-xstart
     #if new res larger than original, set to original
     if newxres > xfmap.xres:
+        print("WARNING: derived X size larger than X size read from data")
         newxres = xfmap.xres
     newxdim=newxres*(xfmap.headerdict["File Header"]["Width (mm)"]/xfmap.headerdict["File Header"]["Xres"])
 
-    newyres=ycoords[1]-ycoords[0]
+
+    ystart = ycoords[0]
+    if ycoords[1] <= xfmap.yres:
+        yend = ycoords[1]
+    else:
+        yend = xfmap.yres
+
+    newyres=yend-ystart
+
     #if new res larger than original, set to original
     if newyres > xfmap.yres:
+        print("WARNING: derived Y size larger than Y size read from data")        
         newyres = xfmap.yres
     newydim=newyres*(xfmap.headerdict["File Header"]["Height (mm)"]/xfmap.headerdict["File Header"]["Yres"])
 
@@ -366,7 +385,7 @@ def writepxheader(config, xfmap, pxseries, det: int, pxidx: int, xcoords, ycoord
         - whether we are calculating new deadtimes
 
     """
-    if modify_dt == -1:
+    if modify_dt > 100:
         dt=pxseries.dt[pxidx,det]
     else:
         dt=pxseries.dtmod[pxidx,det]

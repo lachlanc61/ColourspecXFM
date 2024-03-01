@@ -3,7 +3,10 @@ import numpy as np
 from scipy import ndimage
 from math import sqrt
 
-import xfmreadout.utils as utils
+import xfmkit.utils as utils
+
+import logging
+logger = logging.getLogger(__name__)
 
 def gaussianblur(img, kernelsize: int):
     """
@@ -98,3 +101,7 @@ def calc_quantiles(data, sd, multiplier):
     ratio = (q2_sd*multiplier) / q99_data
 
     return ratio, q99_data, q2_sd
+
+
+
+

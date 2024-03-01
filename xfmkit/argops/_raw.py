@@ -1,6 +1,18 @@
 import os
 import argparse
 import psutil
+import logging
+
+import xfmkit.processops as processops
+import xfmkit.config as config
+
+logger = logging.getLogger(__name__)
+
+
+valid_weight_transforms=config.get('argparse', 'valid_weight_transforms')
+default_weight_transform=config.get('argparse', 'default_weight_transform')
+valid_data_transforms=config.get('argparse', 'valid_data_transforms')
+ignore_lines=config.get('elements', 'ignore_lines')
 
 def checkargs(args, config):
     """
@@ -16,13 +28,13 @@ def checkargs(args, config):
         print("continuing with --index-only disabled")
         args.index_only = False
 
-    if args.index_only and args.modify_deadtimes == 999:
+    if args.index_only and args.modify_deadtimes < 0:
         print("-------------------------------")
         print("WARNING: must parse map to predict deadtimes")
         print("continuing with --index-only disabled")
         args.index_only = False
 
-    if not args.modify_deadtimes == -1 and not args.write_modified:
+    if not args.modify_deadtimes > 100 and not args.write_modified:
         print("-------------------------------")
         print("WARNING: must write map to apply modified deadtimes")
         print("continuing with --write-modified enabled")
@@ -38,13 +50,16 @@ def checkargs(args, config):
         raise ValueError("No input file specified")
 
     if args.modify_deadtimes >= 0 and args.modify_deadtimes <= 100:
+        #we are assigning fixed DT
         pass
-    elif args.modify_deadtimes == -1:
+    elif args.modify_deadtimes < 0:
+        #we are predicting DT
         pass
-    elif args.modify_deadtimes == 999:
+    elif args.modify_deadtimes > 100:
+        #we are not changing DT
         pass
     else:
-       raise ValueError("modify-deadtimes value out of range, expected a float within 0.0-100.0") 
+       raise ValueError("modify-deadtimes value out of range")
 
     if args.write_modified:
         if args.x_coords == None:
@@ -122,7 +137,7 @@ def readargs(args_in, config):
         help="Export pixel data to .npy file"
         "will extract spectrum-per-pixel-per-detector data to .npy file-like object"
         "file can be opened with numpy.load(filepath)"
-        "to export as csv, change SAVEFMT_READABLE = True in xfmreadout/config.yaml",
+        "to export as csv, change SAVEFMT_READABLE = True in xfmkit/config.yaml",
         action='store_true',
     )
     argparser.add_argument(
@@ -159,15 +174,15 @@ def readargs(args_in, config):
         "If no value is given, will perform a per-pixel prediction from parsed counts"
         "Use with ----write-modified"
         "WARNING: experimental, prediction highly approximate",
-        const=float(999),
-        default=float(-1),
+        const=float(-1),
+        default=float(101),
         action='store',
         nargs='?',
         type=float,
         #DEFAULTS: 
-        #   if arg not given, value = -1 
+        #   if arg not given, value = 101 
         #       = do not fill deadtimes
-        #   if arg given but no value specified, value = 999
+        #   if arg given but no value specified, value = -1
         #        = predict deadtimes from counts
 
     )
@@ -201,14 +216,20 @@ def readargs(args_in, config):
     )
 
     #--------------------------
-    #resource args eg. multiprocess, batch size
+    #resource args eg. multiload, batch size
     argparser.add_argument(
-        '-m', "--multiprocess", 
+        '-m', "--multiload", 
         help="Pre-cache memory using second process"
         "Prevents parse operation waiting on disk I/O"
         "Increases memory usage for buffer to 2x --memory-size",
         action='store_true', 
     )
+    argparser.add_argument(
+        '-p', "--python-only", 
+        help="Parse using python only"
+        "Exclude C++ submodule",
+        action='store_true', 
+    )    
     argparser.add_argument(
         '-s', "--chunk-size", 
         help="Size of memory buffer (in Mb) to load while parsing"
@@ -220,102 +241,5 @@ def readargs(args_in, config):
     args = argparser.parse_args(args_in)
 
     args = checkargs(args, config)
-
-    return args
-
-
-
-def checkargs_processed(args, config):
-    """
-    sanity check on arg combinations
-    """
-    if args.x_coords == None:
-        args.x_coords = [ 0, int(999999)]
-    if args.y_coords == None:
-        args.y_coords = [0 , int(999999)]
-
-    if (args.x_coords[0] >= args.x_coords[1]):
-        raise ValueError("First x_coordinate must be < second x_coordinate")
-    if (args.y_coords[0] >= args.x_coords[1]):
-        raise ValueError("First y_coordinate must be < second y_coordinate")
-
-    if args.n_components <= 0 or args.n_components >= 100:
-        raise ValueError("Invalid number of components, (expected 1 < n < 100)")
-
-    return args
-
-def readargs_processed(args_in, config):
-    """
-    read in a set of command-line args for analysing processed maps
-    """
-
-    #initialise the parser
-    argparser = argparse.ArgumentParser(
-        description="XFM data loader and analysis package"
-    )
-
-    #--------------------------
-    #set up the expected args
-    #--------------------------
-    #inputs and outputs locations
-    argparser.add_argument(
-        "-d", "--input-directory", 
-        help="Specify a directory containing processed .tiff files"
-        "with pixel values corresponding to concentration, areal density, or counts",
-        type=os.path.abspath,
-    )
-    argparser.add_argument(
-        "-o", "--output-directory", 
-        help="Specify the filepath to be used for outputs"
-        "Results will be placed in a  ./outputs/ subfolder within this directory"
-        "Defaults to the input directory",
-        type=os.path.abspath,
-    )
-    argparser.add_argument(
-        '-x', "--x-coords", 
-        help="Start and end coordinates in X direction"
-        "as: X_start, X_end"
-        "Crop the exported map to these coordinates",
-        nargs='+', 
-        type=int, 
-    )
-    argparser.add_argument(
-        '-y', "--y-coords", 
-        help="Start and end coordinates in Y direction"
-        "as: Y_start, Y_end"
-        "Crop the exported map to these coordinates",
-        nargs='+', 
-        type=int, 
-    )
-
-    argparser.add_argument(
-        '-n', "--n-components", 
-        help="Number of components for reduction",
-        type=int, 
-        default=int(2)
-    )
-
-    argparser.add_argument(
-        "-ff", "--force", 
-        help="Force recalculation of all pixels/classes",
-        action='store_true', 
-    )
-
-    argparser.add_argument(
-        "-k", "--kde", 
-        help="Visualise kde",
-        action='store_true', 
-    )
-
-    argparser.add_argument(
-        "-fc", "--force-clustering", 
-        help="Force recalculation of clusters - overridden by --force",
-        action='store_true', 
-    )    
-
-
-    args = argparser.parse_args(args_in)
-
-    args = checkargs_processed(args, config)
 
     return args
