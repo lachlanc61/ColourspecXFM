@@ -1,51 +1,20 @@
 import time
 import numpy as np
+import logging
+
+import parsercore
 
 import xfmkit.bufferops as bufferops
 import xfmkit.utils as utils
 import xfmkit.structures as structures
 
-import parsercore
+from ._utils import *
 
-import logging
 logger = logging.getLogger(__name__)
 
-class MapDone(Exception): pass
 
-def endpx(pxidx, idx, buffer, xfmap, pixelseries):
-    """
-    Cleanup operations at end of each pixel
+DEBUG = False
 
-        prints status at end of each row
-
-        raises MapDone at expected end of map
-    """
-    row=pixelseries.yidx[pxidx,0]+1
-
-    #print pixel index at end of every row
-    if pxidx % xfmap.xres == (xfmap.xres-1): 
-        print(f"\rRow {row}/{xfmap.yres} at pixel {pxidx}, byte {int(buffer.fidx+idx)} ({100*(idx)/xfmap.fullsize:.1f} %)", end='')
-        pass
-    #stop when pixel index greater than expected no. pixels
-    if (pxidx >= (xfmap.npx-1)):
-        print(f"\nEND OF MAP: row {row}/{xfmap.yres}, pixel {pxidx}")
-        raise MapDone
-
-    pxidx+=1
-
-    return pxidx
-
-
-def initparse(xfmap, multiload):
-    """
-    unused for now
-    """
-    xfmap.resetfile()
-    buffer = bufferops.MapBuffer(xfmap.infile, xfmap.chunksize, multiload)
-    idx = xfmap.datastart
-    pxheaderlen = xfmap.PXHEADERLEN    
-
-    return buffer, idx, pxheaderlen
 
 def indexmap(xfmap, pixelseries, multiload):
     """
@@ -73,56 +42,55 @@ def indexmap(xfmap, pixelseries, multiload):
             indexlist[pxidx, det] = buffer.fidx+idx-pxheaderlen
 
             pixelseries = pixelseries.receiveheader(pxidx, pxlen, xidx, yidx, det, dt)
-            
+
             #use getstream to step to the next pixel and handle end-of-buffer events
-            __, idx, buffer = bufferops.getstream(buffer, idx, pxlen-pxheaderlen)
+            __spectrum_stream, idx, buffer = bufferops.getstream(buffer, idx, pxlen-pxheaderlen)
 
             if det == xfmap.ndet-1:
-                pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)
+                pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)          
 
-    except MapDone:
-        pixelseries.npx=pxidx+1
-        pixelseries.nrows=pixelseries.yidx[pxidx,0]+1 
-        pixelseries.dtflat = np.sum(pixelseries.dt, axis=1)/pixelseries.ndet
+    except MapComplete:
+        """
+        handle expected end of map (raised during endpx())
+        """
+
+        #assign final sizes
+        npx=pxidx+1     #pixel index still on final pixel
+        nrows=pixelseries.yidx+1 
+
+        if not pixelseries.npx == xfmap.npx:
+            print("WARNING: pixelseries and map object have different pixel sizes at clean completion")
+
+        pixelseries.npx = npx
+        pixelseries.nrows = nrows
+        pixelseries.dimensions = ( nrows, pixelseries.dimensions[1] )        
+
+        xfmap.indexlist = indexlist
+        xfmap.npx_found = xfmap.npx
 
         buffer.wait()
         xfmap.resetfile()
-        return pixelseries, indexlist
+        return pixelseries, xfmap
 
+    except MapEarlyStop:
+        """
+        handle early end of map (raised from bufferops eg. getstream)
+        """        
+        npx = pxidx #pxidx progressed to next (nonexistent) pixel
+        nrows = yidx+1  #yidx still on last even if end of row
 
-def readspectrum(buffer,det,absidx,pxlength,pxheaderlen,bytesperchan,nchannels):
-#def processpixel(buffer,det,pxidx,indexlist,pxheaderlen,bytesperchan,nchannels):
+        print("Resizing dataset to match size of indexed map")
 
-    relidx=int(absidx-buffer.fidx)
-
-    if relidx < 0:
-            raise ValueError(f"pixel start {absidx} not in current buffer beginning {buffer.fidx}") 
-
-    try:
-        #if read exceeds buffer, get next buffer via getstream
-        if relidx+pxlength > buffer.len:
-
-            #FUTURE: join here to wait for processes
-            #should be able to parallelize pullstream + readpx+gapfill + assign
-            
-            #if break is in header, cycle buffer via getstream
-            if relidx+pxheaderlen > buffer.len:     #not sure about > vs >=
-                ___, ___, buffer=bufferops.getstream(buffer, relidx, pxheaderlen)
-            
-            #get next stream
-            stream, ___, buffer=bufferops.getstream(buffer, relidx+pxheaderlen, pxlength-pxheaderlen)
-        #otherwise read it directly
+        if not (npx == xfmap.npx and nrows == xfmap.yres ):
+            pixelseries.truncate_y(npx, nrows)
+            xfmap.indexlist = indexlist[:npx]
+            xfmap.npx_found = npx
         else:
-            stream = buffer.data[relidx+pxheaderlen:relidx+pxlength]
+            print("WARNING: map sizes match despite early stop")
 
-        #continue
-        ___, counts = bufferops.readpxdata(stream, len(stream), bytesperchan, nchannels)
-    finally:
-        return buffer, counts
-    #    pixelseries.data[pxidx,det,:]=counts
-
-    ___ = endpx(pxidx, absidx, buffer, xfmap, pixelseries)    
-
+        buffer.wait()
+        xfmap.resetfile()
+        return pixelseries, xfmap
 
 
 def parse(xfmap, pixelseries, multiload):
@@ -151,7 +119,7 @@ def parse(xfmap, pixelseries, multiload):
 
         python_only = False
         if python_only:
-            print("Reading .GeoPIXE file via python only")
+            print(f"\nParsing via Python")            
             for pxidx in range(pixelseries.npx):
                 for det in range(pixelseries.ndet):
 
@@ -166,11 +134,11 @@ def parse(xfmap, pixelseries, multiload):
 
                 ___ = endpx(pxidx, absidx, buffer, xfmap, pixelseries)
 
-        #PARALLELIZED
+        #using C++
         else:         
             print("Reading .GeoPIXE file via C++")
             buffer_start_px = 0
-
+            print(f"\nParsing via C++")
             while buffer_start_px <= xfmap.fullsize:
 
                 #index_final = indexlist + pixelseries.pxlen
@@ -182,23 +150,38 @@ def parse(xfmap, pixelseries, multiload):
                 #find pixel containing end of buffer
                 buffer_break_px = np.searchsorted(indexlist[:,0], buffer_end) - 1 
                                         # -1 because np.ssorted gives first row of next buffer
-                buffer_end_px = buffer_break_px - 1
-                                        # -1 again to get last unbroken pixel
-                                        
-                #get stream indexes and lengths corresponding to buffer
-                stream_indexes=indexlist[buffer_start_px:buffer_break_px,:]-buffer.fidx
-                stream_pxlen=pxlen[buffer_start_px:buffer_break_px,:]
-
-                print(f"\nReading buffer from pixels {buffer_start_px} to {buffer_break_px}")             
                 
-                #extract the data
-                stream_data = parsercore.readstream(stream_indexes, stream_pxlen, buffer.data, len(buffer.data))
+                #get last unbroken pixel
+                if indexlist[buffer_break_px,-1] + pxlen[buffer_break_px,-1] == buffer_end:
+                    #if buffer ends perfectly at end of pixel, last good pixel is break px
+                    buffer_last_px =  buffer_break_px
+                elif indexlist[buffer_break_px,-1] + pxlen[buffer_break_px,-1] < buffer_end:
+                    raise ValueError("break pixel not at buffer end")
+                else:
+                    buffer_last_px = buffer_break_px - 1
+
+                #get stream indexes and lengths corresponding to buffer up to last unbroken pixel
+                stream_indexes=indexlist[buffer_start_px:buffer_last_px+1,:]-buffer.fidx
+                stream_pxlen=pxlen[buffer_start_px:buffer_last_px+1,:]
+
+                print(f"\nReading buffer, pixels {buffer_start_px} to {buffer_last_px}")             
+                
+                if DEBUG == True:
+                    print(f"\nStart of data to read: {buffer.data[:100]}")
+                    print(f"\nFirst pixel location: {indexlist[buffer_start_px, 0]}")   
+                    print(f"\nFirst pixel byte: {buffer.data[int(indexlist[buffer_start_px, 0]):(int(indexlist[buffer_start_px, 0])+8)]}") 
+                    print(f"\nTypes for parsercore: {type(stream_indexes), stream_indexes.dtype}, {type(stream_pxlen), stream_pxlen.dtype}, {type(buffer.data)}, {type(len(buffer.data))},")
+
+                 #extract the data
+                #---------------------
+                parsed_stream = parsercore.readstream(stream_indexes, stream_pxlen, buffer.data, len(buffer.data))
+                #---------------------
 
                 #copy it to pixelseries
-                pixelseries.data[buffer_start_px:buffer_break_px,:,:] = stream_data
+                pixelseries.data[buffer_start_px:buffer_last_px+1,:,:] = parsed_stream
 
-                #read in final pixel manually
-                #   update buffer via readspectrum
+                #read in final pixel manually to update buffer if needed
+                #   (will have already been read if stream has pixel perfect end)
                 for det in range(pixelseries.ndet):
                     absidx=indexlist[buffer_break_px,det]
                     pxlength=pixelseries.pxlen[buffer_break_px,det]
@@ -219,6 +202,12 @@ def parse(xfmap, pixelseries, multiload):
                     buffer_start_px = buffer_break_px+1
 
     except MapDone:
+        pixelseries.parsed = True
+        buffer.wait()
+        xfmap.resetfile()
+        return pixelseries
+
+    except MapComplete:
         pixelseries.parsed = True
         buffer.wait()
         xfmap.resetfile()
@@ -267,63 +256,13 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, modify_dt, multiload)
                 pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)
 
     except MapDone:
+        pixelseries.parsed = True
+        buffer.wait()
+        xfmap.resetfile()
+        return pixelseries
+
+    except MapComplete:
         buffer.wait()
         xfmap.resetfile()
         return 
     
-
-
-def read(config, args, dirs):
-    """
-    Parse full file, creating map and extracted data objects
-    """
-    #start a timer
-    starttime = time.time() 
-    
-    try:
-        #initialise map object
-        xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub, args.write_modified, args.chunk_size, args.multiload)
-
-        #initialise the spectrum-by-pixel object
-        pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray, args.index_only)
-
-        pixelseries, xfmap.indexlist = indexmap(xfmap, pixelseries, args.multiload)
-
-        if not args.index_only:
-            pixelseries = parse(xfmap, pixelseries, args.multiload)
-            pixelseries = pixelseries.get_derived()    #calculate additional derived properties after parse
-
-        #assign modified deadtimes
-        if not args.modify_deadtimes > 100: #-1 = False
-            pixelseries = pixelseries.get_dtmod(config, xfmap, args.modify_deadtimes)
-
-        if args.write_modified:
-            writemap(config, xfmap, pixelseries, args.x_coords, args.y_coords, \
-                args.modify_deadtimes, args.multiload)
-
-    finally:
-        xfmap.closefiles()
-
-        #complete the timer
-        runtime = time.time() - starttime
-
-        print(
-        "---------------------------\n"
-        "PARSING COMPLETE\n"
-        "---------------------------\n"
-        f"dimensions expected (x,y): {xfmap.xres},{xfmap.yres}\n"
-        f"pixels expected (X*Y): {xfmap.npx}\n"
-        f"pixels found: {pixelseries.npx}\n"
-        f"total time: {round(runtime,2)} s\n"
-        f"time per pixel: {round((runtime/pixelseries.npx),6)} s\n"
-        "---------------------------"
-        )
-
-        #export the pixel header stats and data
-
-        pixelseries.exportpxstats(config, dirs.exports)
-
-        if args.export_data:
-            pixelseries.exportpxdata(config, dirs.exports)    
-
-    return xfmap, pixelseries

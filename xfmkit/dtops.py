@@ -61,10 +61,10 @@ def predict_dt_flat(config, pixelseries, xfmap):
     if pixelseries.parsed == False and not np.max(pixelseries.flatsum) > 0:
         raise ValueError("Deadtime prediction requires parsed map with flattened data")
 
-    if len(pixelseries.flatsum) != len(pixelseries.dtflat):
+    if len(pixelseries.flatsum) != len(pixelseries.dt[:,0]):
         raise ValueError("sum and dt array sizes differ")
 
-    dtmod=np.zeros((len(pixelseries.dtflat),ndet),dtype=np.float32)
+    dtmod=np.zeros((len(pixelseries.dt[:,0]),ndet),dtype=np.float32)
 
     if timeconst == 0.5:    #currently hardcoded to TC = 0.5 us
         for i in range(len(pixelseries.flatsum)):
@@ -155,132 +155,142 @@ def dthist(dt, dir: str, ndet: int):
     """
     generate the deadtime histogram plot
     """
-    fig = plt.figure(figsize=(6,4))
+    try:
+        fig = plt.figure(figsize=(6,4))
 
-    ax = fig.add_subplot(111)
+        ax = fig.add_subplot(111)
 
-    ax.set_xlabel("Deadtime (%)")
-    ax.set_ylabel("No. pixels")
+        ax.set_xlabel("Deadtime (%)")
+        ax.set_ylabel("No. pixels")
 
-    for i in np.arange(ndet):
-        ax.hist(dt[:,i], 100, fc=cset[i], alpha=0.5, label=f"{i}")
+        for i in np.arange(ndet):
+            ax.hist(dt[:,i], 100, fc=cset[i], alpha=0.5, label=f"{i}")
 
-    ax.legend(loc=1, title="Detector:")
+        ax.legend(loc=1, title="Detector:")
 
-    fig.savefig(os.path.join(dir, 'deadtime_histograms.png'), dpi=150)
-    time.sleep(2)
-    plt.clf()    
+        fig.savefig(os.path.join(dir, 'deadtime_histograms.png'), dpi=150)
+        time.sleep(2)
+        plt.clf()    
+    except:
+        print("WARNING: could not complete dt histogram plot")
     return
 
 def dtimages(dt, dir: str, xres: int, yres: int, ndet: int):
     """
     plot the deadtimes as a map image
     """
-    
-    #https://stackoverflow.com/questions/52273546/matplotlib-typeerror-axessubplot-object-is-not-subscriptable
-    #squeeze kwarg forces 1x1 plot to behave as a 2D array so subscripting works
-    fig, ax = plt.subplots(1, ndet, figsize=(8,4), squeeze=False)
+    try:
+        #https://stackoverflow.com/questions/52273546/matplotlib-typeerror-axessubplot-object-is-not-subscriptable
+        #squeeze kwarg forces 1x1 plot to behave as a 2D array so subscripting works
+        fig, ax = plt.subplots(1, ndet, figsize=(8,4), squeeze=False)
 
-    cset = ['red', 'blue']
+        cset = ['red', 'blue']
 
-    for i in np.arange(ndet):
-        #ax now a 2D array because of squeeze - no sure if this index is correct for multiple plots, may be other axis
-        ax[0,i].set_title(f"Detector: {i}")
-        ax[0,i].tick_params(axis='x',colors=cset[i])
-        ax[0,i].tick_params(axis='y',colors=cset[i])
-        for spine in ax[0,i].spines.values():
-            spine.set_linewidth(2)
-            spine.set_color(cset[i])
+        for i in np.arange(ndet):
+            #ax now a 2D array because of squeeze - no sure if this index is correct for multiple plots, may be other axis
+            ax[0,i].set_title(f"Detector: {i}")
+            ax[0,i].tick_params(axis='x',colors=cset[i])
+            ax[0,i].tick_params(axis='y',colors=cset[i])
+            for spine in ax[0,i].spines.values():
+                spine.set_linewidth(2)
+                spine.set_color(cset[i])
 
-        dtimage = dt[:,i].reshape(yres,xres)
+            dtimage = dt[:,i].reshape(yres,xres)
 
-        ax[0,i].imshow(dtimage, cmap="magma")
+            ax[0,i].imshow(dtimage, cmap="magma")
 
-    fig.savefig(os.path.join(dir, 'deadtime_maps.png'), dpi=150)
-    time.sleep(2)
-    plt.clf()    
+        fig.savefig(os.path.join(dir, 'deadtime_maps.png'), dpi=150)
+        time.sleep(2)
+        plt.clf()    
+    except:
+        print("WARNING: could not complete dt image output")
     return
 
 def diffimage(sum, dir: str, xres: int, yres: int, ndet: int):
     """
     plot the differences in deadtimes between detectors as a map image
     """    
+    try:
+        if ndet != 2:
+            raise ValueError("Number of detectors != 2, difference map not possible")
+        
+        sum=sum.astype(float)
+            
+        diffmap = sum[:,0]-sum[:,1]
 
-    if ndet != 2:
-        raise ValueError("Number of detectors != 2, difference map not possible")
-       
-    sum=sum.astype(float)
-         
-    diffmap = sum[:,0]-sum[:,1]
+        diffimage = diffmap.reshape(yres,xres)
 
-    diffimage = diffmap.reshape(yres,xres)
+        fig = plt.figure(figsize=(6,6))
 
-    fig = plt.figure(figsize=(6,6))
+        ax = fig.add_subplot(111)
 
-    ax = fig.add_subplot(111)
+        img = ax.imshow(diffimage, cmap='bwr')
 
-    img = ax.imshow(diffimage, cmap='bwr')
+        plt.colorbar(img, fraction=0.04346, pad=0.04)
 
-    plt.colorbar(img, fraction=0.04346, pad=0.04)
-
-    plt.savefig(os.path.join(dir, 'difference_map.png'), dpi=150)
-    time.sleep(2)
-    plt.clf()
+        plt.savefig(os.path.join(dir, 'difference_map.png'), dpi=150)
+        time.sleep(2)
+        plt.clf()   
+    except:
+        print("WARNING: could not complete dt difference image")
     return
 
 def dtscatter(dt, sum, dir: str, ndet: int):
     """
     produce scatterplot of deadtime vs counts per pixel
     """  
+    try:
+        fig = plt.figure(figsize=(8,4))
 
-    fig = plt.figure(figsize=(8,4))
+        ax = fig.add_subplot(111)
+        ax.set_xlabel("Deadtime (%)")
+        ax.set_ylabel("Counts")
 
-    ax = fig.add_subplot(111)
-    ax.set_xlabel("Deadtime (%)")
-    ax.set_ylabel("Counts")
+        for i in np.arange(ndet):
+            ax.scatter(dt[:,i],sum[:,i], color=cset[i], marker='o', s=50, alpha=0.1, linewidths=None, label=f"{i}")
 
-    for i in np.arange(ndet):
-        ax.scatter(dt[:,i],sum[:,i], color=cset[i], marker='o', s=50, alpha=0.1, linewidths=None, label=f"{i}")
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax.legend(bbox_to_anchor=(1, 0.5), loc="center left", title="Detector:")
+        #NB: works but not sure why... box appears to right
+        #from: https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot
 
-    ax.legend(bbox_to_anchor=(1, 0.5), loc="center left", title="Detector:")
-    #NB: works but not sure why... box appears to right
-    #from: https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot
-
-    fig.savefig(os.path.join(dir, 'deadtime_vs_counts.png'), dpi=150)
-    time.sleep(2)
-    plt.clf()
-    #https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib/53865762#53865762
-    #seriously consider contoured plots
-    #particularly 3rd answer by "Guilliame" using density_scatter
-    
+        fig.savefig(os.path.join(dir, 'deadtime_vs_counts.png'), dpi=150)
+        time.sleep(2)
+        plt.clf()
+        #https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib/53865762#53865762
+        #seriously consider contoured plots
+        #particularly 3rd answer by "Guilliame" using density_scatter
+    except:
+        print("WARNING: could not complete dt scatter plot")
     return
 
 def predhist(dt, dtmod, dir: str, ndet: int):
     """
     generate the predicted deadtime histogram plot
     """ 
-    
-    fig = plt.figure(figsize=(6,4))
+    try:
+        fig = plt.figure(figsize=(6,4))
 
-    ax = fig.add_subplot(111)
+        ax = fig.add_subplot(111)
 
-    ax.set_xlabel("Deadtime (%)")
-    ax.set_ylabel("No. pixels")
+        ax.set_xlabel("Deadtime (%)")
+        ax.set_ylabel("No. pixels")
 
-    i=0
-    labels = [ "measured", "predicted" ]
+        i=0
+        labels = [ "measured", "predicted" ]
 
-    for data in [ dt, dtmod ]:
-        for det in range(ndet):
-            ax.hist(data[:,det], 100, fc=cset[i*2+det], alpha=0.5, label=f"{labels[i]}, {det}")
-        i+=1
+        for data in [ dt, dtmod ]:
+            for det in range(ndet):
+                ax.hist(data[:,det], 100, fc=cset[i*2+det], alpha=0.5, label=f"{labels[i]}, {det}")
+            i+=1
 
-    fig.savefig(os.path.join(dir, 'predicted_deadtime_histograms.png'), dpi=150)
-    time.sleep(2)
-    plt.clf()
+        fig.savefig(os.path.join(dir, 'predicted_deadtime_histograms.png'), dpi=150)
+        time.sleep(2)
+        plt.clf()
+    except:
+        print("WARNING: could not complete predicted dt histogram plot")    
     return
 
 def preddiffimage(dt, dtmod, dir: str, xres: int, yres: int, ndet: int):
@@ -338,32 +348,35 @@ def predscatter(dt, dtmod, sum, dir: str, ndet: int):
     return
 
 
-def dtplots(config, dir: str, dt, sum, dtmod, dtavg, mergedsum, xres: int, yres: int, ndet: int, INDEX_ONLY: bool):
+def dtplots(config, dir: str, dt, sum, dtmod, xres: int, yres: int, ndet: int, INDEX_ONLY: bool):
     """
     produce all deadtime-related plots
     """
-    
-    dthist(dt, dir, ndet)
-    dtimages(dt, dir, xres, yres, ndet)
-    diffimage(sum, dir, xres, yres, ndet)    
-    dtscatter(dt, sum, dir, ndet)    
-    
-    if not INDEX_ONLY and (np.amax(sum) > 0):
+    try:
+        dthist(dt, dir, ndet)
+        dtimages(dt, dir, xres, yres, ndet)
+        diffimage(sum, dir, xres, yres, ndet)    
+        dtscatter(dt, sum, dir, ndet)    
         
-        if ndet == 2:
-        #difference map requires two detectors
-            diffimage(sum, dir, xres, yres, ndet)
-        
-        dtscatter(dt, sum, dir, ndet)
-    elif (np.amax(sum) <= 0):
-        raise ValueError("Sum array is empty or zero - cannot generate sum plots")
+        if not INDEX_ONLY and (np.amax(sum) > 0):
+            
+            if ndet == 2:
+            #difference map requires two detectors
+                diffimage(sum, dir, xres, yres, ndet)
+            
+            dtscatter(dt, sum, dir, ndet)
+        elif (np.amax(sum) <= 0):
+            raise ValueError("Sum array is empty or zero - cannot generate sum plots")
 
-    if np.max(dtmod) > 0 and dtmod.shape[1] == 2:
-        #predicted deadtime map requieres active prediction with two detectors
-        predhist(dt, dtmod, dir, ndet)   
-    else:
-        pass
-
-    plt.close()
+        if np.max(dtmod) > 0 and dtmod.shape[1] == 2:
+            #predicted deadtime map requieres active prediction with two detectors
+            predhist(dt, dtmod, dir, ndet)   
+        else:
+            pass
+    except:
+        print("WARNING: could not complete dt plots")
     
-    return 
+    finally:
+        plt.close()
+        
+        return 
