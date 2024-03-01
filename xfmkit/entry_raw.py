@@ -104,8 +104,7 @@ def read_raw(args_in):
         if (np.max(pixelseries.data) > 0) and pixelseries.parsed == True:
             print("--------------")
             print("GENERATING PLOTS")
-            dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtmod, pixelseries.dtflat, \
-                pixelseries.flatsum, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
+            dtops.dtplots(config, dirs.plots, pixelseries.dt, pixelseries.sum, pixelseries.dtmod, xfmap.xres, xfmap.yres, pixelseries.ndet, args.index_only)
 
             pixelseries.rgbarray, pixelseries.rvals, pixelseries.gvals, pixelseries.bvals \
                 = rgbspectrum.calccolours(config, pixelseries, xfmap, pixelseries.flattened, dirs)       #flattened / corrected

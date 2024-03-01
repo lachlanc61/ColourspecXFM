@@ -8,6 +8,11 @@ import xfmkit.structures as structures
 
 class MapDone(Exception): pass
 
+class MapComplete(Exception): pass
+
+class MapEarlyStop(Exception): pass
+
+
 def endpx(pxidx, idx, buffer, xfmap, pixelseries):
     """
     Cleanup operations at end of each pixel
@@ -16,16 +21,16 @@ def endpx(pxidx, idx, buffer, xfmap, pixelseries):
 
         raises MapDone at expected end of map
     """
-    row=pixelseries.yidx[pxidx,0]+1
+    row=pixelseries.yidx[pxidx,0]
 
     #print pixel index at end of every row
     if pxidx % xfmap.xres == (xfmap.xres-1): 
-        print(f"\rRow {row}/{xfmap.yres} at pixel {pxidx}, byte {int(buffer.fidx+idx)} ({100*(idx)/xfmap.fullsize:.1f} %)", end='')
+        print(f"\rRow {row}/{xfmap.yres-1} at pixel {pxidx}, byte {int(buffer.fidx+idx)} ({100*(idx)/xfmap.fullsize:.1f} %)", end='')
         pass
     #stop when pixel index greater than expected no. pixels
     if (pxidx >= (xfmap.npx-1)):
         print(f"\nEND OF MAP: row {row}/{xfmap.yres}, pixel {pxidx}")
-        raise MapDone
+        raise MapComplete
 
     pxidx+=1
 

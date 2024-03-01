@@ -120,7 +120,7 @@ class MapBuffer:
         
         if self.data == "":
             print(f"\n WARNING: Attempting to load chunk beyond EOF - dimensions in header may be incorrect.")
-            raise parser.MapDone
+            raise parser.MapEarlyStop
 
         return
 
@@ -161,8 +161,8 @@ def getstream(buffer, idx: int, length: int):
 
     if len(stream) < length:
         if buffer.len == 0:
-            print(f"\n WARNING: Mismatch between EOF and expected pixel count - map dimensions may be incorrect in file header.")
-            raise parser.MapDone
+            print(f"\n WARNING: Early EOF at index {idx} - map dimensions may be incorrect in file header.")
+            raise parser.MapEarlyStop
         else:
             raise ValueError("FATAL: unexpected stream size before end of buffer")
         

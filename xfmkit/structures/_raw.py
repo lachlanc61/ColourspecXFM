@@ -108,12 +108,14 @@ class PixelSeries:
         self.energy=xfmap.energy
         self.dimensions = xfmap.dimensions
 
+        #derived variables
+        self.npx = npx
+        self.nrows = xfmap.dimensions[0]
+        self.nchan=config['NCHAN']
 
         #assign number of detectors
         self.detarray = detarray
-        self.npx = npx
         self.ndet=max(self.detarray)+1
-        self.nchan=config['NCHAN']
 
         #initialise pixel value arrays
         self.parsed=False
@@ -127,12 +129,11 @@ class PixelSeries:
         #flat
         self.flattened=np.zeros((npx),dtype=np.uint32) 
         self.flatsum=np.zeros((npx),dtype=np.uint32) 
-        self.dtflat=np.zeros((npx),dtype=np.float32)  
         #per-detector
         self.sum=np.zeros((npx,self.ndet),dtype=np.uint32)  
         self.dtmod=np.zeros((npx,self.ndet),dtype=np.float32)  
 
-        #create analysis outputs
+        #initalise analysis containers
         self.rvals=np.zeros(npx)
         self.gvals=np.zeros(npx)
         self.bvals=np.zeros(npx)
@@ -149,12 +150,11 @@ class PixelSeries:
             self.data=np.zeros((npx,self.ndet,self.nchan),dtype=np.uint16)
 #            if config['DOBG']: self.corrected=np.zeros((xfmap.npx,config['NCHAN']),dtype=np.uint16)
         else:
-        #create a small dummy array just in case
             self.data=np.zeros((1024,self.nchan),dtype=np.uint16)
+            self.data=None
 
         self.parsing = INDEX_ONLY
 
-        #self.nrows=0
 
     def receiveheader(self, pxidx, pxlen, xcoord, ycoord, det, dt):
         self.pxlen[pxidx,det]=pxlen
@@ -164,6 +164,49 @@ class PixelSeries:
         self.dt[pxidx,det]=dt
         
         return self
+
+    def truncate_y(self, npx, nrows):
+
+        #find the end of the row
+        _current_row = nrows - 1
+        _current_pixel = npx - 1
+        _x_width = self.dimensions[1]
+        
+        if not ((_current_row) == (_current_pixel // _x_width)):
+            raise ValueError("mismatch between current row and expected row from pixel, dimensions")
+
+        _row_end_index = _current_row * _x_width + _x_width - 1
+
+        new_npx = _row_end_index + 1 
+
+        if not ((new_npx) <= (self.npx)):
+            raise ValueError("pixelseries attempting to truncate beyond original number of pixels")
+
+        #do the truncation
+        self.npx = new_npx
+        self.nrows = nrows
+        self.dimensions = ( nrows, self.dimensions[1] )
+
+        self.pxlen=self.pxlen[:new_npx]
+        self.xidx=self.xidx[:new_npx]
+        self.yidx=self.yidx[:new_npx]
+        self.det=self.det[:new_npx]
+        self.dt=self.dt[:new_npx]
+
+        #derived arrays
+        #flat
+        self.flattened=self.flattened[:new_npx]
+        self.flatsum=self.flatsum[:new_npx]
+        #per-detector
+        self.sum=self.sum[:new_npx]
+        self.dtmod=self.dtmod[:new_npx]
+
+        #analysis outputs
+        self.rvals=self.rvals[:new_npx]
+        self.gvals=self.gvals[:new_npx]
+        self.bvals=self.bvals[:new_npx]
+        self.totalcounts=self.totalcounts[:new_npx]
+
 
     def get_dtmod(self, config, xfmap, target_dt: float):
             """
@@ -224,8 +267,7 @@ class PixelSeries:
                 #include derived stats if data was fully parsed
                 if self.parsing:
                     np.savetxt(os.path.join(dir, "pxstats_sum.txt"), self.sum, fmt='%d', delimiter=",")  
-                    np.savetxt(os.path.join(dir, "pxstats_dtmod.txt"), self.dtmod, fmt='%d', delimiter=",")    
-                    np.savetxt(os.path.join(dir, "pxstats_dtflat.txt"), self.dtflat, fmt='%d', delimiter=",")  
+                    np.savetxt(os.path.join(dir, "pxstats_dtmod.txt"), self.dtmod, fmt='%d', delimiter=",")     
         else:
             np.save(os.path.join(dir, "pxstats_pxlen"), self.pxlen)            
             np.save(os.path.join(dir, "pxstats_xidx"), self.xidx)    
@@ -236,7 +278,6 @@ class PixelSeries:
             if self.parsing:
                 np.save(os.path.join(dir, "pxstats_sum"), self.sum)  
                 np.save(os.path.join(dir, "pxstats_dtmod"), self.dtmod)    
-                np.save(os.path.join(dir, "pxstats_dtflat"), self.dtflat) 
 
 
 

@@ -32,7 +32,7 @@ def read(config, args, dirs):
         #initialise the spectrum-by-pixel object
         pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray, args.index_only)
 
-        pixelseries, xfmap.indexlist = indexmap(xfmap, pixelseries, args.multiload)
+        pixelseries, xfmap = indexmap(xfmap, pixelseries, args.multiload)
 
         if not args.index_only:
             pixelseries = parse(xfmap, pixelseries, args.multiload)

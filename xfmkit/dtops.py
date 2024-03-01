@@ -61,10 +61,10 @@ def predict_dt_flat(config, pixelseries, xfmap):
     if pixelseries.parsed == False and not np.max(pixelseries.flatsum) > 0:
         raise ValueError("Deadtime prediction requires parsed map with flattened data")
 
-    if len(pixelseries.flatsum) != len(pixelseries.dtflat):
+    if len(pixelseries.flatsum) != len(pixelseries.dt[:,0]):
         raise ValueError("sum and dt array sizes differ")
 
-    dtmod=np.zeros((len(pixelseries.dtflat),ndet),dtype=np.float32)
+    dtmod=np.zeros((len(pixelseries.dt[:,0]),ndet),dtype=np.float32)
 
     if timeconst == 0.5:    #currently hardcoded to TC = 0.5 us
         for i in range(len(pixelseries.flatsum)):
@@ -348,7 +348,7 @@ def predscatter(dt, dtmod, sum, dir: str, ndet: int):
     return
 
 
-def dtplots(config, dir: str, dt, sum, dtmod, dtavg, mergedsum, xres: int, yres: int, ndet: int, INDEX_ONLY: bool):
+def dtplots(config, dir: str, dt, sum, dtmod, xres: int, yres: int, ndet: int, INDEX_ONLY: bool):
     """
     produce all deadtime-related plots
     """
