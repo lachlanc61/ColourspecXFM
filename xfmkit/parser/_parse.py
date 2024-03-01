@@ -55,14 +55,18 @@ def indexmap(xfmap, pixelseries, multiload):
         """
 
         #assign final sizes
-        pixelseries.npx=pxidx+1     #pixel index still on final pixel
-        pixelseries.nrows=pixelseries.yidx[pxidx,0]+1 
-
+        npx=pxidx+1     #pixel index still on final pixel
+        nrows=pixelseries.yidx+1 
 
         if not pixelseries.npx == xfmap.npx:
             print("WARNING: pixelseries and map object have different pixel sizes at clean completion")
 
+        pixelseries.npx = npx
+        pixelseries.nrows = nrows
+        pixelseries.dimensions = ( nrows, pixelseries.dimensions[1] )        
+
         xfmap.indexlist = indexlist
+        xfmap.npx_found = xfmap.npx
 
         buffer.wait()
         xfmap.resetfile()
@@ -80,6 +84,7 @@ def indexmap(xfmap, pixelseries, multiload):
         if not (npx == xfmap.npx and nrows == xfmap.yres ):
             pixelseries.truncate_y(npx, nrows)
             xfmap.indexlist = indexlist[:npx]
+            xfmap.npx_found = npx
         else:
             print("WARNING: map sizes match despite early stop")
 
@@ -146,10 +151,10 @@ def parse(xfmap, pixelseries, multiload):
                                         # -1 because np.ssorted gives first row of next buffer
                 
                 #get last unbroken pixel
-                if indexlist[buffer_break_px,1] + pxlen[buffer_break_px,1] == buffer_end:
+                if indexlist[buffer_break_px,-1] + pxlen[buffer_break_px,-1] == buffer_end:
                     #if buffer ends perfectly at end of pixel, last good pixel is break px
                     buffer_last_px =  buffer_break_px
-                elif indexlist[buffer_break_px,1] + pxlen[buffer_break_px,1] < buffer_end:
+                elif indexlist[buffer_break_px,-1] + pxlen[buffer_break_px,-1] < buffer_end:
                     raise ValueError("break pixel not at buffer end")
                 else:
                     buffer_last_px = buffer_break_px - 1
@@ -158,7 +163,7 @@ def parse(xfmap, pixelseries, multiload):
                 stream_indexes=indexlist[buffer_start_px:buffer_last_px+1,:]-buffer.fidx
                 stream_pxlen=pxlen[buffer_start_px:buffer_last_px+1,:]
 
-                print(f"\nReading buffer from pixels {buffer_start_px} to {buffer_last_px}")             
+                print(f"\nReading buffer, pixels {buffer_start_px} to {buffer_last_px}")             
                 
                 if DEBUG == True:
                     print(f"\nStart of data to read: {buffer.data[:100]}")

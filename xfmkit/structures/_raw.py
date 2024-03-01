@@ -101,7 +101,7 @@ class Xfmap:
 
 
 class PixelSeries:
-    def __init__(self, config, xfmap, npx, detarray, INDEX_ONLY: bool):
+    def __init__(self, config, xfmap, npx, detarray, parsing: bool):
 
         #copied variables
         self.source=xfmap
@@ -110,6 +110,7 @@ class PixelSeries:
 
         #derived variables
         self.npx = npx
+        self.parsing = parsing
         self.nrows = xfmap.dimensions[0]
         self.nchan=config['NCHAN']
 
@@ -146,14 +147,11 @@ class PixelSeries:
         self.corrected=np.zeros(10)
 
         #initialise whole data containers (WARNING: large)
-        if not INDEX_ONLY:
+        if self.parsing:
             self.data=np.zeros((npx,self.ndet,self.nchan),dtype=np.uint16)
 #            if config['DOBG']: self.corrected=np.zeros((xfmap.npx,config['NCHAN']),dtype=np.uint16)
         else:
-            self.data=np.zeros((1024,self.nchan),dtype=np.uint16)
-            self.data=None
-
-        self.parsing = INDEX_ONLY
+            self.data=np.zeros((1024,self.ndet,self.nchan),dtype=np.uint16)
 
 
     def receiveheader(self, pxidx, pxlen, xcoord, ycoord, det, dt):
@@ -192,6 +190,9 @@ class PixelSeries:
         self.yidx=self.yidx[:new_npx]
         self.det=self.det[:new_npx]
         self.dt=self.dt[:new_npx]
+
+        if self.parsing and self.data is not None:
+            self.data=self.data[:new_npx]
 
         #derived arrays
         #flat

@@ -30,7 +30,7 @@ def read(config, args, dirs):
         xfmap = structures.Xfmap(config, dirs.fi, dirs.fsub, args.write_modified, args.chunk_size, args.multiload)
 
         #initialise the spectrum-by-pixel object
-        pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray, args.index_only)
+        pixelseries = structures.PixelSeries(config, xfmap, xfmap.npx, xfmap.detarray, (not args.index_only))
 
         pixelseries, xfmap = indexmap(xfmap, pixelseries, args.multiload)
 
