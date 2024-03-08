@@ -201,17 +201,12 @@ def parse(xfmap, pixelseries, multiload):
                     #increment beginning of next buffer
                     buffer_start_px = buffer_break_px+1
 
-    except MapDone:
+    except ( MapDone, MapComplete, MapEarlyStop ) :
         pixelseries.parsed = True
         buffer.wait()
         xfmap.resetfile()
         return pixelseries
-
-    except MapComplete:
-        pixelseries.parsed = True
-        buffer.wait()
-        xfmap.resetfile()
-        return pixelseries
+    
 
 def writemap(config, xfmap, pixelseries, xcoords, ycoords, modify_dt, multiload):
     """
@@ -255,14 +250,7 @@ def writemap(config, xfmap, pixelseries, xcoords, ycoords, modify_dt, multiload)
             if det == xfmap.ndet-1:
                 pxidx = endpx(pxidx, idx+buffer.fidx, buffer, xfmap, pixelseries)
 
-    except MapDone:
-        pixelseries.parsed = True
+    except ( MapDone, MapComplete, MapEarlyStop ) :
         buffer.wait()
         xfmap.resetfile()
-        return pixelseries
-
-    except MapComplete:
-        buffer.wait()
-        xfmap.resetfile()
-        return 
-    
+        return pixelseries        
