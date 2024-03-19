@@ -156,7 +156,8 @@ def parse(xfmap, pixelseries, multiload):
                     #if buffer ends perfectly at end of pixel, last good pixel is break px
                     buffer_last_px =  buffer_break_px
                 elif indexlist[buffer_break_px,-1] + pxlen[buffer_break_px,-1] < buffer_end:
-                    raise ValueError("break pixel not at buffer end")
+                    print(f"WARNING: unexplained data at end of buffer - break pixel byte: {indexlist[buffer_break_px,-1] + pxlen[buffer_break_px,-1]}, buffer end byte: {buffer_end}")
+                    buffer_last_px = buffer_break_px
                 else:
                     buffer_last_px = buffer_break_px - 1
 
@@ -196,7 +197,8 @@ def parse(xfmap, pixelseries, multiload):
                         print(f"\nEND OF MAP: pixel {buffer_break_px}")
                         raise MapDone
                     else:
-                        raise ValueError(f"Buffer position unchanged at end of pixel")
+                        print(f"WARNING: unexpected early stop - last pixel byte: {indexlist[buffer_break_px,-1] + pxlen[buffer_break_px,-1]}, map end byte: {xfmap.fullsize}")
+                        raise MapEarlyStop(f"Buffer position unchanged at end of pixel")
                 else:
                     #increment beginning of next buffer
                     buffer_start_px = buffer_break_px+1
