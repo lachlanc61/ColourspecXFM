@@ -171,19 +171,26 @@ class PixelSeries:
         _x_width = self.dimensions[1]
         
         if not ((_current_row) == (_current_pixel // _x_width)):
-            raise ValueError("mismatch between current row and expected row from pixel, dimensions")
+            print(f"WARNING: mismatch between current row ({_current_row}) and expected row from pixel dimensions {(_current_pixel // _x_width)}")
+            print(f"using expected row {(_current_pixel // _x_width)}")
+
+            if ((_current_row) > (_current_pixel // _x_width)):
+                _current_row = (_current_pixel // _x_width)
+            else:
+                _current_row = _current_row - 1  #go back one row to be safe
 
         _row_end_index = _current_row * _x_width + _x_width - 1
 
         new_npx = _row_end_index + 1 
 
-        if not ((new_npx) <= (self.npx)):
-            raise ValueError("pixelseries attempting to truncate beyond original number of pixels")
+        if ((new_npx) >= (self.npx)):
+            print(f"WARNING: pixelseries attempting to truncate beyond original number of pixels, new: {new_npx} vs old: {self.npx}")
+            new_npx  = self.npx
 
         #do the truncation
         self.npx = new_npx
-        self.nrows = nrows
-        self.dimensions = ( nrows, self.dimensions[1] )
+        self.nrows = _current_row + 1
+        self.dimensions = ( _current_row + 1, self.dimensions[1] )
 
         self.pxlen=self.pxlen[:new_npx]
         self.xidx=self.xidx[:new_npx]
